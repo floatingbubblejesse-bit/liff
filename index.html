@@ -5,65 +5,333 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>身體組成儀表板</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      background: #f0f4f8;
-      color: #333;
+      font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-serif;
+      background: #f0f4f8; color: #333; min-height: 100vh;
     }
-    .logo { font-size: 48px; margin-bottom: 16px; }
-    .title { font-size: 20px; font-weight: bold; color: #00B900; }
-    #msg { margin-top: 12px; font-size: 14px; color: #888; }
-    #err { margin-top: 16px; font-size: 14px; color: #e53e3e;
-           background: #fff5f5; border: 1px solid #fed7d7;
-           border-radius: 8px; padding: 12px 16px;
-           max-width: 320px; text-align: center; white-space: pre-line; display: none; }
+    .header {
+      background: linear-gradient(135deg, #00B900, #00C853);
+      color: white; padding: 20px 16px 28px; text-align: center;
+    }
+    .header h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .header p  { font-size: 13px; opacity: 0.85; }
+    .loading {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 60vh; gap: 16px;
+    }
+    .spinner {
+      width: 44px; height: 44px; border: 4px solid #e0e0e0;
+      border-top-color: #00B900; border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-box {
+      margin: 32px 16px; padding: 20px;
+      background: #fff3f3; border: 1px solid #ffcdd2;
+      border-radius: 12px; text-align: center; color: #c62828; white-space: pre-line;
+    }
+    .content { padding: 0 12px 32px; margin-top: -12px; }
+    .card {
+      background: white; border-radius: 14px; padding: 16px;
+      margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .card-title {
+      font-size: 13px; font-weight: 700; color: #555;
+      letter-spacing: 0.5px; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .profile { display: flex; align-items: center; gap: 12px; }
+    .avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: linear-gradient(135deg, #00B900, #00C853);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; color: white; font-weight: 700; flex-shrink: 0;
+    }
+    .profile-info h2 { font-size: 17px; font-weight: 700; }
+    .profile-info p  { font-size: 12px; color: #888; margin-top: 2px; }
+    .badge {
+      display: inline-block; background: #e8f5e9; color: #2e7d32;
+      font-size: 11px; padding: 2px 8px; border-radius: 20px;
+      margin-top: 4px; font-weight: 600;
+    }
+    .metrics-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .metric-item {
+      background: #f8fafb; border-radius: 10px; padding: 10px 8px; text-align: center;
+    }
+    .metric-label { font-size: 10px; color: #888; margin-bottom: 4px; }
+    .metric-value { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+    .metric-unit  { font-size: 10px; color: #aaa; }
+    .metric-diff  { font-size: 11px; margin-top: 3px; }
+    .diff-good { color: #2e7d32; }
+    .diff-warn { color: #e65100; }
+    .diff-same { color: #888; }
+    .chart-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 5px 12px; border-radius: 20px; border: none;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      background: #f0f0f0; color: #555; transition: all 0.2s;
+    }
+    .tab-btn.active { background: #00B900; color: white; }
+    .chart-wrap { position: relative; height: 200px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th {
+      background: #f5f5f5; padding: 8px 6px; text-align: center;
+      font-weight: 700; color: #555; white-space: nowrap; position: sticky; top: 0;
+    }
+    td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9f9f9; }
+    .date-col { font-size: 11px; color: #888; }
+    .no-data { text-align: center; color: #aaa; padding: 32px; font-size: 14px; }
   </style>
 </head>
 <body>
-  <div class="logo">📊</div>
-  <div class="title">身體組成儀表板</div>
-  <div id="msg">連接 LINE 中...</div>
-  <div id="err"></div>
 
-  <script>
-    // ===================== 🔧 設定區（只需改這兩行）=====================
-    var LIFF_ID      = '2009326025-XAQhb1rA';
-    var DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
-    // =================================================================
+<div class="header">
+  <h1>📊 身體組成儀表板</h1>
+  <p>個人健康數據追蹤</p>
+</div>
 
-    function setMsg(t) { document.getElementById('msg').textContent = t; }
-    function showErr(t) {
-      document.getElementById('msg').style.display = 'none';
-      var el = document.getElementById('err');
-      el.textContent = t;
-      el.style.display = 'block';
-    }
+<div id="loading" class="loading">
+  <div class="spinner"></div>
+  <p id="loading-msg" style="color:#888;font-size:14px;">連接中...</p>
+</div>
+<div id="error"   style="display:none"></div>
+<div id="content" style="display:none" class="content"></div>
 
+<script>
+  // ===================== 🔧 設定區 =====================
+  var LIFF_ID = '2009326025-XAQhb1rA';
+  var API_URL = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
+  // ======================================================
+
+  var METRICS = [
+    ['體重',               '體重',    'kg',   true ],
+    ['體脂率',             '體脂率',  '%',    true ],
+    ['肌肉量',             '肌肉量',  'kg',   false],
+    ['水分比率',           '水分',    '%',    false],
+    ['內臟脂肪指數',       '內臟脂肪','',     true ],
+    ['身體質量參數 (BMI)', 'BMI',     '',     true ],
+    ['基礎代謝 (BMR)',     'BMR',     'kcal', false],
+    ['腰圍',               '腰圍',    'cm',   true ],
+    ['臀圍',               '臀圍',    'cm',   true ],
+  ];
+
+  var chartInstance = null;
+  var allData       = null;
+
+  function setMsg(t) {
+    var el = document.getElementById('loading-msg');
+    if (el) el.textContent = t;
+  }
+
+  function showError(msg) {
+    document.getElementById('loading').style.display = 'none';
+    var el = document.getElementById('error');
+    el.innerHTML = '<div class="error-box">⚠️ ' + esc(msg) + '</div>';
+    el.style.display = 'block';
+  }
+
+  function fetchData(paramName, paramValue) {
+    setMsg('載入資料中...');
+    var url = API_URL + '?' + paramName + '=' + encodeURIComponent(paramValue);
+    fetch(url)
+      .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        if (data.error) {
+          showError(data.error);
+        } else if (!data.measurements || !data.customer) {
+          showError('資料格式異常，請聯絡店家');
+        } else {
+          allData = data;
+          renderDashboard(data);
+        }
+      })
+      .catch(function(err) {
+        showError('資料載入失敗：' + (err.message || err) + '\n\n請重試或聯絡店家');
+      });
+  }
+
+  // ── 主流程 ──
+  var params = new URLSearchParams(window.location.search);
+  var urlId  = params.get('id');
+
+  if (urlId) {
+    // 個人化連結模式（通知訊息帶 ?id=院區病歷號）
+    fetchData('id', urlId);
+  } else {
+    // LIFF 模式 — 從 LINE 取得 UID
+    setMsg('連接 LINE 中...');
     liff.init({ liffId: LIFF_ID })
       .then(function() {
-        setMsg('取得 LINE 帳號中...');
+        setMsg('取得帳號中...');
         if (!liff.isInClient()) {
-          showErr('請在 LINE 中開啟此連結：\nhttps://liff.line.me/' + LIFF_ID);
+          showError('請在 LINE 中開啟此連結：\nhttps://liff.line.me/' + LIFF_ID);
           return;
         }
         return liff.getProfile();
       })
       .then(function(profile) {
         if (!profile || !profile.userId) return;
-        setMsg('載入個人資料中...');
-        window.location.href = DASHBOARD_URL + '?uid=' + encodeURIComponent(profile.userId);
+        fetchData('uid', profile.userId);
       })
       .catch(function(err) {
-        showErr('LIFF 初始化失敗：\n' + (err.message || err) +
-                '\n\n請確認從 LINE 點擊連結開啟。');
+        showError('LIFF 初始化失敗：\n' + (err.message || err) +
+                  '\n\n請在 LINE 中開啟：\nhttps://liff.line.me/' + LIFF_ID);
       });
-  </script>
+  }
+
+  function renderDashboard(data) {
+    var m      = data.measurements;
+    var cust   = data.customer;
+    var latest = m.length > 0 ? m[m.length - 1] : null;
+    var prev   = m.length > 1 ? m[m.length - 2] : null;
+    var html   = '';
+
+    // 個人資料卡
+    html += '<div class="card"><div class="profile">';
+    html += '<div class="avatar">' + esc((cust.name || '?')[0]) + '</div>';
+    html += '<div class="profile-info"><h2>' + esc(cust.name) + '</h2>';
+    html += '<p>院區病歷號：' + esc(cust.sn) + '</p>';
+    if (cust.settingName) html += '<span class="badge">' + esc(cust.settingName) + '</span>';
+    html += '</div></div></div>';
+
+    // 最新數值卡
+    if (latest) {
+      var latestDate = latest['測量日期/時間'] || '';
+      html += '<div class="card"><div class="card-title">📋 最新測量';
+      if (latestDate) html += ' <span style="font-weight:400;color:#aaa;font-size:11px;">' + latestDate + '</span>';
+      html += '</div><div class="metrics-grid">';
+      METRICS.forEach(function(meta) {
+        var key = meta[0], label = meta[1], unit = meta[2], lowerGood = meta[3];
+        var curr = parseFloat(latest[key]);
+        if (isNaN(curr)) return;
+        var diffHtml = '';
+        if (prev) {
+          var pv = parseFloat(prev[key]);
+          if (!isNaN(pv)) {
+            var diff  = curr - pv;
+            var good  = (lowerGood && diff < 0) || (!lowerGood && diff > 0);
+            var cls   = diff === 0 ? 'diff-same' : (good ? 'diff-good' : 'diff-warn');
+            var sign  = diff > 0 ? '+' : '';
+            var arrow = diff === 0 ? '→' : (diff > 0 ? '↑' : '↓');
+            diffHtml  = '<div class="metric-diff ' + cls + '">' + arrow + ' ' + sign + diff.toFixed(1) + unit + '</div>';
+          }
+        }
+        html += '<div class="metric-item">';
+        html += '<div class="metric-label">' + esc(label) + '</div>';
+        html += '<div class="metric-value">' + curr + '<span class="metric-unit">' + esc(unit) + '</span></div>';
+        html += diffHtml + '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    // 趨勢圖
+    if (m.length > 1) {
+      html += '<div class="card"><div class="card-title">📈 趨勢圖</div><div class="chart-tabs">';
+      METRICS.forEach(function(meta, idx) {
+        var hasData = m.some(function(row) { return !isNaN(parseFloat(row[meta[0]])); });
+        if (!hasData) return;
+        html += '<button class="tab-btn' + (idx === 0 ? ' active' : '') +
+                '" onclick="switchChart(\'' + meta[0] + '\', this)">' + esc(meta[1]) + '</button>';
+      });
+      html += '</div><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>';
+    }
+
+    // 歷史紀錄表
+    if (m.length > 0) {
+      html += '<div class="card"><div class="card-title">📄 測量歷史</div>';
+      html += '<div class="table-wrap"><table><tr><th>日期</th>';
+      METRICS.forEach(function(meta) {
+        if (m.some(function(r) { return !isNaN(parseFloat(r[meta[0]])); }))
+          html += '<th>' + esc(meta[1]) + '</th>';
+      });
+      html += '</tr>';
+      m.slice().reverse().forEach(function(row) {
+        html += '<tr><td class="date-col">' + esc((row['測量日期/時間'] || '').substring(0, 10)) + '</td>';
+        METRICS.forEach(function(meta) {
+          if (!m.some(function(r) { return !isNaN(parseFloat(r[meta[0]])); })) return;
+          var val = parseFloat(row[meta[0]]);
+          html += '<td>' + (isNaN(val) ? '-' : val) + '</td>';
+        });
+        html += '</tr>';
+      });
+      html += '</table></div></div>';
+    } else {
+      html += '<div class="card"><div class="no-data">尚無測量紀錄</div></div>';
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').innerHTML = html;
+    document.getElementById('content').style.display = 'block';
+
+    if (m.length > 1) {
+      setTimeout(function() {
+        for (var i = 0; i < METRICS.length; i++) {
+          if (m.some(function(row) { return !isNaN(parseFloat(row[METRICS[i][0]])); })) {
+            renderChart(METRICS[i][0]); break;
+          }
+        }
+      }, 100);
+    }
+  }
+
+  function renderChart(metricKey) {
+    var m = allData.measurements;
+    var meta = METRICS.find(function(x) { return x[0] === metricKey; });
+    var labels = [], values = [];
+    m.forEach(function(row) {
+      var val = parseFloat(row[metricKey]);
+      if (!isNaN(val)) {
+        labels.push((row['測量日期/時間'] || '').substring(0, 10));
+        values.push(val);
+      }
+    });
+    var canvas = document.getElementById('trendChart');
+    if (!canvas) return;
+    if (chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: meta[1] + (meta[2] ? '(' + meta[2] + ')' : ''),
+          data: values,
+          borderColor: '#00B900',
+          backgroundColor: 'rgba(0,185,0,0.08)',
+          tension: 0.3, pointBackgroundColor: '#00B900', pointRadius: 5, fill: true
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+          y: { ticks: { font: { size: 11 } } }
+        }
+      }
+    });
+  }
+
+  function switchChart(metricKey, btn) {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    renderChart(metricKey);
+  }
+
+  function esc(str) {
+    return String(str || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
 </body>
 </html>
