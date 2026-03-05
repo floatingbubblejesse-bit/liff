@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>餐食審核｜醫護後台</title>
+  <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+  <style>
+    :root {
+      --green: #06c755;
+      --green-dark: #04a847;
+      --red: #e53935;
+      --bg: #f0f4f8;
+      --card: #ffffff;
+      --text: #1a202c;
+      --muted: #718096;
+      --border: #e2e8f0;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 100px;
+    }
+
+    /* Header */
+    .header {
+      background: var(--green);
+      color: #fff;
+      padding: 18px 20px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    }
+    .header svg { width: 28px; height: 28px; flex-shrink: 0; }
+    .header h1 { font-size: 18px; font-weight: 700; }
+    .header .subtitle { font-size: 12px; opacity: .85; margin-top: 1px; }
+
+    /* Loading / Error */
+    #loading, #error-screen {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: calc(100vh - 70px);
+      gap: 14px; padding: 32px;
+      text-align: center;
+    }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 4px solid #c3e6cd;
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #error-screen .icon { font-size: 48px; }
+    #error-screen p { color: var(--muted); font-size: 15px; }
+
+    /* Main */
+    #main-content { display: none; padding: 16px; }
+
+    /* Card */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--green-dark);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Patient Info */
+    .patient-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .info-item label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .info-item span { font-size: 15px; font-weight: 600; }
+
+    /* Food Tags */
+    .food-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .food-tag {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* Score */
+    .score-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .score-badge {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .score-badge.high { background: var(--green); }
+    .score-badge.mid  { background: #fb8c00; }
+    .score-badge.low  { background: var(--red); }
+    .score-label { font-size: 13px; color: var(--muted); }
+    .score-label strong { display: block; font-size: 16px; color: var(--text); }
+
+    /* Nutrient Grid */
+    .nutrient-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .nutrient-item {
+      background: #f7f9fc;
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .nutrient-item label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .nutrient-item input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      outline: none;
+    }
+    .nutrient-item input:focus { color: var(--green-dark); }
+    .nutrient-item .unit { font-size: 11px; color: var(--muted); }
+
+    /* Score Slider */
+    .score-field label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .score-field label span {
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--green-dark);
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(to right, var(--green) var(--val, 80%), #e2e8f0 var(--val, 80%));
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--green);
+      border: 3px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    }
+
+    /* Textarea */
+    .advice-textarea, .reviewer-note {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+      resize: vertical;
+      font-family: inherit;
+      color: var(--text);
+      background: #f7f9fc;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .advice-textarea { min-height: 90px; }
+    .reviewer-note   { min-height: 60px; margin-top: 4px; }
+    .advice-textarea:focus,
+    .reviewer-note:focus { border-color: var(--green); background: #fff; }
+
+    /* Action Bar */
+    .action-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #fff;
+      padding: 12px 16px;
+      display: flex;
+      gap: 10px;
+      box-shadow: 0 -2px 12px rgba(0,0,0,.1);
+      z-index: 20;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .1s, opacity .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-approve { background: var(--green); color: #fff; flex: 2; }
+    .btn-reject  { background: #fff; color: var(--red); border: 2px solid var(--red); flex: 1; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 90px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.78);
+      color: #fff;
+      border-radius: 24px;
+      padding: 10px 20px;
+      font-size: 14px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity .3s;
+      z-index: 99;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+
+    /* Success */
+    #success-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 70px);
+      padding: 32px;
+      text-align: center;
+      gap: 16px;
+    }
+    #success-screen .check { font-size: 64px; }
+    #success-screen h2 { font-size: 22px; font-weight: 800; }
+    #success-screen p { color: var(--muted); font-size: 15px; line-height: 1.6; }
+    .close-btn {
+      margin-top: 8px;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 36px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+    <rect x="9" y="3" width="6" height="4" rx="1" ry="1"/>
+    <path d="m9 12 2 2 4-4"/>
+  </svg>
+  <div>
+    <h1>餐食審核</h1>
+    <div class="subtitle">醫護人員專用後台</div>
+  </div>
+</div>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p>初始化中，請稍候…</p>
+</div>
+
+<div id="error-screen" style="display:none;">
+  <div class="icon">⚠️</div>
+  <h2 id="error-title">發生錯誤</h2>
+  <p id="error-msg">請確認連結是否正確，或重新整理頁面。</p>
+</div>
+
+<div id="main-content">
+
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      病患資訊
+    </div>
+    <div class="patient-grid">
+      <div class="info-item"><label>姓名</label><span id="p-name">—</span></div>
+      <div class="info-item"><label>院區病歷號</label><span id="p-pid">—</span></div>
+      <div class="info-item"><label>分析時間</label><span id="p-time" style="font-size:13px;">—</span></div>
+      <div class="info-item"><label>記錄 ID</label><span id="p-id" style="font-size:12px;color:var(--muted);">—</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M8 12h8M12 8v8"/></svg>
+      食物清單
+    </div>
+    <div class="food-tags" id="food-tags"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      營養評分
+    </div>
+    <div class="score-row">
+      <div class="score-badge" id="score-badge">—</div>
+      <div class="score-label">
+        <strong id="score-desc">—</strong>
+        AI 初判（可調整滑桿）
+      </div>
+    </div>
+    <div class="score-field">
+      <label>調整評分 <span id="score-display">—</span></label>
+      <input type="range" id="score-slider" min="0" max="100" value="80"
+             oninput="updateScore(this.value)" />
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      營養數值（點擊可修改）
+    </div>
+    <div class="nutrient-grid">
+      <div class="nutrient-item">
+        <label>熱量</label>
+        <input type="number" id="n-cal" inputmode="decimal" />
+        <div class="unit">kcal</div>
+      </div>
+      <div class="nutrient-item">
+        <label>蛋白質</label>
+        <input type="number" id="n-pro" inputmode="decimal" />
+        <div class="unit">g</div>
+      </div>
+      <div class="nutrient-item">
+        <label>纖維質</label>
+        <input type="number" id="n-fib" inputmode="decimal" />
+        <div class="unit">g</div>
+      </div>
+      <div class="nutrient-item">
+        <label>碳水化合物</label>
+        <input type="number" id="n-carb" inputmode="decimal" />
+        <div class="unit">g</div>
+      </div>
+      <div class="nutrient-item">
+        <label>脂肪</label>
+        <input type="number" id="n-fat" inputmode="decimal" />
+        <div class="unit">g</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      飲食建議（可直接修改）
+    </div>
+    <textarea class="advice-textarea" id="n-advice" rows="4" placeholder="AI 初判建議…"></textarea>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      營養師備注（選填，不傳給病患）
+    </div>
+    <textarea class="reviewer-note" id="n-note" rows="2" placeholder="例：病患昨日已超標，本次建議保守…"></textarea>
+  </div>
+
+</div>
+
+<div id="success-screen">
+  <div class="check">✅</div>
+  <h2 id="success-title">核准完成</h2>
+  <p id="success-msg">已將調整後的分析結果傳送給病患，<br/>並記錄至 Google Sheets。</p>
+  <button class="close-btn" onclick="closeLiff()">關閉視窗</button>
+</div>
+
+<div class="action-bar" id="action-bar">
+  <button class="btn btn-reject" id="btn-reject" onclick="submitReview('reject')">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    駁回
+  </button>
+  <button class="btn btn-approve" id="btn-approve" onclick="submitReview('approve')">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    核准並送出
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════
+// 設定：建立 LIFF App 後填入
+// ═══════════════════════════════════
+const LIFF_ID = "2009326025-0mhpcsM1";
+
+let params = {};
+let reviewerProfile = null;
+
+// ── Utils ──
+function showToast(msg, duration) {
+  duration = duration || 2200;
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, duration);
+}
+
+function showError(title, msg) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('error-title').textContent = title;
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('error-screen').style.display = 'flex';
+}
+
+function updateScore(val) {
+  val = parseInt(val);
+  document.getElementById('score-display').textContent = val;
+  var slider = document.getElementById('score-slider');
+  slider.style.setProperty('--val', val + '%');
+  var badge = document.getElementById('score-badge');
+  badge.textContent = val;
+  badge.className = 'score-badge ' + (val >= 70 ? 'high' : val >= 40 ? 'mid' : 'low');
+  document.getElementById('score-desc').textContent =
+    val >= 80 ? '優良' : val >= 60 ? '尚可' : val >= 40 ? '待改善' : '不足';
+}
+
+// ── Init ──
+function init() {
+  // Parse URL params
+  var search = location.search.substring(1);
+  var pairs = search.split('&');
+  var raw = {};
+  pairs.forEach(function(p) {
+    var idx = p.indexOf('=');
+    if (idx > 0) raw[decodeURIComponent(p.substring(0, idx))] = decodeURIComponent(p.substring(idx + 1));
+  });
+
+  params = {
+    id:      raw['id']      || '',
+    name:    raw['name']    || '未知',
+    pid:     raw['pid']     || '—',
+    foods:   raw['foods']   || '',
+    cal:     parseFloat(raw['cal'])  || 0,
+    pro:     parseFloat(raw['pro'])  || 0,
+    fib:     parseFloat(raw['fib'])  || 0,
+    carb:    parseFloat(raw['carb']) || 0,
+    fat:     parseFloat(raw['fat'])  || 0,
+    score:   parseInt(raw['score'])  || 60,
+    advice:  raw['advice']  || '',
+    time:    raw['time']    || '',
+    lineUid: raw['line_uid']|| '',
+    webhook: raw['webhook'] || '',
+  };
+
+  // Init LIFF
+  liff.init({ liffId: LIFF_ID })
+    .then(function() {
+      if (!liff.isLoggedIn()) {
+        liff.login({ redirectUri: location.href });
+        return;
+      }
+      return liff.getProfile();
+    })
+    .then(function(profile) {
+      if (profile) reviewerProfile = profile;
+      renderUI();
+    })
+    .catch(function(e) {
+      // LIFF 不可用（桌機預覽等）—— 仍繼續顯示
+      console.warn('LIFF init failed:', e.message);
+      renderUI();
+    });
+}
+
+function renderUI() {
+  document.getElementById('p-name').textContent = params.name;
+  document.getElementById('p-pid').textContent  = params.pid;
+  document.getElementById('p-time').textContent = params.time;
+  document.getElementById('p-id').textContent   = params.id;
+
+  var tags  = document.getElementById('food-tags');
+  var foods = params.foods.split(/[,\uff0c\u3001]/).map(function(f){ return f.trim(); }).filter(Boolean);
+  if (foods.length) {
+    foods.forEach(function(f) {
+      var span = document.createElement('span');
+      span.className   = 'food-tag';
+      span.textContent = f;
+      tags.appendChild(span);
+    });
+  } else {
+    tags.innerHTML = '<span style="color:var(--muted);font-size:14px;">（無資料）</span>';
+  }
+
+  document.getElementById('score-slider').value = params.score;
+  updateScore(params.score);
+
+  document.getElementById('n-cal').value  = params.cal;
+  document.getElementById('n-pro').value  = params.pro;
+  document.getElementById('n-fib').value  = params.fib;
+  document.getElementById('n-carb').value = params.carb;
+  document.getElementById('n-fat').value  = params.fat;
+  document.getElementById('n-advice').value = params.advice;
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('main-content').style.display = 'block';
+}
+
+// ── Submit ──
+function submitReview(action) {
+  if (!params.webhook) {
+    showToast('\u26a0\ufe0f \u672a\u8a2d\u5b9a Webhook URL\uff0c\u7121\u6cd5\u9001\u51fa');
+    return;
+  }
+  var btnA = document.getElementById('btn-approve');
+  var btnR = document.getElementById('btn-reject');
+  btnA.disabled = btnR.disabled = true;
+
+  var payload = {
+    action:          action,
+    recordId:        params.id,
+    patientLineUid:  params.lineUid,
+    patientName:     params.name,
+    patientPid:      params.pid,
+    reviewerLineUid: reviewerProfile ? reviewerProfile.userId        : '',
+    reviewerName:    reviewerProfile ? reviewerProfile.displayName   : '\u71df\u990a\u5e2b',
+    cal:    parseFloat(document.getElementById('n-cal').value)  || 0,
+    pro:    parseFloat(document.getElementById('n-pro').value)  || 0,
+    fib:    parseFloat(document.getElementById('n-fib').value)  || 0,
+    carb:   parseFloat(document.getElementById('n-carb').value) || 0,
+    fat:    parseFloat(document.getElementById('n-fat').value)  || 0,
+    score:  parseInt(document.getElementById('score-slider').value) || 0,
+    advice: document.getElementById('n-advice').value.trim(),
+    note:   document.getElementById('n-note').value.trim(),
+    reviewTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+  };
+
+  fetch(params.webhook, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  .then(function(res) {
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    document.getElementById('action-bar').style.display   = 'none';
+    document.getElementById('main-content').style.display = 'none';
+    var ss = document.getElementById('success-screen');
+    ss.style.display = 'flex';
+    if (action === 'reject') {
+      document.getElementById('success-title').textContent = '\u5df2\u99c1\u56de';
+      document.getElementById('success-msg').textContent   = '\u6b64\u4efd\u8a18\u9304\u5df2\u6a19\u8a18\u70ba\u99c1\u56de\uff0c\u672a\u50b3\u9001\u7d66\u75c5\u60a3\u3002';
+    }
+  })
+  .catch(function(err) {
+    showToast('\u274c \u9001\u51fa\u5931\u6557\uff1a' + err.message, 3000);
+    btnA.disabled = btnR.disabled = false;
+  });
+}
+
+function closeLiff() {
+  try { liff.closeWindow(); } catch(e) { window.close(); }
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
