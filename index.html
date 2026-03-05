@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>身體組成儀表板</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f0f4f8;
+      color: #333;
+    }
+    .logo { font-size: 48px; margin-bottom: 16px; }
+    .title { font-size: 20px; font-weight: bold; color: #00B900; }
+    #msg { margin-top: 12px; font-size: 14px; color: #888; }
+    #err { margin-top: 16px; font-size: 14px; color: #e53e3e;
+           background: #fff5f5; border: 1px solid #fed7d7;
+           border-radius: 8px; padding: 12px 16px;
+           max-width: 320px; text-align: center; white-space: pre-line; display: none; }
+  </style>
+</head>
+<body>
+  <div class="logo">📊</div>
+  <div class="title">身體組成儀表板</div>
+  <div id="msg">連接 LINE 中...</div>
+  <div id="err"></div>
+
+  <script>
+    // ===================== 🔧 設定區（只需改這兩行）=====================
+    var LIFF_ID      = '2009326025-XAQhb1rA';
+    var DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
+    // =================================================================
+
+    function setMsg(t) { document.getElementById('msg').textContent = t; }
+    function showErr(t) {
+      document.getElementById('msg').style.display = 'none';
+      var el = document.getElementById('err');
+      el.textContent = t;
+      el.style.display = 'block';
+    }
+
+    liff.init({ liffId: LIFF_ID })
+      .then(function() {
+        setMsg('取得 LINE 帳號中...');
+        if (!liff.isInClient()) {
+          showErr('請在 LINE 中開啟此連結：\nhttps://liff.line.me/' + LIFF_ID);
+          return;
+        }
+        return liff.getProfile();
+      })
+      .then(function(profile) {
+        if (!profile || !profile.userId) return;
+        setMsg('載入個人資料中...');
+        window.location.href = DASHBOARD_URL + '?uid=' + encodeURIComponent(profile.userId);
+      })
+      .catch(function(err) {
+        showErr('LIFF 初始化失敗：\n' + (err.message || err) +
+                '\n\n請確認從 LINE 點擊連結開啟。');
+      });
+  </script>
+</body>
+</html>
