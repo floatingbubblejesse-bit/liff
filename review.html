@@ -258,7 +258,7 @@
     html+='</div>';
     if(item.description||item.note) html+='<div class="meal-desc">'+esc(item.description||item.note)+'</div>';
     html+='</div>';
-    if(item.calories||itembuildPresets()     var n=item.nutrients||{};
+    if(item.calories)     var n=item.nutrients||{};
       html+='<div class="detail-card"><div class="dc-title">🤖 AI 估算營養素</div><div class="nutrients-grid">';
       [['熱量','calories','kcal'],['蛋白質','protein','g'],['脂肪','fat','g'],['醣類','carbs','g'],['鈉','sodium','mg'],['纖維','fiber','g']].forEach(function(p){
         var val=item[p[1]]||(n&&n[p[1]])||'--';
