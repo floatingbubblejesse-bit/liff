@@ -169,24 +169,45 @@
   var N8N_LIST   = 'https://huangcs.app.n8n.cloud/webhook/nutrition-review-list';
   var N8N_REVIEW = 'https://huangcs.app.n8n.cloud/webhook/nutrition-review';
 
-  var PRESETS = [
-    {label:'均衡搭配',   text:'這餐的食物搭配均衡，蛋白質、蔬菜、醣類比例適當，繼續保持！'},
-    {label:'蔬菜不足',   text:'這餐蔬菜量稍嫌不足，建議下餐多補充深綠色蔬菜，目標每餐至少半碗。'},
-    {label:'醣類過多',   text:'這餐醣類偏高，建議減少白米飯或麵食份量，改以地瓜、糙米等低GI替代。'},
-    {label:'蛋白質不足', text:'這餐蛋白質攝取不足，建議增加雞蛋、豆腐、雞胸肉等優質蛋白質。'},
-    {label:'油脂過多',   text:'這餐油脂含量較高，下次烹調建議用水煮或清蒸方式，減少油炸或紅燒。'},
-    {label:'份量過大',   text:'這餐份量稍多，建議下餐縮減至七、八分飽，細嚼慢嚥有助控制食量。'},
-    {label:'宵夜不建議', text:'睡前進食容易囤積脂肪，建議晚上10點後避免進食，如需補充可選少量堅果或無糖豆漿。'},
-    {label:'外食注意',   text:'外食容易高油高鹽，建議點餐時選擇清炒、燙青菜，並少喝湯以減少鈉攝取。'},
-    {label:'飲水提醒',   text:'記得多喝水！建議這餐前後各喝一杯水（200ml），有助消化並增加飽足感。'},
-    {label:'表現良好',   text:'這餐表現很棒！食物選擇健康，份量也很適中，繼續維持這樣的飲食習慣！'},
-    {label:'下餐建議',   text:'下一餐建議以清淡為主，多蔬菜、適量蛋白質，避免精緻澱粉，讓身體有時間消化。'},
-    {label:'記錄鼓勵',   text:'感謝您認真記錄每餐！持續記錄有助我們給予更精準的建議，請繼續加油！'},
-  ];
+  var PRESETS = [];
+
+    function loadPresets() {
+      var SHEET_ID = '1M2SzVfAM8I9RnuTj6_nE9Iawn9obJexo2xHl_Lyf1eQ';
+      var sheetName = '\u5287\u672c';
+      var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID +
+        '/gviz/tq?tqx=out:json&sheet=' + encodeURIComponent(sheetName);
+      fetch(url)
+        .then(function(r){ return r.text(); })
+        .then(function(text){
+          var json = JSON.parse(text.replace(/^[^{]+/, '').replace(/\);?\s*$/, ''));
+          var rows = json.table.rows;
+          PRESETS = rows.map(function(row){
+            return { label: row.c[0].v, text: row.c[1].v };
+          });
+          buildPresets();
+        })
+        .catch(function(){
+          PRESETS = [
+            {label:'\u5747\u8861\u641e\u914d', text:'\u9019\u9910\u7684\u98df\u7269\u641e\u914d\u5747\u8861\uff0c\u86cb\u767d\u8cea\u3001\u852c\u83dc\u3001\u9187\u985e\u6bd4\u4f8b\u9069\u7576\uff0c\u7e7c\u7e8c\u4fdd\u6301\uff01'},
+            {label:'\u852c\u83dc\u4e0d\u8db3', text:'\u9019\u9910\u852c\u83dc\u91cf\u7a0d\u5acc\u4e0d\u8db3\uff0c\u5efa\u8b70\u4e0b\u9910\u591a\u88dc\u5145\u6df1\u7da0\u8272\u852c\u83dc\uff0c\u76ee\u6a19\u6bcf\u9910\u81f3\u5c11\u534a\u78d7\u3002'},
+            {label:'\u9187\u985e\u904e\u591a', text:'\u9019\u9910\u9187\u985e\u504f\u9ad8\uff0c\u5efa\u8b70\u6e1b\u5c11\u767d\u7c73\u98ef\u6216\u9eb5\u98df\u4efd\u91cf\uff0c\u6539\u4ee5\u5730\u74dc\u3001\u7c99\u7c73\u7b49\u4f4eGI\u66ff\u4ee3\u3002'},
+            {label:'\u86cb\u767d\u8cea\u4e0d\u8db3', text:'\u9019\u9910\u86cb\u767d\u8cea\u651d\u53d6\u4e0d\u8db3\uff0c\u5efa\u8b70\u589e\u52a0\u96de\u86cb\u3001\u8c46\u8150\u3001\u96de\u80f8\u8089\u7b49\u512a\u8cea\u86cb\u767d\u8cea\u3002'},
+            {label:'\u6cb9\u8102\u904e\u591a', text:'\u9019\u9910\u6cb9\u8102\u542b\u91cf\u8f03\u9ad8\uff0c\u4e0b\u6b21\u70f9\u8abf\u5efa\u8b77\u7528\u6c34\u716e\u6216\u6e05\u8523\u65b9\u5f0f\uff0c\u6e1b\u5c11\u6cb9\u70b8\u6216\u7d05\u71d2\u3002'},
+            {label:'\u4efd\u91cf\u904e\u5927', text:'\u9019\u9910\u4efd\u91cf\u7a0d\u591a\uff0c\u5efa\u8b77\u4e0b\u9910\u7e2e\u6e1b\u81f3\u4e03\u3001\u516b\u5206\u98fd\uff0c\u7d30\u56bc\u6162\u55bd\u6709\u52a9\u63a7\u5236\u98df\u91cf\u3002'},
+            {label:'\u5bb5\u591c\u4e0d\u5efa\u8b70', text:'\u7761\u524d\u9032\u98df\u5bb9\u6613\u56e4\u7a4d\u8102\u80aa\uff0c\u5efa\u8b77\u665a\u4e0a10\u9ede\u5f8c\u907f\u514d\u9032\u98df\uff0c\u5982\u9700\u88dc\u5145\u53ef\u9078\u5c11\u91cf\u5805\u679c\u6216\u7121\u7cd6\u8c46\u6f3f\u3002'},
+            {label:'\u5916\u98df\u6ce8\u610f', text:'\u5916\u98df\u5bb9\u6613\u9ad8\u6cb9\u9ad8\u9e7d\uff0c\u5efa\u8b77\u9ede\u9910\u6642\u9078\u64c7\u6e05\u7092\u3001\u71d9\u9752\u83dc\uff0c\u4e26\u5c11\u5598\u6e6f\u4ee5\u6e1b\u5c11\u9215\u651d\u53d6\u3002'},
+            {label:'\u98f2\u6c34\u63d0\u9192', text:'\u8a18\u5f97\u591a\u5598\u6c34\uff01\u5efa\u8b77\u9019\u9910\u524d\u5f8c\u5404\u5598\u4e00\u676f\u6c34\uff08200ml\uff09\uff0c\u6709\u52a9\u6d88\u5316\u4e26\u589e\u52a0\u98fd\u8db3\u611f\u3002'},
+            {label:'\u8868\u73fe\u826f\u597d', text:'\u9019\u9910\u8868\u73fe\u5f88\u68d2\uff01\u98df\u7269\u9078\u64c7\u5065\u5eb7\uff0c\u4efd\u91cf\u4e5f\u5f88\u9069\u4e2d\uff0c\u7e7c\u7e8c\u7dad\u6301\u9019\u6a23\u7684\u98f2\u98df\u7fd2\u6163\uff01'},
+            {label:'\u4e0b\u9910\u5efa\u8b77', text:'\u4e0b\u4e00\u9910\u5efa\u8b77\u4ee5\u6e05\u6de1\u70ba\u4e3b\uff0c\u591a\u852c\u83dc\u3001\u9069\u91cf\u86cb\u767d\u8cea\uff0c\u907f\u514d\u7cbe\u7dd3\u6fb1\u7c89\uff0c\u8b93\u8eab\u9ad4\u6709\u6642\u9593\u6d88\u5316\u3002'},
+            {label:'\u8a18\u9304\u9f13\u52f5', text:'\u611f\u8b1d\u60a8\u8a8d\u771f\u8a18\u9304\u6bcf\u9910\uff01\u6301\u7e8c\u8a18\u9304\u6709\u52a9\u6211\u5011\u7d66\u4e88\u66f4\u7cbe\u6e96\u7684\u5efa\u8b77\uff0c\u8acb\u7e7c\u7e8c\u52a0\u6cb9\uff01'}
+          ];
+          buildPresets();
+        });
+    }
 
   var queue=[], currentIdx=-1, selectedIds=new Set();
 
-  buildPresets();
+  loadPresets();
   loadQueue();
 
   function buildPresets(){
@@ -237,8 +258,7 @@
     html+='</div>';
     if(item.description||item.note) html+='<div class="meal-desc">'+esc(item.description||item.note)+'</div>';
     html+='</div>';
-    if(item.calories||item.nutrients){
-      var n=item.nutrients||{};
+    if(item.calories||itembuildPresets()     var n=item.nutrients||{};
       html+='<div class="detail-card"><div class="dc-title">🤖 AI 估算營養素</div><div class="nutrients-grid">';
       [['熱量','calories','kcal'],['蛋白質','protein','g'],['脂肪','fat','g'],['醣類','carbs','g'],['鈉','sodium','mg'],['纖維','fiber','g']].forEach(function(p){
         var val=item[p[1]]||(n&&n[p[1]])||'--';
