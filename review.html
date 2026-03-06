@@ -529,7 +529,7 @@ const PRESETS = [
 
 /* ── State ── */
 let records       = [];
-let current       = null;   // current record object
+let current       = null;
 let reviewerUID   = null;
 let reviewerName  = '';
 let allSel        = false;
@@ -552,7 +552,6 @@ async function init() {
 
   renderPresets();
 
-  // Single-record mode (URL params from old flow)
   const sp = new URLSearchParams(window.location.search);
   if (sp.get('id') || sp.get('name')) {
     loadFromParams(sp);
@@ -598,7 +597,6 @@ async function loadRecords() {
   setOverlay(false);
 }
 
-/* ── Load single record from URL params (backward compat) ── */
 function loadFromParams(sp) {
   const r = {
     id:      sp.get('id')     || 'PARAM_' + Date.now(),
@@ -624,7 +622,6 @@ function loadFromParams(sp) {
   setOverlay(false);
 }
 
-/* ── Render left queue ── */
 function renderQueue() {
   const pending = records.filter(r => !r.status || r.status === 'pending').length;
   document.getElementById('pendingBadge').textContent = `待審核 ${pending} 筆`;
@@ -661,25 +658,18 @@ function renderQueue() {
   });
 }
 
-/* ── Select a record ── */
 function selectRecord(i) {
   current = records[i];
-
-  // Re-render queue to update active
   renderQueue();
-
-  // Show cards
   document.getElementById('emptyState').style.display  = 'none';
   document.getElementById('photoCard').style.display   = 'block';
   document.getElementById('patientCard').style.display = 'block';
 
-  // Detail fields
   document.getElementById('dName').textContent = current.name  || '未知';
   document.getElementById('dPid').textContent  = current.pid   || '—';
   document.getElementById('dTime').textContent = relTime(current.time);
   document.getElementById('dId').textContent   = current.id    || '—';
 
-  // Food chips
   const fc = document.getElementById('foodChips');
   fc.innerHTML = '';
   (current.foods || '').split(/[,，、\n]/).map(f=>f.trim()).filter(Boolean).forEach(f => {
@@ -690,10 +680,8 @@ function selectRecord(i) {
   });
   if (!fc.children.length) fc.innerHTML = '<span style="color:#bbb;font-size:12px">無資料</span>';
 
-  // AI advice
   document.getElementById('aiAdvice').textContent = current.advice || '（無建議）';
 
-  // Photo
   const pw = document.getElementById('photoWrap');
   if (current.img_url) {
     pw.innerHTML = `<img src="${current.img_url}" alt="餐食照片"
@@ -707,7 +695,6 @@ function selectRecord(i) {
       </span></div>`;
   }
 
-  // Panel form
   document.getElementById('adviceTA').value = current.advice || '';
   const sc = parseInt(current.score) || 60;
   document.getElementById('scoreSlider').value = sc;
@@ -718,13 +705,11 @@ function selectRecord(i) {
   document.getElementById('vCarb').value = current.carb || '';
   document.getElementById('vFat').value  = current.fat  || '';
 
-  // Buttons
   const ok = !current.status || current.status === 'pending';
   document.getElementById('btnApprove').disabled = !ok;
   document.getElementById('btnReject').disabled  = !ok;
 }
 
-/* ── Score display ── */
 function updateScore(v) {
   v = +v;
   const c = document.getElementById('scoreCircle');
@@ -737,7 +722,6 @@ function updateScore(v) {
   else              { c.style.background = '#c62828'; g.textContent = '不佳 ❌'; }
 }
 
-/* ── Select all ── */
 function toggleSelectAll() {
   allSel = !allSel;
   document.querySelectorAll('.q-check:not(:disabled)').forEach(c => c.checked = allSel);
@@ -750,7 +734,6 @@ function countSel() {
   document.getElementById('btnBatch').disabled = n === 0;
 }
 
-/* ── Batch approve ── */
 async function batchApprove() {
   const checked = [...document.querySelectorAll('.q-check:checked')];
   if (!checked.length) return;
@@ -775,7 +758,6 @@ async function batchApprove() {
   toast(`✅ 批次核准完成，成功 ${ok} 筆`);
 }
 
-/* ── Single review ── */
 async function submitReview(action) {
   if (!current) return;
   const score  = document.getElementById('scoreSlider').value;
@@ -793,7 +775,6 @@ async function submitReview(action) {
     document.getElementById('btnReject').disabled  = true;
     toast(action === 'approve' ? '✅ 已核准並通知病患' : '❌ 已駁回此記錄');
 
-    // Auto next
     const next = records.findIndex(r => !r.status || r.status === 'pending');
     if (next >= 0) setTimeout(() => selectRecord(next), 500);
   } catch(e) {
@@ -802,7 +783,6 @@ async function submitReview(action) {
   setOverlay(false);
 }
 
-/* ── Helpers ── */
 function buildPayload(r, action, score, advice) {
   return {
     action,
@@ -862,10 +842,9 @@ function dec(v) {
   try { return v ? decodeURIComponent(v) : ''; } catch(e) { return v || ''; }
 }
 function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/ g,'&gt;');
 }
 
-// Start
 init();
 </script>
 </body>
