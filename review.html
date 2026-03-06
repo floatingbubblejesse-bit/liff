@@ -282,7 +282,7 @@
     document.getElementById('nut_fiber').value=item.fiber||n.fiber||'';
   }
 
-  function applyPreset(idx){document.getElementById('reviewComment').value=PRESETS[idx].text;}
+  function applyPreset(idx){var el=document.getElementById('reviewComment');el.value=(el.value?el.value+'\n':'')+PRESETS[idx].text;}
 
   function approveItem(){
     if(currentIdx<0) return;
