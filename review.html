@@ -190,8 +190,8 @@
   loadQueue();
 
   function buildPresets(){
-    document.getElementById('presetsGrid').innerHTML=PRESETS.map(function(p){
-      return '<button class="preset-btn" onclick="applyPreset('+JSON.stringify(p.text)+')">'+esc(p.label)+'</button>';
+    document.getElementById('presetsGrid').innerHTML=PRESETS.map(function(p,i){
+      return '<button class="preset-btn" onclick="applyPreset('+i+')">'+esc(p.label)+'</button>';
     }).join('');
   }
 
@@ -262,7 +262,7 @@
     document.getElementById('nut_fiber').value=item.fiber||n.fiber||'';
   }
 
-  function applyPreset(text){document.getElementById('reviewComment').value=text;}
+  function applyPreset(idx){document.getElementById('reviewComment').value=PRESETS[idx].text;}
 
   function approveItem(){
     if(currentIdx<0) return;
