@@ -196,7 +196,7 @@
 
   function renderDetail(item){
     var html='';
-    if(item.photoUrl||item.image) html+='<div class="detail-card"><div class="dc-title">📸 餐食照片</div><img class="meal-photo" src="'+esc(item.photoUrl||item.image)+'" onclick="window.open(this.src)" onerror="this.style.display='none'"></div>';
+    if(item.photoUrl||item.image) html+='<div class="detail-card"><div class="dc-title">📸 餐食照片</div><img class="meal-photo" src="'+esc(item.photoUrl||item.image)+'" onclick="window.open(this.src)" onerror="this.style.display=\'none\'"></div>';
     html+='<div class="detail-card"><div class="dc-title">📋 記錄資訊</div><div class="meal-meta">';
     if(item.patientName) html+='<span class="meta-tag">👤 '+esc(item.patientName)+'</span>';
     if(item.mealType||item.type) html+='<span class="meta-tag">🍽️ '+esc(item.mealType||item.type)+'</span>';
