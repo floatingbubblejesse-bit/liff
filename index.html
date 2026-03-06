@@ -1,629 +1,262 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>身體組成儀表板 | 診間醫生</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>身體組成儀表板</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    :root {
-      --green:#00B900; --green-dark:#009900; --green-light:#e6f9e6;
-      --blue:#1565C0; --blue-light:#e8f0fe;
-      --red:#e53935; --orange:#f57c00;
-      --bg:#f0f2f5; --card:#fff; --text:#1a202c;
-      --muted:#718096; --border:#e2e8f0;
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Segoe UI",sans-serif;
-      background:var(--bg);color:var(--text);height:100vh;display:flex;
-      flex-direction:column;overflow:hidden}
-
-    /* Header */
-    .header{background:linear-gradient(135deg,#00B900,#00C853);color:white;
-      padding:0 24px;height:52px;display:flex;align-items:center;
-      justify-content:space-between;flex-shrink:0;
-      box-shadow:0 2px 8px rgba(0,0,0,.18)}
-    .header h1{font-size:15px;font-weight:700}
-    .header-left{display:flex;align-items:center;gap:10px}
-    .header-right{display:flex;align-items:center;gap:10px;font-size:12px}
-    .patient-tag{background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.4);
-      padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600}
-    .btn-sm{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);
-      color:white;padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer}
-    .btn-sm:hover{background:rgba(255,255,255,.28)}
-
-    /* Tabs */
-    .tabs{background:white;border-bottom:2px solid var(--border);
-      display:flex;flex-shrink:0;padding:0 24px}
-    .tab{padding:12px 20px;font-size:13px;font-weight:600;cursor:pointer;
-      color:var(--muted);border-bottom:3px solid transparent;
-      margin-bottom:-2px;transition:all .15s;white-space:nowrap}
-    .tab:hover{color:var(--text)}
-    .tab.active{color:var(--green);border-bottom-color:var(--green)}
-
-    /* Layout */
-    .layout{display:flex;flex:1;overflow:hidden}
-    .main-col{flex:1;overflow-y:auto;padding:20px}
-    .main-col::-webkit-scrollbar{width:5px}
-    .main-col::-webkit-scrollbar-thumb{background:#ddd;border-radius:4px}
-    .sidebar{width:360px;flex-shrink:0;background:white;
-      border-left:1px solid var(--border);display:flex;
-      flex-direction:column;overflow-y:auto}
-    .sidebar::-webkit-scrollbar{width:4px}
-    .sidebar::-webkit-scrollbar-thumb{background:#ddd;border-radius:4px}
-
-    /* Cards */
-    .card{background:var(--card);border-radius:12px;padding:18px 20px;
-      box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:14px}
-    .card-title{font-size:12px;font-weight:700;color:var(--green-dark);
-      text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;
-      display:flex;align-items:center;gap:6px}
-
-    /* Metrics */
-    .metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
-    .metric-card{background:white;border-radius:10px;padding:14px 12px;text-align:center;
-      box-shadow:0 1px 4px rgba(0,0,0,.07);border-top:3px solid var(--green)}
-    .metric-card.warn{border-top-color:var(--orange)}
-    .metric-card.alert{border-top-color:var(--red)}
-    .metric-label{font-size:11px;color:var(--muted);margin-bottom:6px}
-    .metric-value{font-size:22px;font-weight:800;color:var(--text)}
-    .metric-unit{font-size:11px;color:var(--muted)}
-    .metric-delta{font-size:11px;margin-top:3px}
-    .delta-up{color:var(--red)} .delta-dn{color:var(--green)} .delta-eq{color:var(--muted)}
-
-    .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-    .chart-wrap{background:white;border-radius:12px;padding:16px;
-      box-shadow:0 1px 4px rgba(0,0,0,.07)}
-    .chart-title{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:12px}
-
-    .history-table{width:100%;border-collapse:collapse;font-size:12px}
-    .history-table th{text-align:left;padding:8px 10px;background:#f8f9fa;
-      color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)}
-    .history-table td{padding:8px 10px;border-bottom:1px solid #f5f5f5}
-    .history-table tr:hover td{background:var(--green-light)}
-
-    /* Meals tab */
-    .meal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-    .meal-card{background:white;border-radius:12px;overflow:hidden;
-      box-shadow:0 1px 4px rgba(0,0,0,.08)}
-    .meal-photo{width:100%;height:180px;object-fit:cover;display:block}
-    .meal-photo-ph{width:100%;height:180px;display:flex;align-items:center;
-      justify-content:center;background:#f5f5f5;color:#bbb;
-      font-size:13px;flex-direction:column;gap:6px}
-    .meal-body{padding:14px}
-    .meal-date{font-size:11px;color:var(--muted);margin-bottom:6px}
-    .meal-foods{font-size:13px;font-weight:600;margin-bottom:8px}
-    .meal-nutr{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-    .nutr-tag{background:var(--green-light);color:var(--green-dark);
-      padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500}
-    .meal-score{display:inline-flex;align-items:center;gap:6px;
-      font-size:12px;font-weight:600;margin-bottom:8px}
-    .score-dot{width:28px;height:28px;border-radius:50%;display:flex;
-      align-items:center;justify-content:center;font-size:11px;
-      font-weight:800;color:white}
-    .meal-advice{font-size:12px;color:#555;line-height:1.5;
-      background:#f9f9f9;padding:8px 10px;border-radius:6px;
-      border-left:3px solid var(--green)}
-    .meal-empty{text-align:center;padding:60px 20px;color:#bbb;grid-column:1/-1}
-    .meal-empty .icon{font-size:40px;display:block;margin-bottom:10px}
-
-    /* Sidebar sections */
-    .s-section{padding:16px 18px;border-bottom:1px solid #f0f0f0}
-    .s-section h3{font-size:11px;font-weight:700;color:var(--muted);
-      text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
-    .preset-grid{display:flex;flex-wrap:wrap;gap:5px}
-    .preset-chip{background:var(--blue-light);color:var(--blue);
-      border:1px solid #c5d8fd;padding:4px 9px;border-radius:16px;
-      font-size:11px;cursor:pointer;transition:all .14s}
-    .preset-chip:hover,.preset-chip.flash{background:var(--blue);color:white}
-    textarea.note-ta{width:100%;padding:9px 11px;
-      border:1.5px solid var(--border);border-radius:8px;font-size:12px;
-      resize:vertical;min-height:80px;font-family:inherit;
-      transition:border-color .2s;line-height:1.5}
-    textarea.note-ta:focus{outline:none;border-color:var(--green)}
-    .btn-send{width:100%;margin-top:8px;padding:9px;background:var(--green);
-      color:white;border:none;border-radius:8px;font-size:13px;
-      font-weight:700;cursor:pointer}
-    .btn-send:hover{background:var(--green-dark)}
-    .btn-send:disabled{background:#ccc;cursor:not-allowed}
-    .pid-input{width:100%;padding:8px 10px;border:1.5px solid var(--border);
-      border-radius:8px;font-size:13px;font-weight:600}
-    .pid-input:focus{outline:none;border-color:var(--green)}
-    .btn-load{width:100%;margin-top:6px;padding:8px;background:var(--green);
-      color:white;border:none;border-radius:8px;font-size:12px;
-      font-weight:700;cursor:pointer}
-    .btn-load:hover{background:var(--green-dark)}
-
-    /* Script library */
-    .script-card{background:white;border-radius:10px;padding:14px 16px;
-      box-shadow:0 1px 4px rgba(0,0,0,.07);cursor:pointer;
-      border:1.5px solid var(--border);transition:border-color .15s;
-      margin-bottom:0}
-    .script-card:hover{border-color:var(--blue)}
-    .script-title{font-size:13px;font-weight:700;margin-bottom:6px}
-    .script-body{font-size:12px;color:var(--muted);line-height:1.5}
-
-    /* Overlay / Toast */
-    .overlay{position:fixed;inset:0;background:rgba(255,255,255,.82);
-      display:flex;flex-direction:column;align-items:center;
-      justify-content:center;z-index:200;gap:12px}
-    .spinner{width:34px;height:34px;border:3px solid #eee;
-      border-top-color:var(--green);border-radius:50%;
-      animation:spin .7s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .overlay-text{font-size:13px;color:var(--green);font-weight:600}
-    .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-      background:#222;color:white;padding:8px 18px;border-radius:8px;
-      font-size:13px;z-index:300;opacity:0;transition:opacity .25s;
-      pointer-events:none;white-space:nowrap}
-    .toast.show{opacity:1}
-
-    /* Tab panels */
-    .tab-panel{display:none}
-    .tab-panel.active{display:flex;flex:1;overflow:hidden}
-
-    /* Empty state */
-    .empty{flex:1;display:flex;align-items:center;justify-content:center;
-      flex-direction:column;gap:12px;color:#bbb}
-    .empty .icon{font-size:44px}
-
-    /* Responsive */
-    @media(max-width:900px){
-      .metrics-grid{grid-template-columns:repeat(2,1fr)}
-      .charts-row{grid-template-columns:1fr}
-      .sidebar{width:280px}
-    }
-    @media(max-width:640px){
-      body{overflow:auto;height:auto}
-      .layout{flex-direction:column}
-      .sidebar{width:100%;border-left:none;border-top:1px solid var(--border)}
-      .tab-panel.active{flex-direction:column;overflow:visible}
-      .main-col{overflow:visible}
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-serif; background: #f0f4f8; color: #333; min-height: 100vh; }
+    .header { background: linear-gradient(135deg, #00B900, #00C853); color: white; padding: 20px 16px 28px; text-align: center; }
+    .header h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .header p { font-size: 13px; opacity: 0.85; }
+    .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; gap: 16px; }
+    .spinner { width: 44px; height: 44px; border: 4px solid #e0e0e0; border-top-color: #00B900; border-radius: 50%; animation: spin 0.9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-box { margin: 32px 16px; padding: 20px; background: #fff3f3; border: 1px solid #ffcdd2; border-radius: 12px; text-align: center; color: #c62828; white-space: pre-line; }
+    .content { padding: 0 12px 32px; margin-top: -12px; }
+    .card { background: white; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+    .card-title { font-size: 13px; font-weight: 700; color: #555; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+    .profile { display: flex; align-items: center; gap: 12px; }
+    .avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #00B900, #00C853); display: flex; align-items: center; justify-content: center; font-size: 22px; color: white; font-weight: 700; flex-shrink: 0; }
+    .profile-info h2 { font-size: 17px; font-weight: 700; }
+    .profile-info p { font-size: 12px; color: #888; margin-top: 2px; }
+    .badge { display: inline-block; background: #e8f5e9; color: #2e7d32; font-size: 11px; padding: 2px 8px; border-radius: 20px; margin-top: 4px; font-weight: 600; }
+    .metrics-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .metric-item { background: #f8fafb; border-radius: 10px; padding: 10px 8px; text-align: center; }
+    .metric-label { font-size: 10px; color: #888; margin-bottom: 4px; }
+    .metric-value { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+    .metric-unit { font-size: 10px; color: #aaa; }
+    .metric-diff { font-size: 11px; margin-top: 3px; }
+    .diff-good { color: #2e7d32; }
+    .diff-warn { color: #e65100; }
+    .diff-same { color: #888; }
+    .chart-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .tab-btn { padding: 5px 12px; border-radius: 20px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; background: #f0f0f0; color: #555; transition: all 0.2s; }
+    .tab-btn.active { background: #00B900; color: white; }
+    .chart-wrap { position: relative; height: 200px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { background: #f5f5f5; padding: 8px 6px; text-align: center; font-weight: 700; color: #555; white-space: nowrap; position: sticky; top: 0; }
+    td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9f9f9; }
+    .date-col { font-size: 11px; color: #888; }
+    .no-data { text-align: center; color: #aaa; padding: 32px; font-size: 14px; }
   </style>
 </head>
 <body>
-
-<div class="overlay" id="overlay">
+<div class="header">
+  <h1>📊 身體組成儀表板</h1>
+  <p>個人健康數據追蹤</p>
+</div>
+<div id="loading" class="loading">
   <div class="spinner"></div>
-  <div class="overlay-text" id="overlayText">載入中…</div>
+  <p id="loading-msg" style="color:#888;font-size:14px;">連接中...</p>
 </div>
-<div class="toast" id="toast"></div>
-
-<header class="header">
-  <div class="header-left">
-    <span style="font-size:20px">🩺</span>
-    <h1>身體組成儀表板 · 診間醫生</h1>
-  </div>
-  <div class="header-right">
-    <span class="patient-tag" id="pidTag">病歷號：—</span>
-    <span id="doctorName" style="opacity:.85;font-size:12px"></span>
-    <button class="btn-sm" onclick="reload()">⟳ 重整</button>
-  </div>
-</header>
-
-<nav class="tabs">
-  <div class="tab active" data-tab="body"   onclick="switchTab('body')">🏋️ 身體組成</div>
-  <div class="tab"        data-tab="meal"   onclick="switchTab('meal')">🍱 餐食記錄</div>
-  <div class="tab"        data-tab="advice" onclick="switchTab('advice')">📋 醫生建議</div>
-</nav>
-
-<!-- TAB 1: 身體組成 -->
-<div class="tab-panel active" id="tab-body">
-  <div class="main-col" id="bodyContent">
-    <div class="empty" id="bodyEmpty">
-      <span class="icon">📊</span>
-      <p>從右側輸入病歷號以載入資料</p>
-    </div>
-  </div>
-  <div class="sidebar">
-    <div class="s-section">
-      <h3>🔍 查詢病患</h3>
-      <input class="pid-input" id="pidInput" placeholder="院區病歷號（如 A0001）"
-        onkeydown="if(event.key==='Enter')loadPatient()">
-      <button class="btn-load" onclick="loadPatient()">載入資料</button>
-    </div>
-    <div class="s-section">
-      <h3>💬 常用醫療建議</h3>
-      <div class="preset-grid" id="presetGrid1"></div>
-    </div>
-    <div class="s-section" style="flex:1">
-      <h3>📝 傳送醫療建議給病患</h3>
-      <textarea class="note-ta" id="noteTA1" placeholder="點選上方快速填入，或直接輸入…" rows="5"></textarea>
-      <button class="btn-send" id="sendBtn1" disabled onclick="sendNote(1)">📤 傳送給病患</button>
-    </div>
-  </div>
-</div>
-
-<!-- TAB 2: 餐食記錄 -->
-<div class="tab-panel" id="tab-meal">
-  <div class="main-col">
-    <div class="meal-grid" id="mealGrid">
-      <div class="meal-empty"><span class="icon">🍽️</span><p>請先在右側查詢病患</p></div>
-    </div>
-  </div>
-  <div class="sidebar">
-    <div class="s-section">
-      <h3>🔍 查詢病患</h3>
-      <input class="pid-input" id="pidInput2" placeholder="院區病歷號"
-        onkeydown="if(event.key==='Enter')loadPatient()">
-      <button class="btn-load" onclick="loadPatient()">載入資料</button>
-    </div>
-    <div class="s-section">
-      <h3>🥗 餐食摘要</h3>
-      <div id="mealSummary" style="font-size:13px;color:var(--muted);line-height:1.8">—</div>
-    </div>
-    <div class="s-section">
-      <h3>💬 常用飲食醫囑</h3>
-      <div class="preset-grid" id="presetGrid2"></div>
-    </div>
-    <div class="s-section" style="flex:1">
-      <h3>📝 傳送飲食醫囑</h3>
-      <textarea class="note-ta" id="noteTA2" rows="4" placeholder="點選快速填入或直接輸入…"></textarea>
-      <button class="btn-send" id="sendBtn2" disabled onclick="sendNote(2)">📤 傳送給病患</button>
-    </div>
-  </div>
-</div>
-
-<!-- TAB 3: 醫生建議 -->
-<div class="tab-panel" id="tab-advice">
-  <div class="main-col">
-    <div class="card" style="margin-bottom:14px">
-      <div class="card-title">📋 醫生建議劇本庫</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">點選任一劇本可快速填入右側傳送欄位</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px"
-           id="scriptLibrary"></div>
-    </div>
-  </div>
-  <div class="sidebar">
-    <div class="s-section">
-      <h3>🔍 查詢病患</h3>
-      <input class="pid-input" id="pidInput3" placeholder="院區病歷號"
-        onkeydown="if(event.key==='Enter')loadPatient()">
-      <button class="btn-load" onclick="loadPatient()">載入資料</button>
-    </div>
-    <div class="s-section" style="flex:1">
-      <h3>📝 傳送醫療建議</h3>
-      <textarea class="note-ta" id="noteTA3" rows="10" placeholder="點選左側劇本，或直接輸入…"></textarea>
-      <button class="btn-send" id="sendBtn3" disabled onclick="sendNote(3)">📤 傳送給病患</button>
-    </div>
-  </div>
-</div>
+<div id="error" style="display:none"></div>
+<div id="content" style="display:none" class="content"></div>
 
 <script>
-/* ── Config ── */
-const LIFF_ID  = '2009326025-0mhpcsM1'; // 請建立醫生專屬 LIFF App 並替換此 ID
-const GAS_URL  = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
-const N8N      = 'https://huangcs.app.n8n.cloud/webhook';
-const MEALS_WH = N8N + '/patient-meals';
-const NOTE_WH  = N8N + '/doctor-note';
+  // ===================== 🔧 設定區 =====================
+  var LIFF_ID  = '2009326025-XAQhb1rA';
+  var API_URL  = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
+  // ======================================================
 
-/* ── 醫生建議劇本 ── */
-const PRESETS = [
-  { label:'⚖️ 體重控制目標', text:'建議每月減重 0.5～1 公斤，以低熱量均衡飲食為原則，避免極端節食。' },
-  { label:'🏃 運動處方',     text:'建議每週進行 150 分鐘中等強度有氧運動（快走、游泳等），並搭配每週 2 次肌力訓練。' },
-  { label:'🩸 血糖管理',     text:'請注意餐後血糖控制，飯後 2 小時血糖建議低於 140 mg/dL，避免精製澱粉及含糖飲料。' },
-  { label:'💊 血壓管理',     text:'每日監測血壓，目標低於 130/80 mmHg。低鈉飲食（每日鈉 < 2300 mg），戒菸限酒。' },
-  { label:'💉 藥物提醒',     text:'請依醫囑按時服藥，勿自行停藥或調整劑量，如有不適請立即回診。' },
-  { label:'🗓️ 複診提醒',     text:'建議 1 個月後回診追蹤，回診前請記錄每日體重及血壓數值。' },
-  { label:'💊 營養補充',     text:'建議補充維生素 D3 1000 IU/天、Omega-3 魚油 1000 mg/天，有助改善代謝指標。' },
-  { label:'😴 睡眠調整',     text:'充足睡眠（7～8 小時）有助代謝調節，建議固定就寢時間，避免熬夜及睡前使用手機。' },
-  { label:'🚶 日常活動',     text:'建議減少久坐，每小時起身活動 5～10 分鐘，每日步行目標 8000 步以上。' },
-  { label:'🧘 壓力管理',     text:'長期壓力影響荷爾蒙及代謝，建議透過冥想、深呼吸或休閒活動調節身心狀態。' },
-  { label:'🫀 心血管保健',   text:'建議定期監測血脂（LDL < 100 mg/dL），採地中海飲食模式，多攝取蔬果及魚類。' },
-  { label:'✅ 進度良好',     text:'本次追蹤數據進步明顯，請繼續維持目前的飲食與運動習慣，期待下次回診有更好的成績！' },
-];
+  var METRICS = [
+    ['體重',              '體重',   'kg',   true ],
+    ['體脂率',            '體脂率', '%',    true ],
+    ['肌肉量',            '肌肉量', 'kg',   false],
+    ['水分比率',          '水分',   '%',    false],
+    ['內臟脂肪指數',      '內臟脂肪','',    true ],
+    ['身體質量參數 (BMI)','BMI',    '',     true ],
+    ['基礎代謝 (BMR)',    'BMR',    'kcal', false],
+    ['腰圍',              '腰圍',   'cm',   true ],
+    ['臀圍',              '臀圍',   'cm',   true ],
+  ];
 
-/* ── State ── */
-let currentPid     = '';
-let currentLineUid = '';
-let doctorLineUid  = '';
-let charts         = {};
+  var chartInstance = null;
+  var allData = null;
 
-/* ── Init ── */
-async function init() {
-  const sp = new URLSearchParams(location.search);
-  currentPid = sp.get('id') || sp.get('pid') || '';
-  ['pidInput','pidInput2','pidInput3'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el && currentPid) el.value = currentPid;
-  });
+  function setMsg(t) { var el = document.getElementById('loading-msg'); if (el) el.textContent = t; }
 
-  try {
-    await liff.init({ liffId: LIFF_ID });
-    if (!liff.isLoggedIn()) { liff.login(); return; }
-    const p = await liff.getProfile();
-    doctorLineUid = p.userId;
-    document.getElementById('doctorName').textContent = p.displayName;
-  } catch(e) {
-    console.warn('LIFF fallback:', e);
-    doctorLineUid = 'TEST_DOCTOR';
-    document.getElementById('doctorName').textContent = '測試模式';
+  function showError(msg) {
+    document.getElementById('loading').style.display = 'none';
+    var el = document.getElementById('error');
+    el.innerHTML = '<div class="error-box">⚠️ ' + esc(msg) + '</div>';
+    el.style.display = 'block';
   }
 
-  renderPresets();
-  renderScriptLibrary();
-  if (currentPid) { await loadPatient(); } else { setOverlay(false); }
-}
+  function fetchData(paramName, paramValue) {
+    setMsg('載入資料中...');
+    var url = API_URL + '?' + paramName + '=' + encodeURIComponent(paramValue);
+    fetch(url)
+      .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+      .then(function(data) {
+        if (data.error) { showError(data.error); }
+        else if (!data.measurements || !data.customer) { showError('資料格式異常，請聯絡店家'); }
+        else { allData = data; renderDashboard(data); }
+      })
+      .catch(function(err) {
+        showError('資料載入失敗：' + (err.message || err) + '
 
-/* ── Load patient ── */
-async function loadPatient() {
-  const inputs = ['pidInput','pidInput2','pidInput3'].map(id => (document.getElementById(id)||{}).value||'').filter(Boolean);
-  currentPid = inputs[0] || '';
-  if (!currentPid) { toast('請輸入院區病歷號'); return; }
-  ['pidInput','pidInput2','pidInput3'].forEach(id => { const el = document.getElementById(id); if(el) el.value = currentPid; });
-  document.getElementById('pidTag').textContent = '病歷號：' + currentPid;
-  const url = new URL(location.href);
-  url.searchParams.set('id', currentPid);
-  history.replaceState(null,'',url.toString());
-  setOverlay(true,'載入病患資料…');
-  await Promise.all([loadBodyData(), loadMealData()]);
-  setOverlay(false);
-}
-
-async function reload() {
-  if (!currentPid) return;
-  setOverlay(true,'重新整理…');
-  await Promise.all([loadBodyData(), loadMealData()]);
-  setOverlay(false);
-}
-
-/* ── Body comp (Google Apps Script) ── */
-async function loadBodyData() {
-  if (!currentPid) return;
-  try {
-    const r = await fetch(GAS_URL + '?id=' + encodeURIComponent(currentPid));
-    const data = await r.json();
-    if (data.error) throw new Error(data.error);
-    if (data.lineUid) currentLineUid = data.lineUid;
-    renderBody(data);
-    enableSend();
-  } catch(e) {
-    console.error(e);
-    document.getElementById('bodyContent').innerHTML =
-      `<div class="empty"><span class="icon">⚠️</span><p>查無客戶資料（${currentPid}），請確認病歷號</p></div>`;
+請重試或聯絡店家');
+      });
   }
-}
 
-function renderBody(data) {
-  document.getElementById('bodyEmpty').style.display = 'none';
-  const latest  = data.latest  || {};
-  const prev    = data.prev    || {};
-  const history = data.history || [];
+  // ── 主流程 ──
+  var params = new URLSearchParams(window.location.search);
+  var urlId  = params.get('id');
 
-  const delta = (key, unit, lb) => {
-    const cur = parseFloat(latest[key]), pre = parseFloat(prev[key]);
-    if (isNaN(cur)||isNaN(pre)) return '';
-    const d = (cur-pre).toFixed(1);
-    if (+d===0) return `<span class="delta-eq">→ 持平</span>`;
-    const ok  = lb ? d<0 : d>0;
-    const cls = ok ? 'delta-dn' : 'delta-up';
-    return `<span class="${cls}">${d>0?'▲':'▼'} ${Math.abs(d)} ${unit}</span>`;
-  };
-  const warnCls = key => {
-    const v = parseFloat(latest[key]);
-    if (key==='體脂率') return v>30?'alert':v>25?'warn':'';
-    if (key==='BMI')   return v>27?'alert':v>24?'warn':'';
-    return '';
-  };
+  if (urlId) {
+    fetchData('id', urlId);
+  } else {
+    setMsg('連接 LINE 中...');
+    liff.init({ liffId: LIFF_ID })
+      .then(function() {
+        setMsg('取得帳號中...');
+        if (!liff.isInClient()) {
+          showError('請在 LINE 中開啟此連結：
+https://liff.line.me/' + LIFF_ID);
+          return;
+        }
+        return liff.getProfile();
+      })
+      .then(function(profile) {
+        if (!profile || !profile.userId) return;
+        fetchData('uid', profile.userId);
+      })
+      .catch(function(err) {
+        showError('LIFF 初始化失敗：
+' + (err.message || err) + '
 
-  const mDefs = [
-    {key:'體重',   label:'體重',   unit:'kg',   lb:true},
-    {key:'體脂率', label:'體脂率', unit:'%',    lb:true},
-    {key:'骨骼肌率',label:'骨骼肌率',unit:'%', lb:false},
-    {key:'BMI',    label:'BMI',    unit:'',     lb:true},
-    {key:'內臟脂肪',label:'內臟脂肪',unit:'',  lb:true},
-    {key:'基礎代謝',label:'基礎代謝',unit:'kcal',lb:false},
-    {key:'體水分率',label:'體水分率',unit:'%', lb:false},
-    {key:'骨質',   label:'骨質',   unit:'kg',   lb:false},
-  ].filter(m => latest[m.key]!==undefined);
+請在 LINE 中開啟：
+https://liff.line.me/' + LIFF_ID);
+      });
+  }
 
-  let html = `<div class="metrics-grid">`;
-  mDefs.forEach(m => {
-    const val = parseFloat(latest[m.key]).toFixed(1);
-    html += `<div class="metric-card ${warnCls(m.key)}">
-      <div class="metric-label">${m.label}</div>
-      <div class="metric-value">${val}<span class="metric-unit"> ${m.unit}</span></div>
-      <div class="metric-delta">${delta(m.key,m.unit,m.lb)}</div>
-    </div>`;
-  });
-  html += `</div>`;
+  function renderDashboard(data) {
+    var m    = data.measurements;
+    var cust = data.customer;
+    var latest = m.length > 0 ? m[m.length - 1] : null;
+    var prev   = m.length > 1 ? m[m.length - 2] : null;
+    var html = '';
 
-  html += `<div class="charts-row">
-    <div class="chart-wrap"><div class="chart-title">📉 體重趨勢（近 8 次）</div>
-      <canvas id="chartWeight" height="190"></canvas></div>
-    <div class="chart-wrap"><div class="chart-title">💪 組成分析（最新）</div>
-      <canvas id="chartComp" height="190"></canvas></div>
-  </div>`;
+    // 個人資料卡
+    html += '<div class="card"><div class="profile">';
+    html += '<div class="avatar">' + esc((cust.name || '?')[0]) + '</div>';
+    html += '<div class="profile-info"><h2>' + esc(cust.name) + '</h2>';
+    html += '<p>院區病歷號：' + esc(cust.sn) + '</p>';
+    if (cust.settingName) html += '<span class="badge">' + esc(cust.settingName) + '</span>';
+    html += '</div></div></div>';
 
-  if (history.length) {
-    html += `<div class="card"><div class="card-title">📅 歷右紀錄</div>
-      <div style="overflow-x:auto"><table class="history-table">
-        <thead><tr><th>日期</th><th>體重</th><th>體脂率</th><th>骨骼肌率</th><th>BMI</th><th>內臟脂肪</th></tr></thead>
-        <tbody>`;
-    [...history].reverse().forEach((row,i,arr)=>{
-      const nxt = arr[i-1];
-      const wd  = nxt ? parseFloat(row['體重'])-parseFloat(nxt['體重']) : 0;
-      const wa  = i>0 ? (wd<0?'<span style="color:green">↓</span>':wd>0?'<span style="color:red">↑</span>':'→') : '';
-      html += `<tr>
-        <td>${row['測量日期']||row['日期']||''}</td>
-        <td>${row['體重']||'—'} ${wa}</td>
-        <td>${row['體脂率']||'—'}</td>
-        <td>${row['骨骼肌率']||'—'}</td>
-        <td>${row['BMI']||'—'}</td>
-        <td>${row['內臟脂肪']||'—'}</td>
-      </tr>`;
+    // 最新數值卡
+    if (latest) {
+      var latestDate = latest['測量日期/時間'] || '';
+      html += '<div class="card"><div class="card-title">📋 最新測量';
+      if (latestDate) html += ' <span style="font-weight:400;color:#aaa;font-size:11px;">' + latestDate + '</span>';
+      html += '</div><div class="metrics-grid">';
+      METRICS.forEach(function(meta) {
+        var key = meta[0], label = meta[1], unit = meta[2], lowerGood = meta[3];
+        var curr = parseFloat(latest[key]);
+        if (isNaN(curr)) return;
+        var diffHtml = '';
+        if (prev) {
+          var pv = parseFloat(prev[key]);
+          if (!isNaN(pv)) {
+            var diff = curr - pv;
+            var good = (lowerGood && diff < 0) || (!lowerGood && diff > 0);
+            var cls  = diff === 0 ? 'diff-same' : (good ? 'diff-good' : 'diff-warn');
+            var sign = diff > 0 ? '+' : '';
+            var arrow = diff === 0 ? '→' : (diff > 0 ? '↑' : '↓');
+            diffHtml = '<div class="metric-diff ' + cls + '">' + arrow + ' ' + sign + diff.toFixed(1) + unit + '</div>';
+          }
+        }
+        html += '<div class="metric-item">';
+        html += '<div class="metric-label">' + esc(label) + '</div>';
+        html += '<div class="metric-value">' + curr + '<span class="metric-unit">' + esc(unit) + '</span></div>';
+        html += diffHtml + '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    // 趨勢圖
+    if (m.length > 1) {
+      html += '<div class="card"><div class="card-title">📈 趨勢圖</div><div class="chart-tabs">';
+      METRICS.forEach(function(meta, idx) {
+        var hasData = m.some(function(row) { return !isNaN(parseFloat(row[meta[0]])); });
+        if (!hasData) return;
+        html += '<button class="tab-btn' + (idx === 0 ? ' active' : '') + '" onclick="switchChart('' + meta[0] + '', this)">' + esc(meta[1]) + '</button>';
+      });
+      html += '</div><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>';
+    }
+
+    // 歷史紀錄表
+    if (m.length > 0) {
+      html += '<div class="card"><div class="card-title">📄 測量歷史</div>';
+      html += '<div class="table-wrap"><table><tr><th>日期</th>';
+      METRICS.forEach(function(meta) {
+        if (m.some(function(r) { return !isNaN(parseFloat(r[meta[0]])); })) html += '<th>' + esc(meta[1]) + '</th>';
+      });
+      html += '</tr>';
+      m.slice().reverse().forEach(function(row) {
+        html += '<tr><td class="date-col">' + esc((row['測量日期/時間'] || '').substring(0, 10)) + '</td>';
+        METRICS.forEach(function(meta) {
+          if (!m.some(function(r) { return !isNaN(parseFloat(r[meta[0]])); })) return;
+          var val = parseFloat(row[meta[0]]);
+          html += '<td>' + (isNaN(val) ? '-' : val) + '</td>';
+        });
+        html += '</tr>';
+      });
+      html += '</table></div></div>';
+    } else {
+      html += '<div class="card"><div class="no-data">尚無測量紀錄</div></div>';
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').innerHTML = html;
+    document.getElementById('content').style.display = 'block';
+
+    if (m.length > 1) {
+      setTimeout(function() {
+        for (var i = 0; i < METRICS.length; i++) {
+          if (m.some(function(row) { return !isNaN(parseFloat(row[METRICS[i][0]]])); })) {
+            renderChart(METRICS[i][0]); break;
+          }
+        }
+      }, 100);
+    }
+  }
+
+  function renderChart(metricKey) {
+    var m    = allData.measurements;
+    var meta = METRICS.find(function(x) { return x[0] === metricKey; });
+    var labels = [], values = [];
+    m.forEach(function(row) {
+      var val = parseFloat(row[metricKey]);
+      if (!isNaN(val)) { labels.push((row['測量日期/時間'] || '').substring(0, 10)); values.push(val); }
     });
-    html += `</tbody></table></div></div>`;
-  }
-
-  document.getElementById('bodyContent').innerHTML = html;
-
-  // Charts
-  const labels  = history.map(r=>r['測量日期']||r['日期']||'').slice(-8);
-  const weights = history.map(r=>parseFloat(r['體重'])).slice(-8);
-  destroyChart('chartWeight');
-  charts['chartWeight'] = new Chart(document.getElementById('chartWeight'),{
-    type:'line',
-    data:{labels,datasets:[{label:'體重(kg)',data:weights,
-      borderColor:'#00B900',backgroundColor:'rgba(0,185,0,.1)',
-      tension:.3,pointRadius:4,pointBackgroundColor:'#00B900',fill:true}]},
-    options:{responsive:true,plugins:{legend:{display:false}},
-      scales:{y:{beginAtZero:false}}}
-  });
-
-  const compK = ['體脂率','骨骼肌率','體水分率'];
-  destroyChart('chartComp');
-  charts['chartComp'] = new Chart(document.getElementById('chartComp'),{
-    type:'doughnut',
-    data:{labels:compK,datasets:[{data:compK.map(k=>parseFloat(latest[k])||0),
-      backgroundColor:['#e53935','#00B900','#1565C0'],borderWidth:2}]},
-    options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}
-  });
-}
-
-function destroyChart(id) {
-  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
-}
-
-/* ── Meal records (n8n) ── */
-async function loadMealData() {
-  if (!currentPid) return;
-  try {
-    const r = await fetch(MEALS_WH + '?pid=' + encodeURIComponent(currentPid));
-    if (!r.ok) throw new Error('HTTP '+r.status);
-    const data = await r.json();
-    const recs = Array.isArray(data) ? data : (data.records||[]);
-    renderMeals(recs);
-  } catch(e) {
-    console.error('meals:',e);
-    renderMeals([]);
-  }
-}
-
-function renderMeals(records) {
-  const grid = document.getElementById('mealGrid');
-  const sum  = document.getElementById('mealSummary');
-  if (!records.length) {
-    grid.innerHTML = `<div class="meal-empty"><span class="icon">🍽️</span><p>此病患尚無已審核的餐食記錄</p></div>`;
-    sum.innerHTML = '尚無餐食記錄';
-    return;
-  }
-  const avgScore = (records.reduce((a,r)=>a+(+r.score||0),0)/records.length).toFixed(0);
-  const avgCal   = (records.reduce((a,r)=>a+(+r.cal||0),0)/records.length).toFixed(0);
-  sum.innerHTML = `記錄筆數：<strong>${records.length}</strong><br>平均評分：<strong>${avgScore} 分</strong><br>平均熱量：<strong>${avgCal} kcal</strong>`;
-
-  grid.innerHTML = records.map(r=>{
-    const sc  = +r.score||0;
-    const col = sc>=85?'#2e7d32':sc>=70?'#388e3c':sc>=60?'#f57c00':'#c62828';
-    const photo = r.img_url
-      ? `<img class="meal-photo" src="${esc(r.img_url)}" alt="餐食照片" onerror="this.style.display='none'">`
-      : `<div class="meal-photo-ph"><span style="font-size:32px">📷</span><span>無照片</span></div>`;
-    const tags = (r.foods||'').split(/[,，、\n]/).filter(f=>f.trim())
-      .map(f=>`<span class="nutr-tag">${esc(f.trim())}</span>`).join('');
-    return `<div class="meal-card">${photo}
-      <div class="meal-body">
-        <div class="meal-date">🕐 ${relTime(r.time)}</div>
-        <div class="meal-foods">${esc(r.foods||'—')}</div>
-        <div class="meal-nutr">${tags}
-          <span class="nutr-tag">🔥 ${r.cal||0} kcal</span>
-          <span class="nutr-tag">🥩 ${r.pro||0}g</span></div>
-        <div class="meal-score">
-          <div class="score-dot" style="background:${col}">${sc}</div>
-          <span style="color:${col}">${scoreLabel(sc)}</span></div>
-        <div class="meal-advice">${esc(r.advice||'（無建議）')}</div>
-      </div></div>`;
-  }).join('');
-}
-
-/* ── Presets ── */
-function renderPresets() {
-  ['presetGrid1','presetGrid2'].forEach(gid=>{
-    const taId = gid==='presetGrid1'?'noteTA1':'noteTA2';
-    const g    = document.getElementById(gid);
-    PRESETS.forEach(p=>{
-      const el = document.createElement('div');
-      el.className = 'preset-chip'; el.textContent = p.label;
-      el.onclick = ()=>{
-        const ta = document.getElementById(taId);
-        ta.value = ta.value ? ta.value+'\n'+p.text : p.text;
-        el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),600);
-      };
-      g.appendChild(el);
+    var canvas = document.getElementById('trendChart');
+    if (!canvas) return;
+    if (chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: { labels: labels, datasets: [{ label: meta[1] + (meta[2] ? '(' + meta[2] + ')' : ''), data: values, borderColor: '#00B900', backgroundColor: 'rgba(0,185,0,0.08)', tension: 0.3, pointBackgroundColor: '#00B900', pointRadius: 5, fill: true }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 10 }, maxRotation: 45 } }, y: { ticks: { font: { size: 11 } } } } }
     });
-  });
-}
+  }
 
-function renderScriptLibrary() {
-  const lib = document.getElementById('scriptLibrary');
-  PRESETS.forEach(p=>{
-    const el = document.createElement('div');
-    el.className = 'script-card';
-    el.innerHTML = `<div class="script-title">${esc(p.label)}</div>
-                    <div class="script-body">${esc(p.text)}</div>`;
-    el.onclick = ()=>{ document.getElementById('noteTA3').value = p.text; toast('✅ 已填入傳送欄位'); };
-    lib.appendChild(el);
-  });
-}
+  function switchChart(metricKey, btn) {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    renderChart(metricKey);
+  }
 
-/* ── Send note ── */
-async function sendNote(n) {
-  if (!currentLineUid) { toast('⚠️ 找不到病患 LINE UID，請確認資料已載入'); return; }
-  const ta   = document.getElementById('noteTA'+n);
-  const note = ta.value.trim();
-  if (!note) { toast('請輸入建議內容'); return; }
-  if (!confirm(`傳送以下訊息給病患？\n\n${note.slice(0,80)}${note.length>80?'…':''}`)) return;
-  const btn = document.getElementById('sendBtn'+n);
-  btn.disabled = true; btn.textContent = '傳送中…';
-  try {
-    const r = await fetch(NOTE_WH,{method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({lineUid:currentLineUid,doctorLineUid,note,pid:currentPid})});
-    if (!r.ok) throw new Error('HTTP '+r.status);
-    toast('✅ 醫療建議已傳送給病患'); ta.value = '';
-  } catch(e) { toast('⚠️ 傳送失敗：'+e.message); }
-  btn.disabled = false; btn.textContent = '📤 傳送給病患';
-}
-
-/* ── Tab switching ── */
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
-}
-
-function enableSend() {
-  ['sendBtn1','sendBtn2','sendBtn3'].forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=false; });
-}
-
-/* ── Helpers ── */
-function scoreLabel(v) {
-  if(v>=85)return'優秀 🌟'; if(v>=70)return'良好 👍';
-  if(v>=60)return'尚可 🆗'; if(v>=40)return'待改善 ⚠️'; return'不佳 ❌';
-}
-function relTime(s) {
-  if(!s)return'—';
-  try {
-    const d=new Date(s),now=new Date(),diff=now-d;
-    if(diff<60000)return'剛剛';
-    if(diff<3600000)return Math.floor(diff/60000)+' 分鐘前';
-    if(diff<86400000)return Math.floor(diff/3600000)+' 小時前';
-    return d.toLocaleDateString('zh-TW')+' '+d.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
-  }catch(e){return s;}
-}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/ g,'&gt;');}
-let _tt;
-function toast(msg,ms=3000){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('show'),ms);
-}
-function setOverlay(show,text='載入中…'){
-  document.getElementById('overlay').style.display=show?'flex':'none';
-  document.getElementById('overlayText').textContent=text;
-}
-
-init();
+  function esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
 </script>
 </body>
 </html>
