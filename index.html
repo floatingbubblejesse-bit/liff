@@ -100,9 +100,7 @@
         else { allData = data; renderDashboard(data); }
       })
       .catch(function(err) {
-        showError('資料載入失敗：' + (err.message || err) + '
-
-請重試或聯絡店家');
+        showError('資料載入失敗：' + (err.message || err) + ' 請重試或聯絡店家');
       });
   }
 
@@ -118,8 +116,7 @@
       .then(function() {
         setMsg('取得帳號中...');
         if (!liff.isInClient()) {
-          showError('請在 LINE 中開啟此連結：
-https://liff.line.me/' + LIFF_ID);
+          showError('請在 LINE 中開啟此連結：https://liff.line.me/' + LIFF_ID);
           return;
         }
         return liff.getProfile();
@@ -129,11 +126,7 @@ https://liff.line.me/' + LIFF_ID);
         fetchData('uid', profile.userId);
       })
       .catch(function(err) {
-        showError('LIFF 初始化失敗：
-' + (err.message || err) + '
-
-請在 LINE 中開啟：
-https://liff.line.me/' + LIFF_ID);
+        showError('LIFF 初始化失敗：' + (err.message || err) + ' 請在 LINE 中開啟：https://liff.line.me/' + LIFF_ID);
       });
   }
 
@@ -188,7 +181,7 @@ https://liff.line.me/' + LIFF_ID);
       METRICS.forEach(function(meta, idx) {
         var hasData = m.some(function(row) { return !isNaN(parseFloat(row[meta[0]])); });
         if (!hasData) return;
-        html += '<button class="tab-btn' + (idx === 0 ? ' active' : '') + '" onclick="switchChart('' + meta[0] + '', this)">' + esc(meta[1]) + '</button>';
+        html += '<button class="tab-btn' + (idx === 0 ? ' active' : '') + '" onclick="switchChart(\'' + meta[0] + '\', this)">' + esc(meta[1]) + '</button>';
       });
       html += '</div><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>';
     }
@@ -222,7 +215,7 @@ https://liff.line.me/' + LIFF_ID);
     if (m.length > 1) {
       setTimeout(function() {
         for (var i = 0; i < METRICS.length; i++) {
-          if (m.some(function(row) { return !isNaN(parseFloat(row[METRICS[i][0]]])); })) {
+          if (m.some(function(row) { return !isNaN(parseFloat(row[METRICS[i][0]])); })) {
             renderChart(METRICS[i][0]); break;
           }
         }
