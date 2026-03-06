@@ -181,7 +181,7 @@
         .then(function(text){
           var json = JSON.parse(text.replace(/^[^{]+/, '').replace(/\);?\s*$/, ''));
           var rows = json.table.rows;
-          PRESETS = rows.map(function(row){
+          PRESETS = rows.slice(1).map(function(row){
             return { label: row.c[0].v, text: row.c[1].v };
           });
           buildPresets();
