@@ -228,7 +228,7 @@
       html+='<div class="card"><div class="card-title">📈 趨勢圖</div><div class="chart-tabs">';
       METRICS.forEach(function(meta,idx){
         if(!m.some(function(r){return !isNaN(parseFloat(r[meta[0]]));})){ return; }
-        html+='<button class="ctab'+(idx===0?' active':'')+'" onclick="switchChart(''+meta[0]+'',this)">'+esc(meta[1])+'</button>';
+        html+='<button class="ctab'+(idx===0?' active':'')+'" onclick="switchChart(\''+meta[0]+'\',this)">'+esc(meta[1])+'</button>';
       });
       html+='</div><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>';
     }
@@ -297,7 +297,7 @@
       html+='<div class="meal-header"><span class="meal-date">'+esc(m.date||m.timestamp||'')+'</span>';
       html+='<span class="meal-status '+(approved?'status-approved':'status-pending')+'">'+(approved?'✓ 已審核':'⏳ 待審核')+'</span></div>';
       if(m.mealType||m.type) html+='<div class="meal-type">'+esc(m.mealType||m.type||'')+'</div>';
-      if(m.photoUrl||m.image) html+='<img class="meal-photo" src="'+esc(m.photoUrl||m.image)+'" onclick="window.open(this.src)" onerror="this.style.display='none'">';
+      if(m.photoUrl||m.image) html+='<img class="meal-photo" src="'+esc(m.photoUrl||m.image)+'" onclick="window.open(this.src)" onerror="this.style.display=\'none\'">';
       if(m.analysis||m.comment) html+='<div class="meal-analysis">'+esc(m.analysis||m.comment||'')+'</div>';
       html+='</div>';
     });
