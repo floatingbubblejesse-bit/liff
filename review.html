@@ -1,851 +1,285 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>餐食審核 | 營養師後台</title>
-  <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>餐食審核｜營養師後台</title>
   <style>
     :root {
-      --green: #06C755;
-      --green-dark: #04a847;
-      --green-light: #e8f9ee;
-      --blue: #1a73e8;
-      --blue-light: #e8f0fe;
-      --red: #e53935;
-      --orange: #f57c00;
-      --bg: #f0f2f5;
-      --card: #ffffff;
-      --text: #1a202c;
-      --muted: #718096;
-      --border: #e2e8f0;
-      --sidebar: 290px;
-      --panel: 400px;
+      --green:#00897B; --green-dark:#00695C; --green-light:#e0f2f1;
+      --blue:#1565C0; --orange:#f57c00; --red:#e53935;
+      --bg:#f5f7fa; --card:#fff; --text:#1a202c; --muted:#718096; --border:#e2e8f0;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    /* ── Header ── */
-    .header {
-      background: var(--green);
-      color: white;
-      padding: 0 24px;
-      height: 54px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,.18);
-      z-index: 10;
-    }
-    .header-left { display: flex; align-items: center; gap: 10px; }
-    .header h1 { font-size: 16px; font-weight: 700; letter-spacing: .3px; }
-    .header-right { display: flex; align-items: center; gap: 10px; }
-    .badge-count {
-      background: rgba(255,255,255,0.25);
-      border: 1px solid rgba(255,255,255,0.4);
-      color: white;
-      padding: 3px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .reviewer-name { font-size: 12px; opacity: .85; }
-    .btn-refresh {
-      background: rgba(255,255,255,0.18);
-      border: 1px solid rgba(255,255,255,0.35);
-      color: white;
-      padding: 5px 14px;
-      border-radius: 6px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: background .15s;
-    }
-    .btn-refresh:hover { background: rgba(255,255,255,0.3); }
-
-    /* ── Main 3-col layout ── */
-    .main { display: flex; flex: 1; overflow: hidden; }
-
-    /* ── LEFT: queue ── */
-    .sidebar {
-      width: var(--sidebar);
-      flex-shrink: 0;
-      background: var(--card);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-    }
-    .sidebar-head {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .sidebar-head h2 { font-size: 13px; font-weight: 600; color: var(--muted); }
-    .btn-select-all {
-      font-size: 12px; color: var(--blue);
-      background: none; border: none; cursor: pointer; padding: 0;
-    }
-    .queue { flex: 1; overflow-y: auto; }
-    .queue::-webkit-scrollbar { width: 4px; }
-    .queue::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
-
-    .q-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 11px 16px;
-      border-bottom: 1px solid #f5f5f5;
-      cursor: pointer;
-      transition: background .12s;
-      user-select: none;
-    }
-    .q-item:hover { background: #fafafa; }
-    .q-item.active { background: var(--green-light); border-left: 3px solid var(--green); }
-    .q-item.done { opacity: .5; }
-    .q-check { width: 16px; height: 16px; cursor: pointer; accent-color: var(--green); flex-shrink: 0; }
-    .q-avatar {
-      width: 34px; height: 34px;
-      border-radius: 50%;
-      background: var(--green-light);
-      color: var(--green-dark);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 700; flex-shrink: 0;
-    }
-    .q-info { flex: 1; min-width: 0; }
-    .q-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .q-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
-    .q-badge {
-      font-size: 10px; padding: 2px 6px; border-radius: 10px; flex-shrink: 0;
-      font-weight: 600;
-    }
-    .q-badge.pending { background: #fff3e0; color: var(--orange); }
-    .q-badge.approved { background: var(--green-light); color: var(--green-dark); }
-    .q-badge.rejected { background: #ffebee; color: var(--red); }
-
-    .sidebar-foot {
-      padding: 12px 16px;
-      border-top: 1px solid var(--border);
-    }
-    .btn-batch {
-      width: 100%; padding: 9px;
-      background: var(--green); color: white;
-      border: none; border-radius: 8px;
-      font-size: 13px; font-weight: 700;
-      cursor: pointer; transition: background .15s;
-    }
-    .btn-batch:hover { background: var(--green-dark); }
-    .btn-batch:disabled { background: #ccc; cursor: not-allowed; }
-
-    /* ── CENTER: detail ── */
-    .center {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .center::-webkit-scrollbar { width: 5px; }
-    .center::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
-
-    .empty-state {
-      flex: 1;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      color: #bbb; gap: 12px;
-      min-height: 300px;
-    }
-    .empty-state .icon { font-size: 52px; }
-    .empty-state p { font-size: 14px; }
-
-    .card {
-      background: var(--card);
-      border-radius: 12px;
-      padding: 18px 20px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.07);
-    }
-    .card-title {
-      font-size: 12px; font-weight: 700;
-      color: var(--green-dark); text-transform: uppercase;
-      letter-spacing: .5px;
-      margin-bottom: 12px;
-      display: flex; align-items: center; gap: 6px;
-    }
-
-    /* Photo */
-    .photo-wrap {
-      width: 100%; border-radius: 10px; overflow: hidden;
-      background: #f5f5f5; min-height: 160px;
-      display: flex; align-items: center; justify-content: center;
-      position: relative;
-    }
-    .photo-wrap img { width: 100%; max-height: 320px; object-fit: cover; display: block; }
-    .photo-placeholder {
-      padding: 32px; text-align: center; color: #bbb; font-size: 13px;
-    }
-    .photo-placeholder span { font-size: 36px; display: block; margin-bottom: 8px; }
-
-    /* Info grid */
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-    .info-item label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 3px; }
-    .info-item .val { font-size: 14px; font-weight: 600; }
-
-    .food-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-    .food-chip {
-      background: var(--green-light); color: var(--green-dark);
-      padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;
-    }
-    .ai-advice-box {
-      background: #f9f9f9; border-radius: 8px;
-      padding: 10px 12px; font-size: 13px; color: #555; line-height: 1.6;
-      margin-top: 10px; border-left: 3px solid var(--green);
-    }
-
-    /* ── RIGHT: review panel ── */
-    .panel {
-      width: var(--panel);
-      flex-shrink: 0;
-      background: var(--card);
-      border-left: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-    }
-    .panel::-webkit-scrollbar { width: 4px; }
-    .panel::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
-
-    .p-section {
-      padding: 16px 20px;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    .p-section h3 {
-      font-size: 12px; font-weight: 700;
-      color: var(--muted); text-transform: uppercase;
-      letter-spacing: .4px; margin-bottom: 12px;
-    }
-
-    /* Preset scripts */
-    .preset-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-    .preset-chip {
-      background: var(--blue-light); color: var(--blue);
-      border: 1px solid #c5d8fd;
-      padding: 5px 10px; border-radius: 20px;
-      font-size: 12px; cursor: pointer;
-      transition: all .15s; user-select: none;
-    }
-    .preset-chip:hover { background: var(--blue); color: white; }
-    .preset-chip.flash { background: var(--blue); color: white; }
-    .preset-more { font-size: 11px; color: var(--blue); cursor: pointer; margin-top: 4px; background: none; border: none; padding: 0; }
-
-    /* Advice textarea */
-    .advice-ta {
-      width: 100%; padding: 10px 12px;
-      border: 1.5px solid var(--border); border-radius: 8px;
-      font-size: 13px; resize: vertical; min-height: 80px;
-      font-family: inherit; transition: border-color .2s; line-height: 1.5;
-    }
-    .advice-ta:focus { outline: none; border-color: var(--green); }
-
-    /* Score */
-    .score-row { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
-    .score-circle {
-      width: 52px; height: 52px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; font-weight: 800; color: white; flex-shrink: 0;
-      transition: background .3s;
-    }
-    .score-info .grade { font-size: 15px; font-weight: 700; }
-    .score-info .hint { font-size: 11px; color: var(--muted); }
-    input[type=range] {
-      width: 100%; accent-color: var(--green); cursor: pointer;
-      height: 4px;
-    }
-
-    /* Nutrition inputs */
-    .nutr-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-    .nutr-item label { font-size: 10px; color: var(--muted); display: block; text-align: center; margin-bottom: 4px; }
-    .nutr-input {
-      width: 100%; padding: 7px 4px;
-      border: 1.5px solid var(--border); border-radius: 8px;
-      font-size: 13px; font-weight: 700; text-align: center;
-      transition: border-color .2s;
-    }
-    .nutr-input:focus { outline: none; border-color: var(--green); }
-    .nutr-unit { font-size: 9px; color: #bbb; text-align: center; margin-top: 2px; }
-
-    /* Action buttons */
-    .action-row {
-      padding: 14px 20px;
-      display: flex; gap: 10px;
-      border-top: 1px solid var(--border);
-      flex-shrink: 0;
-      margin-top: auto;
-    }
-    .btn-reject {
-      flex: 1; padding: 11px;
-      background: white; color: var(--red);
-      border: 2px solid var(--red); border-radius: 10px;
-      font-size: 14px; font-weight: 700; cursor: pointer;
-      transition: all .18s;
-    }
-    .btn-reject:hover { background: var(--red); color: white; }
-    .btn-approve {
-      flex: 2; padding: 11px;
-      background: var(--green); color: white;
-      border: none; border-radius: 10px;
-      font-size: 14px; font-weight: 700; cursor: pointer;
-      transition: background .18s;
-    }
-    .btn-approve:hover { background: var(--green-dark); }
-    .btn-approve:disabled, .btn-reject:disabled { opacity: .45; cursor: not-allowed; }
-
-    /* Loading & Toast */
-    .overlay {
-      position: fixed; inset: 0;
-      background: rgba(255,255,255,.82);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      z-index: 200; gap: 12px;
-    }
-    .spinner {
-      width: 36px; height: 36px;
-      border: 3px solid #eee; border-top-color: var(--green);
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .overlay-text { font-size: 14px; color: var(--green); font-weight: 600; }
-
-    .toast {
-      position: fixed; bottom: 20px; left: 50%;
-      transform: translateX(-50%);
-      background: #222; color: white;
-      padding: 9px 20px; border-radius: 8px;
-      font-size: 13px; z-index: 300;
-      opacity: 0; transition: opacity .25s;
-      white-space: nowrap; pointer-events: none;
-    }
-    .toast.show { opacity: 1; }
-
-    /* Responsive */
-    @media (max-width: 1100px) {
-      :root { --panel: 340px; }
-    }
-    @media (max-width: 860px) {
-      :root { --sidebar: 230px; --panel: 300px; }
-      .nutr-grid { grid-template-columns: repeat(3, 1fr); }
-    }
-    @media (max-width: 640px) {
-      body { overflow: auto; }
-      .main { flex-direction: column; }
-      .sidebar { width: 100%; height: 160px; overflow: hidden; }
-      .queue { display: flex; flex-direction: row; overflow-x: auto; overflow-y: hidden; }
-      .q-item { min-width: 160px; flex-shrink: 0; }
-      .panel { width: 100%; border-left: none; border-top: 1px solid var(--border); }
-    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+    .header{background:linear-gradient(135deg,#00897B,#004D40);color:white;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .header h1{font-size:15px;font-weight:700}
+    .header-btns{display:flex;gap:8px}
+    .hbtn{background:rgba(255,255,255,0.2);border:none;color:white;padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-weight:600}
+    .hbtn:hover{background:rgba(255,255,255,0.3)}
+    .main{flex:1;display:grid;grid-template-columns:280px 1fr 340px;overflow:hidden;gap:0}
+    .queue-panel{border-right:1px solid var(--border);overflow-y:auto;background:white;display:flex;flex-direction:column}
+    .panel-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .panel-title{font-size:12px;font-weight:700;color:var(--muted)}
+    .select-all-btn{font-size:11px;color:var(--green);cursor:pointer;border:none;background:none;font-weight:600}
+    .queue-list{flex:1;overflow-y:auto}
+    .queue-item{padding:11px 14px;border-bottom:1px solid #f5f5f5;cursor:pointer;transition:background 0.1s;display:flex;align-items:flex-start;gap:8px}
+    .queue-item:hover{background:#f9fafb}
+    .queue-item.active{background:var(--green-light);border-left:3px solid var(--green)}
+    .queue-item.approved{opacity:0.5}
+    .queue-checkbox{margin-top:2px;flex-shrink:0;accent-color:var(--green)}
+    .qi-info{flex:1;min-width:0}
+    .qi-name{font-size:13px;font-weight:600}
+    .qi-sub{font-size:11px;color:var(--muted);margin-top:2px}
+    .qi-badge{font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px}
+    .badge-pending{background:#fff8e1;color:#f57c00}
+    .badge-approved{background:var(--green-light);color:#00695C}
+    .detail-panel{overflow-y:auto;padding:16px;background:#f8fafb;display:flex;flex-direction:column;gap:12px}
+    .detail-empty{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px}
+    .detail-card{background:white;border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+    .dc-title{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:10px;letter-spacing:.5px}
+    .meal-photo{width:100%;max-height:260px;object-fit:cover;border-radius:10px;cursor:pointer}
+    .meal-meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+    .meta-tag{font-size:11px;background:#f0f0f0;padding:3px 8px;border-radius:8px;color:#555}
+    .meal-desc{font-size:12px;color:#444;line-height:1.6;white-space:pre-line}
+    .nutrients-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .nut-item{background:#f8fafb;border-radius:8px;padding:8px;text-align:center}
+    .nut-label{font-size:10px;color:var(--muted)}
+    .nut-val{font-size:14px;font-weight:700;color:var(--blue)}
+    .review-panel{border-left:1px solid var(--border);overflow-y:auto;background:white;display:flex;flex-direction:column}
+    .review-body{padding:14px;display:flex;flex-direction:column;gap:12px;flex:1}
+    .section-label{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+    .presets-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .preset-btn{padding:7px 8px;background:#f0f9f7;border:1px solid #b2dfdb;border-radius:7px;font-size:10px;color:#00695C;cursor:pointer;text-align:left;line-height:1.4;font-weight:500}
+    .preset-btn:hover{background:#e0f2f1}
+    .review-textarea{width:100%;min-height:90px;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;resize:vertical;outline:none;line-height:1.5}
+    .review-textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,137,123,0.1)}
+    .score-row{display:flex;align-items:center;gap:10px}
+    .score-label{font-size:12px;color:#555;min-width:32px;font-weight:700}
+    .score-slider{flex:1;accent-color:var(--green)}
+    .nutrients-inputs{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+    .nut-input-group{display:flex;flex-direction:column;gap:2px}
+    .nut-input-label{font-size:10px;color:var(--muted)}
+    .nut-input{padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;outline:none}
+    .nut-input:focus{border-color:var(--green)}
+    .review-footer{padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0}
+    .btn-reject{flex:1;padding:10px;border:1px solid var(--border);background:white;border-radius:8px;font-size:13px;cursor:pointer;color:var(--muted);font-weight:600}
+    .btn-approve{flex:2;padding:10px;background:var(--green);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+    .btn-approve:hover{background:var(--green-dark)}
+    .btn-approve:disabled{background:#b2dfdb;cursor:not-allowed}
+    .loading-center{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--muted);font-size:13px}
+    .spinner{width:36px;height:36px;border:4px solid #e0e0e0;border-top-color:var(--green);border-radius:50%;animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .toast{position:fixed;bottom:20px;right:20px;background:#323232;color:white;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;display:none}
+    .no-items{text-align:center;color:var(--muted);padding:32px;font-size:13px}
   </style>
 </head>
 <body>
-
-<!-- Loading overlay -->
-<div class="overlay" id="overlay">
-  <div class="spinner"></div>
-  <div class="overlay-text" id="overlayText">連線中…</div>
+<div class="header">
+  <h1>🥗 餐食審核 · 營養師後台</h1>
+  <div class="header-btns">
+    <button class="hbtn" onclick="loadQueue()">↻ 更新</button>
+    <button class="hbtn" id="batchBtn" onclick="batchApprove()" disabled>批次核准 (<span id="batchCount">0</span>)</button>
+  </div>
 </div>
-
-<!-- Toast -->
-<div class="toast" id="toast"></div>
-
-<!-- Header -->
-<header class="header">
-  <div class="header-left">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-      <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-      <rect x="9" y="3" width="6" height="4" rx="2"/>
-      <path d="M9 12l2 2 4-4"/>
-    </svg>
-    <h1>餐食審核 · 營養師後台</h1>
-  </div>
-  <div class="header-right">
-    <span class="badge-count" id="pendingBadge">待審核 — 筆</span>
-    <span class="reviewer-name" id="reviewerName"></span>
-    <button class="btn-refresh" onclick="loadRecords()">⟳ 重整</button>
-  </div>
-</header>
-
-<!-- Main -->
 <div class="main">
-
-  <!-- ── LEFT Sidebar ── -->
-  <div class="sidebar">
-    <div class="sidebar-head">
-      <h2>待審核列表</h2>
-      <button class="btn-select-all" id="btnSelectAll" onclick="toggleSelectAll()">全選</button>
+  <div class="queue-panel">
+    <div class="panel-header">
+      <span class="panel-title">待審核列表</span>
+      <button class="select-all-btn" onclick="toggleSelectAll()">全選</button>
     </div>
-    <div class="queue" id="queue"></div>
-    <div class="sidebar-foot">
-      <button class="btn-batch" id="btnBatch" disabled onclick="batchApprove()">
-        批次核准（<span id="selCount">0</span> 筆）
-      </button>
+    <div class="queue-list" id="queueList">
+      <div class="loading-center"><div class="spinner"></div><span>載入中...</span></div>
     </div>
   </div>
-
-  <!-- ── CENTER ── -->
-  <div class="center" id="center">
-    <div class="empty-state" id="emptyState">
-      <span class="icon">📋</span>
-      <p>請從左側選擇一筆記錄</p>
-    </div>
-
-    <!-- Photo card -->
-    <div class="card" id="photoCard" style="display:none">
-      <div class="card-title">📸 餐食照片</div>
-      <div class="photo-wrap" id="photoWrap">
-        <div class="photo-placeholder"><span>🍽️</span>載入中…</div>
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-empty">← 請從左側選擇一筆記錄</div>
+  </div>
+  <div class="review-panel">
+    <div class="review-body">
+      <div>
+        <div class="section-label">💬 常用建議劇本</div>
+        <div class="presets-grid" id="presetsGrid"></div>
+      </div>
+      <div>
+        <div class="section-label">✏️ 營養建議（可選填）</div>
+        <textarea class="review-textarea" id="reviewComment" placeholder="點選上方劇本快速填入，或直接輸入..."></textarea>
+      </div>
+      <div>
+        <div class="section-label">⭐ 調整評分</div>
+        <div class="score-row">
+          <span class="score-label" id="scoreLabel">7</span>
+          <input type="range" class="score-slider" id="scoreSlider" min="1" max="10" value="7" oninput="document.getElementById('scoreLabel').textContent=this.value">
+          <span style="font-size:11px;color:#aaa">拖左右調整分數</span>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">📊 營養數值（可調整）</div>
+        <div class="nutrients-inputs">
+          <div class="nut-input-group"><span class="nut-input-label">熱量 (kcal)</span><input class="nut-input" id="nut_cal" type="number" placeholder="--"></div>
+          <div class="nut-input-group"><span class="nut-input-label">蛋白質 (g)</span><input class="nut-input" id="nut_pro" type="number" placeholder="--"></div>
+          <div class="nut-input-group"><span class="nut-input-label">脂肪 (g)</span><input class="nut-input" id="nut_fat" type="number" placeholder="--"></div>
+          <div class="nut-input-group"><span class="nut-input-label">醣類 (g)</span><input class="nut-input" id="nut_carb" type="number" placeholder="--"></div>
+          <div class="nut-input-group"><span class="nut-input-label">鈉 (mg)</span><input class="nut-input" id="nut_sodium" type="number" placeholder="--"></div>
+          <div class="nut-input-group"><span class="nut-input-label">纖維 (g)</span><input class="nut-input" id="nut_fiber" type="number" placeholder="--"></div>
+        </div>
       </div>
     </div>
-
-    <!-- Patient info card -->
-    <div class="card" id="patientCard" style="display:none">
-      <div class="card-title">👤 病患資訊</div>
-      <div class="info-grid">
-        <div class="info-item"><label>姓名</label><div class="val" id="dName">—</div></div>
-        <div class="info-item"><label>院區病歷號</label><div class="val" id="dPid">—</div></div>
-        <div class="info-item"><label>分析時間</label><div class="val" id="dTime">—</div></div>
-        <div class="info-item"><label>記錄 ID</label><div class="val" id="dId" style="font-size:12px;word-break:break-all">—</div></div>
-      </div>
-
-      <div style="margin-top:14px">
-        <div class="card-title" style="margin-bottom:6px">🍱 識別食物</div>
-        <div class="food-chips" id="foodChips"></div>
-      </div>
-
-      <div style="margin-top:14px">
-        <div class="card-title" style="margin-bottom:4px">🤖 AI 初始建議</div>
-        <div class="ai-advice-box" id="aiAdvice">—</div>
-      </div>
+    <div class="review-footer">
+      <button class="btn-reject" onclick="skipItem()">略過</button>
+      <button class="btn-approve" id="approveBtn" onclick="approveItem()" disabled>✓ 審核通過</button>
     </div>
   </div>
-
-  <!-- ── RIGHT Panel ── -->
-  <div class="panel" id="panel">
-
-    <!-- Presets -->
-    <div class="p-section">
-      <h3>💬 常用建議劇本</h3>
-      <div class="preset-grid" id="presetGrid"></div>
-    </div>
-
-    <!-- Advice textarea -->
-    <div class="p-section">
-      <h3>📝 審核建議（可編輯）</h3>
-      <textarea class="advice-ta" id="adviceTA" rows="4" placeholder="點選上方劇本快速填入，或直接輸入…"></textarea>
-    </div>
-
-    <!-- Score -->
-    <div class="p-section">
-      <h3>⭐ 調整評分</h3>
-      <div class="score-row">
-        <div class="score-circle" id="scoreCircle">—</div>
-        <div class="score-info">
-          <div class="grade" id="scoreGrade">—</div>
-          <div class="hint">拖曳滑桿調整分數</div>
-        </div>
-      </div>
-      <input type="range" id="scoreSlider" min="0" max="100" value="60"
-             oninput="updateScore(+this.value)">
-    </div>
-
-    <!-- Nutrition -->
-    <div class="p-section">
-      <h3>📊 營養數值（可調整）</h3>
-      <div class="nutr-grid">
-        <div class="nutr-item">
-          <label>熱量</label>
-          <input type="number" class="nutr-input" id="vCal" min="0">
-          <div class="nutr-unit">kcal</div>
-        </div>
-        <div class="nutr-item">
-          <label>蛋白質</label>
-          <input type="number" class="nutr-input" id="vPro" min="0">
-          <div class="nutr-unit">g</div>
-        </div>
-        <div class="nutr-item">
-          <label>纖維質</label>
-          <input type="number" class="nutr-input" id="vFib" min="0">
-          <div class="nutr-unit">g</div>
-        </div>
-        <div class="nutr-item">
-          <label>碳水</label>
-          <input type="number" class="nutr-input" id="vCarb" min="0">
-          <div class="nutr-unit">g</div>
-        </div>
-        <div class="nutr-item">
-          <label>脂肪</label>
-          <input type="number" class="nutr-input" id="vFat" min="0">
-          <div class="nutr-unit">g</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Actions -->
-    <div class="action-row">
-      <button class="btn-reject" id="btnReject" disabled onclick="submitReview('reject')">✗ 駁回</button>
-      <button class="btn-approve" id="btnApprove" disabled onclick="submitReview('approve')">✓ 核准並送出</button>
-    </div>
-
-  </div><!-- /panel -->
-</div><!-- /main -->
-
+</div>
+<div class="toast" id="toast"></div>
 <script>
-/* ── Config ── */
-const LIFF_ID      = '2009326025-0mhpcsM1';
-const LIST_WH      = 'https://huangcs.app.n8n.cloud/webhook/nutrition-review-list';
-const REVIEW_WH    = 'https://huangcs.app.n8n.cloud/webhook/nutrition-review';
+  var N8N_LIST   = 'https://huangcs.app.n8n.cloud/webhook/nutrition-review-list';
+  var N8N_REVIEW = 'https://huangcs.app.n8n.cloud/webhook/nutrition-review';
 
-/* ── Preset scripts ── */
-const PRESETS = [
-  { label: '🥦 蔬菜不足',   text: '蔬菜攝取明顯不足，建議每餐至少1份深色蔬菜（菠菜、花椰菜），補充纖維並增加飽足感。' },
-  { label: '🍗 蛋白質良好', text: '優質蛋白質攝取良好，來源選擇佳，請繼續保持此飲食習慣。' },
-  { label: '🍚 精製澱粉多', text: '精製澱粉比例偏高，建議1/3替換為全穀類（糙米、燕麥），有助穩定血糖。' },
-  { label: '🛢️ 油脂偏高',   text: '本餐油脂含量偏高，建議改以蒸、烤、燙方式烹調，並注意醬料等隱藏油脂。' },
-  { label: '🌾 纖維不足',   text: '膳食纖維攝取不足，建議多攝取豆類、蔬菜及帶皮水果，有助腸道健康及血糖控制。' },
-  { label: '✅ 飲食均衡',   text: '本餐搭配均衡，各大營養素比例適當，繼續維持良好飲食習慣，表現優秀！' },
-  { label: '🍬 含糖偏高',   text: '含糖飲料或甜食攝取過多，建議以白開水、無糖飲品替代，減少添加糖攝入。' },
-  { label: '🧂 鈉含量高',   text: '本餐估計鈉含量偏高，建議選擇少鹽少醬料的烹調方式，注意加工食品標示。' },
-  { label: '⏰ 少量多餐',   text: '建議採少量多餐（每3~4小時進食），避免單餐過量，有助穩定血糖及代謝速率。' },
-  { label: '💧 多喝水',     text: '提醒每日飲水量建議達體重×30~35ml，充足水分有助代謝廢物排除及整體健康。' },
-  { label: '🥩 蛋白質不足', text: '本餐蛋白質攝取偏低，建議增加瘦肉、豆腐、蛋、豆莢等優質蛋白質來源。' },
-  { label: '🌙 睡前不宜',   text: '本餐高熱量，若為晚餐或宵夜，建議下次減少精製澱粉與油脂，以免影響睡眠品質。' },
-];
+  var PRESETS = [
+    {label:'均衡搭配',   text:'這餐的食物搭配均衡，蛋白質、蔬菜、醣類比例適當，繼續保持！'},
+    {label:'蔬菜不足',   text:'這餐蔬菜量稍嫌不足，建議下餐多補充深綠色蔬菜，目標每餐至少半碗。'},
+    {label:'醣類過多',   text:'這餐醣類偏高，建議減少白米飯或麵食份量，改以地瓜、糙米等低GI替代。'},
+    {label:'蛋白質不足', text:'這餐蛋白質攝取不足，建議增加雞蛋、豆腐、雞胸肉等優質蛋白質。'},
+    {label:'油脂過多',   text:'這餐油脂含量較高，下次烹調建議用水煮或清蒸方式，減少油炸或紅燒。'},
+    {label:'份量過大',   text:'這餐份量稍多，建議下餐縮減至七、八分飽，細嚼慢嚥有助控制食量。'},
+    {label:'宵夜不建議', text:'睡前進食容易囤積脂肪，建議晚上10點後避免進食，如需補充可選少量堅果或無糖豆漿。'},
+    {label:'外食注意',   text:'外食容易高油高鹽，建議點餐時選擇清炒、燙青菜，並少喝湯以減少鈉攝取。'},
+    {label:'飲水提醒',   text:'記得多喝水！建議這餐前後各喝一杯水（200ml），有助消化並增加飽足感。'},
+    {label:'表現良好',   text:'這餐表現很棒！食物選擇健康，份量也很適中，繼續維持這樣的飲食習慣！'},
+    {label:'下餐建議',   text:'下一餐建議以清淡為主，多蔬菜、適量蛋白質，避免精緻澱粉，讓身體有時間消化。'},
+    {label:'記錄鼓勵',   text:'感謝您認真記錄每餐！持續記錄有助我們給予更精準的建議，請繼續加油！'},
+  ];
 
-/* ── State ── */
-let records       = [];
-let current       = null;
-let reviewerUID   = null;
-let reviewerName  = '';
-let allSel        = false;
+  var queue=[], currentIdx=-1, selectedIds=new Set();
 
-/* ── Init ── */
-async function init() {
-  try {
-    await liff.init({ liffId: LIFF_ID });
-    if (!liff.isLoggedIn()) { liff.login(); return; }
-    const p = await liff.getProfile();
-    reviewerUID  = p.userId;
-    reviewerName = p.displayName;
-    document.getElementById('reviewerName').textContent = p.displayName;
-  } catch(e) {
-    console.warn('LIFF fallback:', e);
-    reviewerUID  = 'TEST_REVIEWER';
-    reviewerName = '測試模式';
-    document.getElementById('reviewerName').textContent = '測試模式';
+  buildPresets();
+  loadQueue();
+
+  function buildPresets(){
+    document.getElementById('presetsGrid').innerHTML=PRESETS.map(function(p){
+      return '<button class="preset-btn" onclick="applyPreset('+JSON.stringify(p.text)+')">'+esc(p.label)+'</button>';
+    }).join('');
   }
 
-  renderPresets();
-
-  const sp = new URLSearchParams(window.location.search);
-  if (sp.get('id') || sp.get('name')) {
-    loadFromParams(sp);
-  } else {
-    await loadRecords();
+  function loadQueue(){
+    document.getElementById('queueList').innerHTML='<div class="loading-center"><div class="spinner"></div><span>載入中...</span></div>';
+    fetch(N8N_LIST)
+      .then(function(r){return r.json();})
+      .then(function(data){queue=data.records||data||[];renderQueue();})
+      .catch(function(err){document.getElementById('queueList').innerHTML='<div class="no-items">載入失敗：'+esc(err.message)+'</div>';});
   }
-}
 
-/* ── Render presets ── */
-function renderPresets() {
-  const grid = document.getElementById('presetGrid');
-  PRESETS.forEach((p, i) => {
-    const el = document.createElement('div');
-    el.className = 'preset-chip';
-    el.textContent = p.label;
-    el.onclick = () => {
-      const ta = document.getElementById('adviceTA');
-      ta.value = ta.value ? ta.value + '\n' + p.text : p.text;
-      el.classList.add('flash');
-      setTimeout(() => el.classList.remove('flash'), 600);
-      ta.focus();
-    };
-    grid.appendChild(el);
-  });
-}
+  function renderQueue(){
+    if(queue.length===0){document.getElementById('queueList').innerHTML='<div class="no-items">🎉 目前沒有待審核記錄</div>';return;}
+    document.getElementById('queueList').innerHTML=queue.map(function(item,idx){
+      var approved=item.approved||item.status==='approved';
+      var isActive=idx===currentIdx, isChecked=selectedIds.has(item.id||idx);
+      return '<div class="queue-item'+(isActive?' active':'')+(approved?' approved':'')+'" onclick="selectItem('+idx+')">'+
+        '<input type="checkbox" class="queue-checkbox"'+(isChecked?' checked':'')+(approved?' disabled':'')+' onclick="toggleCheck(event,'+(item.id||idx)+')">'+
+        '<div class="qi-info">'+
+          '<div class="qi-name">'+esc(item.patientName||item.name||'未知病患')+
+            '<span class="qi-badge '+(approved?'badge-approved':'badge-pending')+'">'+(approved?'已審核':'待審')+'</span>'+
+          '</div>'+
+          '<div class="qi-sub">'+esc(item.mealType||item.type||'')+'　'+esc((item.timestamp||item.date||'').substring(0,16))+'</div>'+
+        '</div></div>';
+    }).join('');
+    updateBatchBtn();
+  }
 
-/* ── Load records from n8n list webhook ── */
-async function loadRecords() {
-  setOverlay(true, '載入待審核列表…');
-  try {
-    const res = await fetch(LIST_WH, { method: 'GET' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    records = Array.isArray(data) ? data : (data.records || []);
+  function selectItem(idx){
+    currentIdx=idx; renderQueue();
+    var item=queue[idx];
+    renderDetail(item); prefillReview(item);
+    document.getElementById('approveBtn').disabled=(item.approved||item.status==='approved');
+  }
+
+  function renderDetail(item){
+    var html='';
+    if(item.photoUrl||item.image) html+='<div class="detail-card"><div class="dc-title">📸 餐食照片</div><img class="meal-photo" src="'+esc(item.photoUrl||item.image)+'" onclick="window.open(this.src)" onerror="this.style.display='none'"></div>';
+    html+='<div class="detail-card"><div class="dc-title">📋 記錄資訊</div><div class="meal-meta">';
+    if(item.patientName) html+='<span class="meta-tag">👤 '+esc(item.patientName)+'</span>';
+    if(item.mealType||item.type) html+='<span class="meta-tag">🍽️ '+esc(item.mealType||item.type)+'</span>';
+    if(item.timestamp||item.date) html+='<span class="meta-tag">📅 '+esc((item.timestamp||item.date||'').substring(0,16))+'</span>';
+    html+='</div>';
+    if(item.description||item.note) html+='<div class="meal-desc">'+esc(item.description||item.note)+'</div>';
+    html+='</div>';
+    if(item.calories||item.nutrients){
+      var n=item.nutrients||{};
+      html+='<div class="detail-card"><div class="dc-title">🤖 AI 估算營養素</div><div class="nutrients-grid">';
+      [['熱量','calories','kcal'],['蛋白質','protein','g'],['脂肪','fat','g'],['醣類','carbs','g'],['鈉','sodium','mg'],['纖維','fiber','g']].forEach(function(p){
+        var val=item[p[1]]||(n&&n[p[1]])||'--';
+        html+='<div class="nut-item"><div class="nut-label">'+p[0]+'</div><div class="nut-val">'+val+'<span style="font-size:9px;color:#aaa"> '+p[2]+'</span></div></div>';
+      });
+      html+='</div></div>';
+    }
+    document.getElementById('detailPanel').innerHTML=html;
+  }
+
+  function prefillReview(item){
+    document.getElementById('scoreSlider').value=item.score||7;
+    document.getElementById('scoreLabel').textContent=item.score||7;
+    document.getElementById('reviewComment').value=item.comment||'';
+    var n=item.nutrients||{};
+    document.getElementById('nut_cal').value=item.calories||n.calories||'';
+    document.getElementById('nut_pro').value=item.protein||n.protein||'';
+    document.getElementById('nut_fat').value=item.fat||n.fat||'';
+    document.getElementById('nut_carb').value=item.carbs||n.carbs||'';
+    document.getElementById('nut_sodium').value=item.sodium||n.sodium||'';
+    document.getElementById('nut_fiber').value=item.fiber||n.fiber||'';
+  }
+
+  function applyPreset(text){document.getElementById('reviewComment').value=text;}
+
+  function approveItem(){
+    if(currentIdx<0) return;
+    var item=queue[currentIdx];
+    var payload={id:item.id,approved:true,score:parseInt(document.getElementById('scoreSlider').value),comment:document.getElementById('reviewComment').value.trim(),
+      nutrients:{calories:document.getElementById('nut_cal').value,protein:document.getElementById('nut_pro').value,fat:document.getElementById('nut_fat').value,
+        carbs:document.getElementById('nut_carb').value,sodium:document.getElementById('nut_sodium').value,fiber:document.getElementById('nut_fiber').value}};
+    document.getElementById('approveBtn').disabled=true;
+    fetch(N8N_REVIEW,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .then(function(r){return r.json();})
+      .then(function(){
+        queue[currentIdx].approved=true; queue[currentIdx].status='approved';
+        showToast('✅ 審核通過！'); renderQueue();
+        var next=queue.findIndex(function(it,i){return i>currentIdx&&!it.approved&&it.status!=='approved';});
+        if(next>=0) selectItem(next); else {currentIdx=-1;document.getElementById('detailPanel').innerHTML='<div class="detail-empty">所有記錄已審核完畢 🎉</div>';}
+      })
+      .catch(function(err){document.getElementById('approveBtn').disabled=false;showToast('❌ 失敗：'+err.message);});
+  }
+
+  function skipItem(){
+    var next=queue.findIndex(function(it,i){return i>currentIdx&&!it.approved&&it.status!=='approved';});
+    if(next>=0) selectItem(next);
+  }
+
+  function toggleCheck(e,id){e.stopPropagation();if(e.target.checked) selectedIds.add(id); else selectedIds.delete(id);updateBatchBtn();}
+
+  function toggleSelectAll(){
+    var pendingIds=queue.filter(function(it){return !it.approved&&it.status!=='approved';}).map(function(it,i){return it.id||i;});
+    if(selectedIds.size===pendingIds.length) selectedIds.clear(); else pendingIds.forEach(function(id){selectedIds.add(id);});
     renderQueue();
-    toast(`已載入 ${records.filter(r=>r.status==='pending'||!r.status).length} 筆待審核`);
-  } catch(e) {
-    console.error(e);
-    records = [];
-    renderQueue();
-    toast('⚠️ 無法連線列表 API，請確認 n8n webhook 已啟用');
-  }
-  setOverlay(false);
-}
-
-function loadFromParams(sp) {
-  const r = {
-    id:      sp.get('id')     || 'PARAM_' + Date.now(),
-    name:    dec(sp.get('name')),
-    pid:     sp.get('pid')    || '',
-    foods:   dec(sp.get('foods')),
-    cal:     sp.get('cal')    || '0',
-    pro:     sp.get('pro')    || '0',
-    fib:     sp.get('fib')    || '0',
-    carb:    sp.get('carb')   || '0',
-    fat:     sp.get('fat')    || '0',
-    score:   sp.get('score')  || '60',
-    advice:  dec(sp.get('advice')),
-    time:    sp.get('time')   || '',
-    line_uid:sp.get('line_uid')|| '',
-    img_url: sp.get('img_url')|| '',
-    webhook: sp.get('webhook')|| REVIEW_WH,
-    status:  'pending',
-  };
-  records = [r];
-  renderQueue();
-  selectRecord(0);
-  setOverlay(false);
-}
-
-function renderQueue() {
-  const pending = records.filter(r => !r.status || r.status === 'pending').length;
-  document.getElementById('pendingBadge').textContent = `待審核 ${pending} 筆`;
-
-  const q = document.getElementById('queue');
-  if (records.length === 0) {
-    q.innerHTML = '<div style="padding:24px;text-align:center;color:#bbb;font-size:13px">目前沒有待審核記錄</div>';
-    return;
-  }
-  q.innerHTML = '';
-  records.forEach((r, i) => {
-    const item = document.createElement('div');
-    const isPending = !r.status || r.status === 'pending';
-    item.className = 'q-item' +
-      (current && current.id === r.id ? ' active' : '') +
-      (!isPending ? ' done' : '');
-
-    const initial = (r.name || '?').charAt(0).toUpperCase();
-    const badge = r.status === 'approved' ? 'approved' :
-                  r.status === 'rejected' ? 'rejected' : 'pending';
-    const badgeText = badge === 'approved' ? '已核准' : badge === 'rejected' ? '已駁回' : '待審核';
-
-    item.innerHTML = `
-      <input type="checkbox" class="q-check" data-i="${i}"
-        ${!isPending ? 'disabled' : ''}
-        onclick="e=>e.stopPropagation()" onchange="countSel()">
-      <div class="q-avatar">${initial}</div>
-      <div class="q-info" onclick="selectRecord(${i})">
-        <div class="q-name">${esc(r.name || '未知')}</div>
-        <div class="q-meta">${esc(r.pid || '')} · ${relTime(r.time)}</div>
-      </div>
-      <span class="q-badge ${badge}">${badgeText}</span>`;
-    q.appendChild(item);
-  });
-}
-
-function selectRecord(i) {
-  current = records[i];
-  renderQueue();
-  document.getElementById('emptyState').style.display  = 'none';
-  document.getElementById('photoCard').style.display   = 'block';
-  document.getElementById('patientCard').style.display = 'block';
-
-  document.getElementById('dName').textContent = current.name  || '未知';
-  document.getElementById('dPid').textContent  = current.pid   || '—';
-  document.getElementById('dTime').textContent = relTime(current.time);
-  document.getElementById('dId').textContent   = current.id    || '—';
-
-  const fc = document.getElementById('foodChips');
-  fc.innerHTML = '';
-  (current.foods || '').split(/[,，、\n]/).map(f=>f.trim()).filter(Boolean).forEach(f => {
-    const el = document.createElement('span');
-    el.className = 'food-chip';
-    el.textContent = f;
-    fc.appendChild(el);
-  });
-  if (!fc.children.length) fc.innerHTML = '<span style="color:#bbb;font-size:12px">無資料</span>';
-
-  document.getElementById('aiAdvice').textContent = current.advice || '（無建議）';
-
-  const pw = document.getElementById('photoWrap');
-  if (current.img_url) {
-    pw.innerHTML = `<img src="${current.img_url}" alt="餐食照片"
-      onerror="this.parentElement.innerHTML='<div class=\\'photo-placeholder\\'><span>🍽️</span>照片無法載入</div>'">`;
-  } else {
-    pw.innerHTML = `<div class="photo-placeholder">
-      <span>📷</span>
-      照片尚未整合<br>
-      <span style="font-size:11px;display:block;margin-top:4px;color:#ccc">
-        需在 n8n 工作流程中儲存圖片 URL
-      </span></div>`;
   }
 
-  document.getElementById('adviceTA').value = current.advice || '';
-  const sc = parseInt(current.score) || 60;
-  document.getElementById('scoreSlider').value = sc;
-  updateScore(sc);
-  document.getElementById('vCal').value  = current.cal  || '';
-  document.getElementById('vPro').value  = current.pro  || '';
-  document.getElementById('vFib').value  = current.fib  || '';
-  document.getElementById('vCarb').value = current.carb || '';
-  document.getElementById('vFat').value  = current.fat  || '';
+  function updateBatchBtn(){var n=selectedIds.size;document.getElementById('batchCount').textContent=n;document.getElementById('batchBtn').disabled=n===0;}
 
-  const ok = !current.status || current.status === 'pending';
-  document.getElementById('btnApprove').disabled = !ok;
-  document.getElementById('btnReject').disabled  = !ok;
-}
-
-function updateScore(v) {
-  v = +v;
-  const c = document.getElementById('scoreCircle');
-  const g = document.getElementById('scoreGrade');
-  c.textContent = v;
-  if      (v >= 85) { c.style.background = '#2e7d32'; g.textContent = '優秀 🌟'; }
-  else if (v >= 70) { c.style.background = '#388e3c'; g.textContent = '良好 👍'; }
-  else if (v >= 60) { c.style.background = '#f57c00'; g.textContent = '尚可 🆗'; }
-  else if (v >= 40) { c.style.background = '#e65100'; g.textContent = '待改善 ⚠️'; }
-  else              { c.style.background = '#c62828'; g.textContent = '不佳 ❌'; }
-}
-
-function toggleSelectAll() {
-  allSel = !allSel;
-  document.querySelectorAll('.q-check:not(:disabled)').forEach(c => c.checked = allSel);
-  document.getElementById('btnSelectAll').textContent = allSel ? '取消全選' : '全選';
-  countSel();
-}
-function countSel() {
-  const n = document.querySelectorAll('.q-check:checked').length;
-  document.getElementById('selCount').textContent = n;
-  document.getElementById('btnBatch').disabled = n === 0;
-}
-
-async function batchApprove() {
-  const checked = [...document.querySelectorAll('.q-check:checked')];
-  if (!checked.length) return;
-  const score  = document.getElementById('scoreSlider').value;
-  const advice = document.getElementById('adviceTA').value;
-  if (!confirm(`批次核准 ${checked.length} 筆記錄？\n評分：${score} 分`)) return;
-
-  setOverlay(true, `批次核准中 0 / ${checked.length}…`);
-  let ok = 0;
-  for (const c of checked) {
-    const i = +c.dataset.i;
-    try {
-      await post(records[i].webhook || REVIEW_WH, buildPayload(records[i], 'approve', score, advice));
-      records[i].status = 'approved';
-      ok++;
-      setOverlay(true, `批次核准中 ${ok} / ${checked.length}…`);
-    } catch(e) { console.error(e); }
+  function batchApprove(){
+    if(selectedIds.size===0) return;
+    var ids=Array.from(selectedIds);
+    var payload={batchIds:ids,approved:true,score:parseInt(document.getElementById('scoreSlider').value),comment:document.getElementById('reviewComment').value.trim()};
+    document.getElementById('batchBtn').disabled=true;
+    fetch(N8N_REVIEW,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .then(function(r){return r.json();})
+      .then(function(){
+        ids.forEach(function(id){var item=queue.find(function(it,i){return(it.id||i)===id;});if(item){item.approved=true;item.status='approved';}});
+        selectedIds.clear(); showToast('✅ 批次審核完成（'+ids.length+' 筆）'); renderQueue();
+      })
+      .catch(function(err){showToast('❌ 失敗：'+err.message);document.getElementById('batchBtn').disabled=false;});
   }
-  setOverlay(false);
-  renderQueue();
-  countSel();
-  toast(`✅ 批次核准完成，成功 ${ok} 筆`);
-}
 
-async function submitReview(action) {
-  if (!current) return;
-  const score  = document.getElementById('scoreSlider').value;
-  const advice = document.getElementById('adviceTA').value;
-  const label  = action === 'approve' ? '核准' : '駁回';
-  if (!confirm(`確定${label}「${current.name}」？`)) return;
-
-  setOverlay(true, `送出${label}中…`);
-  try {
-    await post(current.webhook || REVIEW_WH, buildPayload(current, action, score, advice));
-    const idx = records.findIndex(r => r.id === current.id);
-    if (idx >= 0) records[idx].status = action === 'approve' ? 'approved' : 'rejected';
-    renderQueue();
-    document.getElementById('btnApprove').disabled = true;
-    document.getElementById('btnReject').disabled  = true;
-    toast(action === 'approve' ? '✅ 已核准並通知病患' : '❌ 已駁回此記錄');
-
-    const next = records.findIndex(r => !r.status || r.status === 'pending');
-    if (next >= 0) setTimeout(() => selectRecord(next), 500);
-  } catch(e) {
-    toast('⚠️ 送出失敗：' + e.message);
-  }
-  setOverlay(false);
-}
-
-function buildPayload(r, action, score, advice) {
-  return {
-    action,
-    id:             r.id,
-    line_uid:       r.line_uid,
-    reviewerLineUid:reviewerUID,
-    score:          parseInt(score),
-    advice:         advice || r.advice || '',
-    cal:  parseFloat(document.getElementById('vCal').value)  || r.cal  || 0,
-    pro:  parseFloat(document.getElementById('vPro').value)  || r.pro  || 0,
-    fib:  parseFloat(document.getElementById('vFib').value)  || r.fib  || 0,
-    carb: parseFloat(document.getElementById('vCarb').value) || r.carb || 0,
-    fat:  parseFloat(document.getElementById('vFat').value)  || r.fat  || 0,
-  };
-}
-
-async function post(url, body) {
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error('HTTP ' + r.status);
-  return r;
-}
-
-function setOverlay(show, text = '處理中…') {
-  const el = document.getElementById('overlay');
-  el.style.display = show ? 'flex' : 'none';
-  document.getElementById('overlayText').textContent = text;
-}
-
-let _toastTimer;
-function toast(msg, ms = 3200) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => t.classList.remove('show'), ms);
-}
-
-function relTime(s) {
-  if (!s) return '—';
-  try {
-    const d   = new Date(s);
-    const now = new Date();
-    const diff = now - d;
-    if (diff < 60000)       return '剛剛';
-    if (diff < 3600000)     return Math.floor(diff/60000) + ' 分鐘前';
-    if (diff < 86400000)    return Math.floor(diff/3600000) + ' 小時前';
-    return d.toLocaleDateString('zh-TW') + ' ' +
-           d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-  } catch(e) { return s; }
-}
-
-function dec(v) {
-  try { return v ? decodeURIComponent(v) : ''; } catch(e) { return v || ''; }
-}
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/ g,'&gt;');
-}
-
-init();
+  function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(function(){t.style.display='none';},3000);}
+  function esc(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 </script>
 </body>
 </html>
