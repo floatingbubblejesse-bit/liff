@@ -234,7 +234,7 @@
   function approveItem(){
     if(currentIdx<0) return;
     var item=queue[currentIdx];
-    var payload={id:item.id,approved:true,score:parseInt(document.getElementById('scoreSlider').value),comment:document.getElementById('reviewComment').value.trim(),
+    var payload={id:item.id,row_number:item.row_number,approved:true,score:parseInt(document.getElementById('scoreSlider').value),comment:document.getElementById('reviewComment').value.trim(),
       nutrients:{calories:document.getElementById('nut_cal').value,protein:document.getElementById('nut_pro').value,fat:document.getElementById('nut_fat').value,
         carbs:document.getElementById('nut_carb').value,sodium:document.getElementById('nut_sodium').value,fiber:document.getElementById('nut_fiber').value}};
     document.getElementById('approveBtn').disabled=true;
