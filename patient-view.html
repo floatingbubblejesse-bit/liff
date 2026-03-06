@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>病患資料｜診間醫生</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --blue:#1565C0; --blue-light:#e8f0fe;
+      --green:#00897B; --green-light:#e0f2f1;
+      --red:#e53935; --orange:#f57c00;
+      --bg:#f0f4f8; --card:#fff; --text:#1a202c;
+      --muted:#718096; --border:#e2e8f0;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;overflow:hidden}
+    .header{background:linear-gradient(135deg,#1565C0,#0D47A1);color:white;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0}
+    .back-btn{background:rgba(255,255,255,0.2);border:none;color:white;padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+    .back-btn:hover{background:rgba(255,255,255,0.3)}
+    .header-info{flex:1}
+    .header-info h1{font-size:16px;font-weight:700}
+    .header-info p{font-size:11px;opacity:0.8;margin-top:1px}
+    .tab-bar{background:white;border-bottom:1px solid var(--border);display:flex;flex-shrink:0}
+    .tab-btn{flex:1;padding:12px 8px;border:none;background:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s}
+    .tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+    .main{flex:1;overflow:hidden;display:flex}
+    .tab-pane{display:none;flex:1;overflow-y:auto;padding:16px}
+    .tab-pane.active{display:flex;flex-direction:column;gap:14px}
+    .card{background:white;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+    .card-title{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+    .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:50vh;gap:14px}
+    .spinner{width:40px;height:40px;border:4px solid #e0e0e0;border-top-color:var(--blue);border-radius:50%;animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .error-box{margin:24px;padding:18px;background:#fff3f3;border:1px solid #ffcdd2;border-radius:12px;text-align:center;color:#c62828}
+    .profile-row{display:flex;align-items:center;gap:12px}
+    .avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#1565C0,#42A5F5);display:flex;align-items:center;justify-content:center;font-size:20px;color:white;font-weight:700;flex-shrink:0}
+    .profile-name{font-size:16px;font-weight:700}
+    .profile-sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .line-badge{font-size:11px;background:var(--green-light);color:#2e7d32;padding:2px 7px;border-radius:10px;margin-left:6px}
+    .metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .metric-item{background:#f8fafb;border-radius:10px;padding:10px 8px;text-align:center}
+    .metric-label{font-size:10px;color:var(--muted);margin-bottom:4px}
+    .metric-value{font-size:17px;font-weight:700}
+    .metric-unit{font-size:10px;color:#aaa}
+    .metric-diff{font-size:11px;margin-top:3px}
+    .diff-good{color:#2e7d32}.diff-warn{color:#e65100}.diff-same{color:#888}
+    .chart-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+    .ctab{padding:4px 11px;border-radius:16px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:#f0f0f0;color:#555}
+    .ctab.active{background:var(--blue);color:white}
+    .chart-wrap{position:relative;height:180px}
+    .table-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:11px}
+    th{background:#f5f5f5;padding:7px 5px;text-align:center;font-weight:700;color:#555;white-space:nowrap;position:sticky;top:0}
+    td{padding:7px 5px;text-align:center;border-bottom:1px solid #f0f0f0}
+    tr:last-child td{border-bottom:none}
+    .date-col{font-size:10px;color:#888}
+    .meal-card{background:white;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:8px}
+    .meal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .meal-date{font-size:12px;font-weight:700;color:var(--blue)}
+    .meal-status{font-size:10px;padding:2px 8px;border-radius:10px}
+    .status-approved{background:#e8f5e9;color:#2e7d32}
+    .status-pending{background:#fff8e1;color:#f57c00}
+    .meal-type{font-size:12px;color:#555;margin-bottom:6px}
+    .meal-photo{width:100%;max-height:160px;object-fit:cover;border-radius:8px;cursor:pointer}
+    .meal-analysis{font-size:11px;color:#666;margin-top:6px;line-height:1.5}
+    .no-data{text-align:center;color:#aaa;padding:24px;font-size:13px}
+    .presets-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+    .preset-btn{padding:9px 10px;background:#f0f4ff;border:1px solid #c5cae9;border-radius:8px;font-size:11px;color:#3949ab;cursor:pointer;text-align:left;line-height:1.4}
+    .preset-btn:hover{background:#e8eaf6}
+    .note-textarea{width:100%;min-height:120px;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;outline:none;line-height:1.6}
+    .note-textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,101,192,0.1)}
+    .char-count{font-size:11px;color:var(--muted);text-align:right;margin-top:4px}
+    .send-btn{width:100%;padding:13px;background:var(--blue);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px}
+    .send-btn:hover{background:#0d47a1}
+    .send-btn:disabled{background:#90a4ae;cursor:not-allowed}
+    .send-success{display:none;background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:10px;text-align:center;font-size:13px;font-weight:600;margin-top:8px}
+  </style>
+</head>
+<body>
+<div class="header">
+  <a class="back-btn" href="./doctor.html">← 返回</a>
+  <div class="header-info">
+    <h1 id="headerName">載入中...</h1>
+    <p id="headerSub">病患資料</p>
+  </div>
+</div>
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('body')">🏋️ 身體組成</button>
+  <button class="tab-btn" onclick="switchTab('meals')">🍱 餐食記錄</button>
+  <button class="tab-btn" onclick="switchTab('note')">📋 醫生建議</button>
+</div>
+<div class="main">
+  <div id="loadingDiv" class="loading" style="flex:1">
+    <div class="spinner"></div>
+    <p style="color:#888;font-size:13px">載入資料中...</p>
+  </div>
+  <div id="errorDiv" style="display:none;flex:1"></div>
+  <div id="tab-body" class="tab-pane" style="display:none"></div>
+  <div id="tab-meals" class="tab-pane" style="display:none">
+    <div id="mealsContent"><div class="no-data">載入中...</div></div>
+  </div>
+  <div id="tab-note" class="tab-pane" style="display:none">
+    <div class="card">
+      <div class="card-title">💬 快速預設建議</div>
+      <div class="presets-grid" id="presetsGrid"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">✏️ 建議內容</div>
+      <textarea class="note-textarea" id="noteText" placeholder="輸入給病患的建議..." oninput="updateChar()"></textarea>
+      <div class="char-count"><span id="charCount">0</span> 字</div>
+      <button class="send-btn" id="sendBtn" onclick="sendNote()">
+        <span>📤 傳送給病患（LINE）</span>
+      </button>
+      <div class="send-success" id="sendSuccess">✅ 建議已成功傳送！</div>
+    </div>
+  </div>
+</div>
+<script>
+  var GAS_URL  = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
+  var N8N      = 'https://huangcs.app.n8n.cloud/webhook';
+  var MEALS_WH = N8N + '/patient-meals';
+  var NOTE_WH  = N8N + '/doctor-note';
+
+  var PRESETS = [
+    {label:'體重控制',text:'建議維持規律飲食，控制每日熱量攝取，避免宵夜及高糖食物，搭配每週 3 次有氧運動。'},
+    {label:'運動處方',text:'建議每週至少 150 分鐘中等強度運動，可選擇快走、游泳或騎車，循序漸進增加強度。'},
+    {label:'血糖管理',text:'注意飲食中醣類的種類與份量，選擇低 GI 食物，定時定量進餐，避免空腹時間過長。'},
+    {label:'血壓控制',text:'減少鈉鹽攝取，多吃蔬菜水果，維持正常體重，規律運動，並按時服藥。'},
+    {label:'蛋白質攝取',text:'每日蛋白質建議攝取量為體重（kg）× 1.2~1.5g，優先選擇雞胸肉、魚、豆腐、蛋等優質蛋白。'},
+    {label:'睡眠建議',text:'充足睡眠對代謝與體重管理至關重要，建議每天睡足 7~8 小時，維持固定作息。'},
+    {label:'飲水建議',text:'每日飲水量建議為體重（kg）× 30~35 ml，分次補充，避免一次大量飲水，少喝含糖飲料。'},
+    {label:'減脂進度',text:'本週體脂率已有進步，請繼續保持！重點在飲食控制，建議記錄每日飲食，下次回診帶來。'},
+    {label:'肌肉量不足',text:'目前肌肉量偏低，建議增加阻力訓練，每週 2~3 次，同時提高蛋白質攝取幫助肌肉合成。'},
+    {label:'內臟脂肪警示',text:'內臟脂肪指數偏高，需特別注意，建議減少精緻澱粉及酒精攝取，配合核心肌群訓練。'},
+    {label:'維持期建議',text:'目前數據維持良好，請繼續保持現有飲食與運動習慣，每 2~3 個月回診追蹤即可。'},
+    {label:'下次回診',text:'建議 4 週後回診追蹤體組成變化，如有任何不適請提前聯絡。期待您下次的好成績！'},
+  ];
+
+  var METRICS = [
+    ['體重','體重','kg',true],['體脂率','體脂率','%',true],['肌肉量','肌肉量','kg',false],
+    ['水分比率','水分','%',false],['內臟脂肪指數','內臟脂肪','',true],
+    ['身體質量參數 (BMI)','BMI','',true],['基礎代謝 (BMR)','BMR','kcal',false],
+    ['腰圍','腰圍','cm',true],['臀圍','臀圍','cm',true],
+  ];
+
+  var chartInstance=null, allData=null, patientSn='', patientName='', patientLineUid='', activeTab='body';
+
+  var params = new URLSearchParams(window.location.search);
+  patientSn = params.get('id') || '';
+
+  if (!patientSn) {
+    showError('缺少病患 ID，請從醫生總覽頁面進入。');
+  } else {
+    buildPresets();
+    loadBodyData();
+  }
+
+  function buildPresets() {
+    var html = '';
+    PRESETS.forEach(function(p) {
+      html += '<button class="preset-btn" onclick="applyPreset(' + JSON.stringify(p.text) + ')">' + esc(p.label) + '</button>';
+    });
+    document.getElementById('presetsGrid').innerHTML = html;
+  }
+
+  function loadBodyData() {
+    fetch(GAS_URL + '?id=' + encodeURIComponent(patientSn))
+      .then(function(r){return r.json();})
+      .then(function(data){
+        if (data.error){showError(data.error);return;}
+        allData=data;
+        patientName=(data.customer&&data.customer.name)||patientSn;
+        patientLineUid=(data.customer&&data.customer.lineUid)||'';
+        document.getElementById('headerName').textContent=patientName;
+        document.getElementById('headerSub').textContent=patientSn+'　體組成資料';
+        renderBodyTab(data);
+        document.getElementById('loadingDiv').style.display='none';
+        showTab('body');
+      })
+      .catch(function(err){showError('資料載入失敗：'+err.message);});
+  }
+
+  function switchTab(name){
+    activeTab=name;
+    document.querySelectorAll('.tab-btn').forEach(function(b,i){
+      b.classList.toggle('active',['body','meals','note'][i]===name);
+    });
+    if(name==='meals') loadMeals();
+    showTab(name);
+  }
+
+  function showTab(name){
+    ['body','meals','note'].forEach(function(t){
+      var el=document.getElementById('tab-'+t);
+      if(el){el.style.display=t===name?'flex':'none';el.classList.toggle('active',t===name);}
+    });
+  }
+
+  function renderBodyTab(data){
+    var m=data.measurements||[], cust=data.customer||{};
+    var latest=m.length>0?m[m.length-1]:null, prev=m.length>1?m[m.length-2]:null;
+    var html='';
+    html+='<div class="card"><div class="profile-row">';
+    html+='<div class="avatar">'+esc((patientName||'?')[0])+'</div>';
+    html+='<div><div class="profile-name">'+esc(patientName);
+    if(cust.lineUid) html+='<span class="line-badge">LINE ✓</span>';
+    html+='</div><div class="profile-sub">院區病歷號：'+esc(patientSn)+'</div>';
+    if(cust.settingName) html+='<div class="profile-sub">'+esc(cust.settingName)+'</div>';
+    html+='</div></div></div>';
+    if(latest){
+      var d=(latest['測量日期/時間']||'').substring(0,10);
+      html+='<div class="card"><div class="card-title">📋 最新測量 <span style="font-weight:400;color:#aaa;font-size:10px">'+esc(d)+'</span></div>';
+      html+='<div class="metrics-grid">';
+      METRICS.forEach(function(meta){
+        var curr=parseFloat(latest[meta[0]]); if(isNaN(curr)) return;
+        var diffHtml='';
+        if(prev){var pv=parseFloat(prev[meta[0]]);
+          if(!isNaN(pv)){var diff=curr-pv;var good=(meta[3]&&diff<0)||(!meta[3]&&diff>0);
+            var cls=diff===0?'diff-same':(good?'diff-good':'diff-warn');
+            diffHtml='<div class="metric-diff '+cls+'">'+(diff>0?'↑+':(diff<0?'↓':'→'))+diff.toFixed(1)+meta[2]+'</div>';}}
+        html+='<div class="metric-item"><div class="metric-label">'+esc(meta[1])+'</div>';
+        html+='<div class="metric-value">'+curr+'<span class="metric-unit">'+esc(meta[2])+'</span></div>'+diffHtml+'</div>';
+      });
+      html+='</div></div>';
+    }
+    if(m.length>1){
+      html+='<div class="card"><div class="card-title">📈 趨勢圖</div><div class="chart-tabs">';
+      METRICS.forEach(function(meta,idx){
+        if(!m.some(function(r){return !isNaN(parseFloat(r[meta[0]]));})){ return; }
+        html+='<button class="ctab'+(idx===0?' active':'')+'" onclick="switchChart(''+meta[0]+'',this)">'+esc(meta[1])+'</button>';
+      });
+      html+='</div><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>';
+    }
+    if(m.length>0){
+      html+='<div class="card"><div class="card-title">📄 測量歷史</div><div class="table-wrap"><table><tr><th>日期</th>';
+      METRICS.forEach(function(meta){
+        if(m.some(function(r){return !isNaN(parseFloat(r[meta[0]]));})){ html+='<th>'+esc(meta[1])+'</th>'; }
+      });
+      html+='</tr>';
+      m.slice().reverse().forEach(function(row){
+        html+='<tr><td class="date-col">'+esc((row['測量日期/時間']||'').substring(0,10))+'</td>';
+        METRICS.forEach(function(meta){
+          if(!m.some(function(r){return !isNaN(parseFloat(r[meta[0]]));})){return;}
+          var v=parseFloat(row[meta[0]]);
+          html+='<td>'+(isNaN(v)?'-':v)+'</td>';
+        });
+        html+='</tr>';
+      });
+      html+='</table></div></div>';
+    }
+    document.getElementById('tab-body').innerHTML=html;
+    if(m.length>1){
+      setTimeout(function(){
+        for(var i=0;i<METRICS.length;i++){
+          if(m.some(function(row){return !isNaN(parseFloat(row[METRICS[i][0]]));})){renderChart(METRICS[i][0]);break;}
+        }
+      },100);
+    }
+  }
+
+  function renderChart(key){
+    var m=allData.measurements, meta=METRICS.find(function(x){return x[0]===key;});
+    var labels=[],values=[];
+    m.forEach(function(row){var v=parseFloat(row[key]);if(!isNaN(v)){labels.push((row['測量日期/時間']||'').substring(0,10));values.push(v);}});
+    var canvas=document.getElementById('trendChart'); if(!canvas) return;
+    if(chartInstance) chartInstance.destroy();
+    chartInstance=new Chart(canvas.getContext('2d'),{
+      type:'line',
+      data:{labels:labels,datasets:[{label:meta[1],data:values,borderColor:'#1565C0',backgroundColor:'rgba(21,101,192,0.07)',tension:0.3,pointBackgroundColor:'#1565C0',pointRadius:4,fill:true}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},maxRotation:45}},y:{ticks:{font:{size:10}}}}}
+    });
+  }
+
+  function switchChart(key,btn){
+    document.querySelectorAll('.ctab').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active'); renderChart(key);
+  }
+
+  function loadMeals(){
+    document.getElementById('mealsContent').innerHTML='<div class="no-data">載入餐食記錄中...</div>';
+    fetch(MEALS_WH+'?pid='+encodeURIComponent(patientSn))
+      .then(function(r){return r.json();})
+      .then(function(data){renderMeals(data);})
+      .catch(function(err){document.getElementById('mealsContent').innerHTML='<div class="no-data">載入失敗：'+esc(err.message)+'</div>';});
+  }
+
+  function renderMeals(data){
+    var list=data.meals||data||[];
+    if(!Array.isArray(list)||list.length===0){
+      document.getElementById('mealsContent').innerHTML='<div class="no-data">尚無餐食記錄</div>'; return;
+    }
+    var html='';
+    list.forEach(function(m){
+      var approved=m.approved||m.status==='approved';
+      html+='<div class="meal-card">';
+      html+='<div class="meal-header"><span class="meal-date">'+esc(m.date||m.timestamp||'')+'</span>';
+      html+='<span class="meal-status '+(approved?'status-approved':'status-pending')+'">'+(approved?'✓ 已審核':'⏳ 待審核')+'</span></div>';
+      if(m.mealType||m.type) html+='<div class="meal-type">'+esc(m.mealType||m.type||'')+'</div>';
+      if(m.photoUrl||m.image) html+='<img class="meal-photo" src="'+esc(m.photoUrl||m.image)+'" onclick="window.open(this.src)" onerror="this.style.display='none'">';
+      if(m.analysis||m.comment) html+='<div class="meal-analysis">'+esc(m.analysis||m.comment||'')+'</div>';
+      html+='</div>';
+    });
+    document.getElementById('mealsContent').innerHTML=html;
+  }
+
+  function applyPreset(text){document.getElementById('noteText').value=text;updateChar();}
+  function updateChar(){document.getElementById('charCount').textContent=document.getElementById('noteText').value.length;}
+
+  function sendNote(){
+    var note=document.getElementById('noteText').value.trim();
+    if(!note){alert('請先輸入建議內容');return;}
+    if(!patientLineUid){alert('此病患尚未綁定 LINE，無法傳送。');return;}
+    var btn=document.getElementById('sendBtn');
+    btn.disabled=true;
+    btn.innerHTML='<div class="spinner" style="width:18px;height:18px;border-width:3px"></div><span>傳送中...</span>';
+    fetch(NOTE_WH,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({lineUid:patientLineUid,note:note,patientSn:patientSn})})
+    .then(function(r){return r.json();})
+    .then(function(res){
+      btn.disabled=false; btn.innerHTML='<span>📤 傳送給病患（LINE）</span>';
+      if(res.ok){
+        document.getElementById('sendSuccess').style.display='block';
+        setTimeout(function(){document.getElementById('sendSuccess').style.display='none';},4000);
+        document.getElementById('noteText').value=''; updateChar();
+      } else { alert('傳送失敗：'+(res.error||JSON.stringify(res))); }
+    })
+    .catch(function(err){btn.disabled=false;btn.innerHTML='<span>📤 傳送給病患（LINE）</span>';alert('傳送失敗：'+err.message);});
+  }
+
+  function showError(msg){
+    document.getElementById('loadingDiv').style.display='none';
+    var el=document.getElementById('errorDiv');
+    el.innerHTML='<div class="error-box">⚠️ '+esc(msg)+'</div>'; el.style.display='block';
+  }
+  function esc(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+</script>
+</body>
+</html>
