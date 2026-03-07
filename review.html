@@ -232,7 +232,7 @@
       return '<div class="queue-item'+(isActive?' active':'')+(approved?' approved':'')+'" onclick="selectItem('+idx+')">'+
         '<input type="checkbox" class="queue-checkbox"'+(isChecked?' checked':'')+(approved?' disabled':'')+' onclick="toggleCheck(event,'+(item.id||idx)+')">'+
         '<div class="qi-info">'+
-          '<div class="qi-name">'+esc(item.patientName||item.name||'未知病患')+
+          '<div class="qi-name">'+esc((item.id||'').split('_')[0]||item.patientName||item.name||'未知病患')+
             '<span class="qi-badge '+(approved?'badge-approved':'badge-pending')+'">'+(approved?'已審核':'待審')+'</span>'+
           '</div>'+
           '<div class="qi-sub">'+esc(item.mealType||item.type||'')+'　'+esc((item.timestamp||item.date||'').substring(0,16))+'</div>'+
@@ -252,7 +252,7 @@
     var html='';
     if(item.photoUrl||item.image||item['LINE圖片ID']) html+='<div class="detail-card"><div class="dc-title">📸 餐食照片<\/div><img class="meal-photo" src="'+esc(item.photoUrl||item.image||(item['LINE圖片ID']?'https://huangcs.app.n8n.cloud/webhook/meal-photo?id='+item['LINE圖片ID']:''))+'" onclick="window.open(this.src)" onerror="this.style.display=\'none\'">';
     html+='<div class="detail-card"><div class="dc-title">📋 記錄資訊</div><div class="meal-meta">';
-    if(item.patientName) html+='<span class="meta-tag">👤 '+esc(item.patientName)+'</span>';
+    var dName=(item.id||'').split('_')[0]||item.patientName||item.name||''; if(dName) html+='<span class="meta-tag">👤 '+esc(dName)+'</span>';
     if(item.mealType||item.type) html+='<span class="meta-tag">🍽️ '+esc(item.mealType||item.type)+'</span>';
     if(item.timestamp||item.date) html+='<span class="meta-tag">📅 '+esc((item.timestamp||item.date||'').substring(0,16))+'</span>';
     html+='</div>';
