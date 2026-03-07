@@ -321,7 +321,7 @@
   if(selectedIds.size===0) return;
   var ids=Array.from(selectedIds);
   var score=parseInt(document.getElementById('scoreSlider').value);
-  var comment=document.getElementById('reviewComment').value.trim();
+  var manualComment=document.getElementById('reviewComment').value.trim();
   document.getElementById('batchBtn').disabled=true;
   var items=ids.map(function(id){return queue.find(function(it,i){return(it.id||i)===id;});}).filter(Boolean);
   var total=items.length, done=0, failed=0;
@@ -329,8 +329,16 @@
   document.getElementById('batchCount').textContent='0/'+total;
 
   function processItem(item){
-    var payload={id:item.id,row_number:item.row_number,line_uid:item.line_uid,approved:true,score:score,comment:comment,batchMode:true,
-      nutrients:{calories:item.calories||'',protein:item.protein||'',fat:item.fat||'',carbs:item.carbs||'',sodium:item.sodium||'',fiber:item.fiber||''}};
+    var itemComment=manualComment||item.comment||'';
+    var payload={id:item.id,row_number:item.row_number,line_uid:item.line_uid,approved:true,score:score,comment:itemComment,batchMode:true,
+      nutrients:{
+        calories: item.calories||'',
+        protein:  item.protein||'',
+        fat:      (item.fat||item.fat===0 && item.fat!==0) ? item.fat : (item.fat||''),
+        carbs:    item.carbs||'',
+        sodium:   item.sodium||'',
+        fiber:    item.fiber||''
+      }};
     return fetch(N8N_REVIEW,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
       .then(function(r){return r.json();})
       .then(function(){item.approved=true;item.status='approved';done++;document.getElementById('batchCount').textContent=done+'/'+total;})
@@ -349,7 +357,7 @@
 
   Promise.all(workers).then(function(){
     selectedIds.clear();
-    var msg='✅ 批次審核完成（'+done-failed+'筆）';
+    var msg='✅ 批次審核完成（'+(done-failed)+'筆）';
     if(failed) msg+=' ❌失敗'+failed+'筆';
     showToast(msg);
     document.getElementById('batchCount').textContent='0';
