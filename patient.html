@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>我的飲食紀錄</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    :root {
+      --primary: #3DAE8F;
+      --primary-dark: #2E8B6E;
+      --primary-light: #E8F7F3;
+      --warning: #F5A623;
+      --danger: #E05252;
+      --success: #4CAF50;
+      --text: #2D3748;
+      --text-muted: #718096;
+      --border: #E2E8F0;
+      --bg: #F7FDFC;
+      --card: #FFFFFF;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 32px;
+    }
+
+    /* ── Loading ── */
+    #loading {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: var(--primary-light);
+      z-index: 999;
+      gap: 16px;
+    }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 4px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { color: var(--text-muted); font-size: 14px; }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+      padding: 20px 16px 24px;
+      color: white;
+    }
+    .header-top {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px;
+    }
+    .avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.6);
+      object-fit: cover;
+      background: rgba(255,255,255,0.3);
+    }
+    .avatar-placeholder {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .header-info h1 { font-size: 18px; font-weight: 600; }
+    .header-info p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+
+    /* ── Protein Progress ── */
+    .protein-card {
+      background: rgba(255,255,255,0.18);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .protein-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px;
+    }
+    .protein-label { font-size: 13px; opacity: 0.9; }
+    .protein-value { font-size: 13px; font-weight: 600; }
+    .progress-bar-bg {
+      background: rgba(255,255,255,0.3);
+      border-radius: 99px; height: 8px; overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%; border-radius: 99px;
+      background: white;
+      transition: width 0.8s ease;
+    }
+    .protein-status {
+      margin-top: 8px; font-size: 12px;
+      text-align: center; opacity: 0.95;
+    }
+
+    /* ── Stats Row ── */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px; padding: 12px 16px;
+    }
+    .stat-card {
+      background: var(--card); border-radius: 10px;
+      padding: 10px; text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .stat-value { font-size: 20px; font-weight: 700; color: var(--primary-dark); }
+    .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Section ── */
+    .section-title {
+      padding: 16px 16px 8px;
+      font-size: 14px; font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+
+    /* ── Meal Card ── */
+    .meal-card {
+      background: var(--card);
+      border-radius: 14px;
+      margin: 0 12px 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .meal-date-bar {
+      padding: 8px 14px;
+      background: var(--primary-light);
+      font-size: 12px;
+      color: var(--primary-dark);
+      font-weight: 600;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .status-badge {
+      font-size: 11px; padding: 2px 8px;
+      border-radius: 99px; font-weight: 600;
+    }
+    .status-pending  { background: #FEF3C7; color: #92400E; }
+    .status-approved { background: #D1FAE5; color: #065F46; }
+    .status-rejected { background: #FEE2E2; color: #991B1B; }
+
+    .meal-image-wrap {
+      width: 100%; height: 200px; overflow: hidden;
+      background: #f0f4f8;
+      position: relative;
+    }
+    .meal-image-wrap img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .meal-image-wrap .img-placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px; background: var(--primary-light);
+    }
+
+    .meal-body { padding: 12px 14px; }
+    .foods-text {
+      font-size: 14px; color: var(--text);
+      line-height: 1.5; margin-bottom: 12px;
+    }
+
+    /* ── Macros Grid ── */
+    .macros-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 6px; margin-bottom: 12px;
+    }
+    .macro-item {
+      text-align: center; padding: 6px 4px;
+      background: var(--bg); border-radius: 8px;
+    }
+    .macro-value {
+      font-size: 15px; font-weight: 700;
+      color: var(--primary-dark);
+    }
+    .macro-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── AI Note ── */
+    .ai-note {
+      background: #F0FFF4;
+      border-left: 3px solid var(--primary);
+      border-radius: 0 8px 8px 0;
+      padding: 8px 10px;
+      font-size: 13px; color: #2D6A4F;
+      line-height: 1.5; margin-bottom: 10px;
+    }
+    .ai-note-label {
+      font-size: 11px; font-weight: 700;
+      color: var(--primary); margin-bottom: 4px;
+    }
+
+    /* ── Nutritionist Advice ── */
+    .nutrition-advice {
+      background: #FFF8E1;
+      border-left: 3px solid var(--warning);
+      border-radius: 0 8px 8px 0;
+      padding: 8px 10px;
+      font-size: 13px; color: #7B5800;
+      line-height: 1.5;
+    }
+    .nutrition-advice-label {
+      font-size: 11px; font-weight: 700;
+      color: var(--warning); margin-bottom: 4px;
+    }
+    .score-row {
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 4px;
+    }
+    .score-stars { color: var(--warning); font-size: 14px; }
+
+    /* ── No Records ── */
+    .empty-state {
+      text-align: center; padding: 48px 24px;
+      color: var(--text-muted);
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+    /* ── Error ── */
+    #error-screen {
+      display: none; padding: 32px 24px; text-align: center;
+    }
+    #error-screen .error-icon { font-size: 56px; margin-bottom: 16px; }
+    #error-screen h2 { font-size: 18px; margin-bottom: 8px; }
+    #error-screen p { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+
+    #main { display: none; }
+
+    /* ── Date separator ── */
+    .date-sep {
+      text-align: center; margin: 4px 0 10px;
+      font-size: 12px; color: var(--text-muted);
+      position: relative;
+    }
+    .date-sep::before, .date-sep::after {
+      content: ''; position: absolute;
+      top: 50%; width: 28%; height: 1px;
+      background: var(--border);
+    }
+    .date-sep::before { left: 12px; }
+    .date-sep::after  { right: 12px; }
+  </style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p>載入中…</p>
+</div>
+
+<!-- Error -->
+<div id="error-screen">
+  <div class="error-icon">🔒</div>
+  <h2>無法載入</h2>
+  <p id="error-msg">請在 LINE App 中開啟此頁面</p>
+</div>
+
+<!-- Main -->
+<div id="main">
+  <header>
+    <div class="header-top">
+      <div id="avatar-wrap">
+        <div class="avatar-placeholder">🧑</div>
+      </div>
+      <div class="header-info">
+        <h1 id="patient-name">載入中…</h1>
+        <p>我的飲食紀錄</p>
+      </div>
+    </div>
+    <div class="protein-card">
+      <div class="protein-header">
+        <span class="protein-label">今日蛋白質進度</span>
+        <span class="protein-value" id="protein-text">—</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="protein-bar" style="width:0%"></div>
+      </div>
+      <div class="protein-status" id="protein-status">計算中…</div>
+    </div>
+  </header>
+
+  <!-- Today stats -->
+  <div class="stats-row" id="stats-row"></div>
+
+  <!-- Records -->
+  <div class="section-title">歷史紀錄</div>
+  <div id="records-list"></div>
+</div>
+
+<script>
+// ─── 設定區（需修改） ─────────────────────────────
+const LIFF_ID       = '2009326025-d6EV7T42';         // LIFF App ID
+const API_URL       = 'https://huangcs.app.n8n.cloud/webhook/patient-history';
+const IMAGE_PROXY   = 'https://huangcs.app.n8n.cloud/webhook/meal-photo';
+// ─────────────────────────────────────────────────
+
+function showError(msg) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('error-screen').style.display = 'block';
+  document.getElementById('error-msg').textContent = msg || '請在 LINE App 中開啟此頁面';
+}
+
+function getTaipeiToday() {
+  const now = new Date(Date.now() + 8 * 3600000);
+  return now.toISOString().split('T')[0]; // YYYY-MM-DD
+}
+
+function isToday(dateStr) {
+  const today = getTaipeiToday();
+  const d = String(dateStr || '');
+  const year = today.split('-')[0];
+  const month = String(parseInt(today.split('-')[1]));
+  const day   = String(parseInt(today.split('-')[2]));
+  // Handle formats like "2026/3/8 下午9:00" or "2026-03-08"
+  return d.includes(today) || d.startsWith(year + '/' + month + '/' + day);
+}
+
+function statusClass(status) {
+  if (!status || status === '待審核') return 'status-pending';
+  if (status === '已核准') return 'status-approved';
+  if (status === '已駁回') return 'status-rejected';
+  return 'status-pending';
+}
+
+function statusLabel(status) {
+  if (!status || status === '待審核') return '待審核';
+  if (status === '已核准') return '✅ 已核准';
+  if (status === '已駁回') return '⚠️ 已駁回';
+  return status;
+}
+
+function scoreToStars(score) {
+  const n = parseFloat(score);
+  if (isNaN(n)) return '';
+  const full = Math.round(n);
+  return '★'.repeat(Math.min(full, 5)) + '☆'.repeat(Math.max(0, 5 - full));
+}
+
+function renderProteinProgress(records, recommended, weight) {
+  const today = getTaipeiToday();
+  const todayRecs = records.filter(r => isToday(r.date));
+  const total = todayRecs.reduce((s, r) => s + (r.protein || 0), 0);
+  const excess = weight * 2;
+  const rec = recommended || 0;
+
+  document.getElementById('protein-text').textContent =
+    Math.round(total) + 'g' + (rec ? ' / ' + Math.round(rec) + 'g' : '');
+
+  if (rec > 0) {
+    const pct = Math.min((total / excess) * 100, 100);
+    document.getElementById('protein-bar').style.width = pct + '%';
+    let msg = '';
+    if (total >= excess && excess > 0)
+      msg = '🚨 蛋白質過量喔！今日已攝取 ' + Math.round(total) + 'g，超過上限 ' + Math.round(excess) + 'g';
+    else if (total >= rec)
+      msg = '🎉 恭喜達標！今日蛋白質共 ' + Math.round(total) + 'g（目標 ' + Math.round(rec) + 'g）';
+    else
+      msg = '💪 距離目標還有 ' + Math.round(rec - total) + 'g，加油！';
+    document.getElementById('protein-status').textContent = msg;
+  } else {
+    document.getElementById('protein-bar').style.width = '0%';
+    document.getElementById('protein-status').textContent = '今日攝取：' + Math.round(total) + 'g';
+  }
+
+  // Today stats
+  const cal   = todayRecs.reduce((s, r) => s + (r.calories || 0), 0);
+  const carb  = todayRecs.reduce((s, r) => s + (r.carbs || 0), 0);
+  const fat   = todayRecs.reduce((s, r) => s + (r.fat || 0), 0);
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-value">${Math.round(cal)}</div>
+      <div class="stat-label">今日熱量 kcal</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${Math.round(total)}</div>
+      <div class="stat-label">今日蛋白質 g</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${todayRecs.length}</div>
+      <div class="stat-label">今日餐數</div>
+    </div>
+  `;
+}
+
+function formatDate(dateStr) {
+  // Format: "2026/3/8 下午1:30" → "3月8日 下午1:30"
+  const m = String(dateStr).match(/(\d+)\/(\d+)\/(\d+)\s*(.*)/);
+  if (m) return `${m[2]}月${m[3]}日 ${m[4]}`;
+  return dateStr;
+}
+
+function getDateGroup(dateStr) {
+  const m = String(dateStr).match(/(\d{4})\/(\d+)\/(\d+)/);
+  if (!m) return dateStr;
+  return `${m[1]} 年 ${m[2]} 月 ${m[3]} 日`;
+}
+
+function renderRecords(records) {
+  const list = document.getElementById('records-list');
+  if (!records || records.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🥗</div><p>還沒有餐食紀錄</p></div>`;
+    return;
+  }
+
+  let lastDateGroup = '';
+  let html = '';
+
+  records.forEach(r => {
+    const dg = getDateGroup(r.date);
+    if (dg !== lastDateGroup) {
+      html += `<div class="date-sep">${dg}</div>`;
+      lastDateGroup = dg;
+    }
+
+    const imgUrl = r.imageId ? `${IMAGE_PROXY}?id=${r.imageId}` : '';
+    const imgHtml = imgUrl
+      ? `<img src="${imgUrl}" onerror="this.parentNode.innerHTML='<div class=img-placeholder>🍱</div>'" loading="lazy">`
+      : `<div class="img-placeholder">🍱</div>`;
+
+    const aiNote = r.aiNote
+      ? `<div class="ai-note"><div class="ai-note-label">🤖 AI 飲食建議</div>${escHtml(r.aiNote)}</div>`
+      : '';
+
+    let reviewHtml = '';
+    if (r.status === '已核准' || r.status === '已駁回') {
+      const stars = r.nutritionScore ? `<div class="score-row"><span class="score-stars">${scoreToStars(r.nutritionScore)}</span><span style="font-size:12px;color:#92400E">(${r.nutritionScore}分)</span></div>` : '';
+      const advice = r.nutritionistAdvice
+        ? `<div>${escHtml(r.nutritionistAdvice)}</div>` : '<div>（無備註）</div>';
+      reviewHtml = `<div class="nutrition-advice">
+        <div class="nutrition-advice-label">👩‍⚕️ 營養師建議</div>
+        ${stars}${advice}
+      </div>`;
+    }
+
+    html += `
+    <div class="meal-card">
+      <div class="meal-date-bar">
+        <span>${formatDate(r.date)}</span>
+        <span class="status-badge ${statusClass(r.status)}">${statusLabel(r.status)}</span>
+      </div>
+      <div class="meal-image-wrap">${imgHtml}</div>
+      <div class="meal-body">
+        <div class="foods-text">${escHtml(r.foods || '（無資料）')}</div>
+        <div class="macros-grid">
+          <div class="macro-item">
+            <div class="macro-value">${Math.round(r.calories || 0)}</div>
+            <div class="macro-label">熱量 kcal</div>
+          </div>
+          <div class="macro-item">
+            <div class="macro-value">${Math.round(r.protein || 0)}</div>
+            <div class="macro-label">蛋白質 g</div>
+          </div>
+          <div class="macro-item">
+            <div class="macro-value">${Math.round(r.carbs || 0)}</div>
+            <div class="macro-label">碳水 g</div>
+          </div>
+          <div class="macro-item">
+            <div class="macro-value">${Math.round(r.fat || 0)}</div>
+            <div class="macro-label">脂肪 g</div>
+          </div>
+          <div class="macro-item">
+            <div class="macro-value">${Math.round(r.fiber || 0)}</div>
+            <div class="macro-label">纖維 g</div>
+          </div>
+        </div>
+        ${aiNote}
+        ${reviewHtml}
+      </div>
+    </div>`;
+  });
+
+  list.innerHTML = html;
+}
+
+function escHtml(str) {
+  return String(str || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function fetchRecords(userId) {
+  const resp = await fetch(`${API_URL}?userId=${encodeURIComponent(userId)}`);
+  if (!resp.ok) throw new Error('API error ' + resp.status);
+  return await resp.json();
+}
+
+async function init() {
+  try {
+    // ── Try URL param first (for testing / fallback) ──
+    const urlParams = new URLSearchParams(location.search);
+    const urlUserId = urlParams.get('userId');
+
+    let userId = null;
+    let displayName = null;
+    let pictureUrl = null;
+
+    if (LIFF_ID && LIFF_ID !== 'YOUR_LIFF_ID_HERE') {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isLoggedIn()) { liff.login(); return; }
+        const profile = await liff.getProfile();
+        userId      = profile.userId;
+        displayName = profile.displayName;
+        pictureUrl  = profile.pictureUrl;
+      } catch (liffErr) {
+        console.warn('LIFF init failed, trying URL param:', liffErr);
+        if (!urlUserId) throw liffErr;
+      }
+    }
+
+    // Fallback: use URL param
+    if (!userId && urlUserId) {
+      userId = urlUserId;
+      displayName = '患者';
+    }
+
+    if (!userId) {
+      showError('請在 LINE App 中開啟此頁面，或確認 LIFF 設定是否正確');
+      return;
+    }
+
+    // Show avatar
+    if (pictureUrl) {
+      document.getElementById('avatar-wrap').innerHTML =
+        `<img class="avatar" src="${pictureUrl}" alt="avatar">`;
+    }
+    document.getElementById('patient-name').textContent = displayName || '您好';
+
+    // Fetch data
+    const data = await fetchRecords(userId);
+
+    // Update name if patient name available
+    if (data.patient?.name) {
+      document.getElementById('patient-name').textContent = data.patient.name;
+    }
+
+    // Render protein progress
+    renderProteinProgress(
+      data.records || [],
+      data.patient?.recommendedProtein || 0,
+      data.patient?.weight || 0
+    );
+
+    // Render records
+    renderRecords(data.records || []);
+
+    // Show main
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+
+  } catch (err) {
+    console.error('Error:', err);
+    showError('載入失敗：' + err.message);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
