@@ -261,7 +261,7 @@
     if(item.calories){     var n=item.nutrients||{};
       html+='<div class="detail-card"><div class="dc-title">🤖 AI 估算營養素</div><div class="nutrients-grid">';
       [['熱量','calories','kcal'],['蛋白質','protein','g'],['脂肪','fat','g'],['醣類','carbs','g'],['鈉','sodium','mg'],['纖維','fiber','g']].forEach(function(p){
-        var val=item[p[1]]||(n&&n[p[1]])||'--';
+        var val=item[p[1]]!=null?item[p[1]]:((n&&n[p[1]]!=null)?n[p[1]]:'--');
         html+='<div class="nut-item"><div class="nut-label">'+p[0]+'</div><div class="nut-val">'+val+'<span style="font-size:9px;color:#aaa"> '+p[2]+'</span></div></div>';
       });
       html+='</div></div>';
@@ -274,12 +274,12 @@
     document.getElementById('scoreLabel').textContent=item.score||7;
     document.getElementById('reviewComment').value=item.comment||'';
     var n=item.nutrients||{};
-    document.getElementById('nut_cal').value=item.calories||n.calories||'';
-    document.getElementById('nut_pro').value=item.protein||n.protein||'';
-    document.getElementById('nut_fat').value=item.fat||n.fat||'';
-    document.getElementById('nut_carb').value=item.carbs||n.carbs||'';
-    document.getElementById('nut_sodium').value=item.sodium||n.sodium||'';
-    document.getElementById('nut_fiber').value=item.fiber||n.fiber||'';
+    document.getElementById('nut_cal').value=item.calories??n.calories??'';
+    document.getElementById('nut_pro').value=item.protein??n.protein??'';
+    document.getElementById('nut_fat').value=item.fat??n.fat??'';
+    document.getElementById('nut_carb').value=item.carbs??n.carbs??'';
+    document.getElementById('nut_sodium').value=item.sodium??n.sodium??'';
+    document.getElementById('nut_fiber').value=item.fiber??n.fiber??'';
   }
 
   function applyPreset(idx){var el=document.getElementById('reviewComment');el.value=(el.value?el.value+'\n':'')+PRESETS[idx].text;}
@@ -332,12 +332,12 @@
     var itemComment=manualComment||item.comment||'';
     var payload={id:item.id,row_number:item.row_number,line_uid:item.line_uid,approved:true,score:score,comment:itemComment,batchMode:true,
       nutrients:{
-        calories: item.calories||'',
-        protein:  item.protein||'',
-        fat:      (item.fat||item.fat===0 && item.fat!==0) ? item.fat : (item.fat||''),
-        carbs:    item.carbs||'',
-        sodium:   item.sodium||'',
-        fiber:    item.fiber||''
+        calories: item.calories??'',
+        protein:  item.protein??'',
+        fat:      item.fat??'',
+        carbs:    item.carbs??'',
+        sodium:   item.sodium??'',
+        fiber:    item.fiber??''
       }};
     return fetch(N8N_REVIEW,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
       .then(function(r){return r.json();})
