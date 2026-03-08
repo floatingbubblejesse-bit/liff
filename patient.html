@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>我的飲食紀錄</title>
-    <!-- iOS WKWebView history.replaceState patch -->
-    <script>(function(){var o=history.replaceState.bind(history);history.replaceState=function(s,t,u){try{o(s,t,u)}catch(e){if(!e||!e.message||e.message.indexOf('did not match')===-1)throw e}};})();</script>
+    <!-- iOS WKWebView history patch — must be before LIFF SDK -->
+  <script>(function(){function p(f){return function(s,t,u){try{f(s,t,u)}catch(e){if(!e||!e.message||e.message.indexOf('did not match')===-1)throw e}}}; history.replaceState=p(history.replaceState.bind(history));history.pushState=p(history.pushState.bind(history));})();</script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     :root {
@@ -510,7 +510,17 @@ async function init() {
         displayName = profile.displayName;
         pictureUrl  = profile.pictureUrl;
       } catch (liffErr) {
-        console.warn('LIFF init failed, trying URL param:', liffErr);
+        console.warn('LIFF init failed:', liffErr);
+        // iOS WKWebView sometimes throws "did not match" on first open — reload once
+        if (liffErr.message && liffErr.message.indexOf('did not match') !== -1) {
+          if (!sessionStorage.getItem('_liff_retry')) {
+            sessionStorage.setItem('_liff_retry', '1');
+            window.location.reload();
+            return;
+          }
+          showError('請關閉此視窗，重新點選選單按鈕開啟');
+          return;
+        }
         if (!urlUserId) throw liffErr;
       }
     }
