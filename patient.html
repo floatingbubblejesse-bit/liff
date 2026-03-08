@@ -442,14 +442,14 @@ function escHtml(str) {
 }
 
 function formatDate(dateStr) {
-  const m = String(dateStr).match(/(\ d+)\/(\ d+)\/(\ d+)\s*(.*)/);
+  const m = String(dateStr).match(/(\d+)\/(\d+)\/(\d+)\s*(.*)/);
   if (m) return `${m[2]}月${m[3]}日 ${m[4]}`;
   return dateStr;
 }
 
 // Extract YYYY-MM-DD key from date string like "2026/3/8 下午1:30"
 function toDateKey(dateStr) {
-  const m = String(dateStr).match(/(\ d{4})\/(\ d+)\/(\ d+)/);
+  const m = String(dateStr).match(/(\d{4})\/(\d+)\/(\d+)/);
   if (!m) return '';
   return m[1] + '-' + String(m[2]).padStart(2,'0') + '-' + String(m[3]).padStart(2,'0');
 }
