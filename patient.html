@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>我的飲食紀錄</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <!-- iOS WKWebView history.replaceState patch -->
+    <script>(function(){var o=history.replaceState.bind(history);history.replaceState=function(s,t,u){try{o(s,t,u)}catch(e){if(!e||!e.message||e.message.indexOf('did not match')===-1)throw e}};})();</script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     :root {
       --primary: #3DAE8F;
