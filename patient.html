@@ -147,32 +147,93 @@
       width: 100% !important;
     }
 
-    /* ── Accordion Record List ── */
-    .accordion-item {
+    /* ── Day Accordion (outer) ── */
+    .day-accordion {
       background: var(--card);
-      border-radius: 12px;
-      margin: 0 12px 8px;
+      border-radius: 14px;
+      margin: 0 12px 10px;
       overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
-    .accordion-header {
+    .day-header {
       display: flex; align-items: center;
-      padding: 11px 14px;
+      padding: 13px 14px;
       cursor: pointer;
       user-select: none;
       gap: 10px;
       -webkit-tap-highlight-color: transparent;
     }
-    .accordion-header:active { background: #f8fffe; }
-    .accordion-date {
+    .day-header:active { background: #f0faf7; }
+    .day-icon { font-size: 18px; flex-shrink: 0; }
+    .day-info { flex: 1; }
+    .day-date-label {
+      font-size: 15px; font-weight: 700; color: var(--text);
+    }
+    .day-summary {
+      font-size: 12px; color: var(--text-muted); margin-top: 2px;
+    }
+    .day-protein-badge {
+      font-size: 13px; font-weight: 700;
+      color: var(--primary-dark);
+      background: var(--primary-light);
+      border-radius: 99px;
+      padding: 3px 10px;
+      flex-shrink: 0;
+    }
+    .day-arrow {
+      font-size: 11px; color: var(--text-muted);
+      transition: transform 0.25s ease;
+      flex-shrink: 0;
+    }
+    .day-accordion.open .day-arrow { transform: rotate(180deg); }
+
+    .day-body {
+      display: none;
+      border-top: 1px solid var(--border);
+      padding: 8px 10px 10px;
+      background: #FAFFFE;
+    }
+    .day-accordion.open .day-body { display: block; }
+
+    /* ── Meal Card (inner, inside a day) ── */
+    .meal-card {
+      background: var(--card);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+    }
+    .meal-card:last-child { margin-bottom: 0; }
+    .meal-card-header {
+      display: flex; align-items: center;
+      padding: 10px 12px;
+      cursor: pointer;
+      user-select: none;
+      gap: 8px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .meal-card-header:active { background: #f8fffe; }
+    .meal-card-time {
       flex: 1;
-      font-size: 13px; color: var(--text);
-      font-weight: 500;
+      font-size: 13px; color: var(--text); font-weight: 500;
     }
-    .accordion-protein {
+    .meal-card-protein {
       font-size: 12px; color: var(--primary-dark); font-weight: 600;
-      margin-right: 6px;
     }
+    .meal-card-arrow {
+      font-size: 10px; color: var(--text-muted);
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+    .meal-card.open .meal-card-arrow { transform: rotate(180deg); }
+    .meal-card-body {
+      display: none;
+      border-top: 1px solid var(--border);
+    }
+    .meal-card.open .meal-card-body { display: block; }
+
+    /* ── Status badge ── */
     .status-badge {
       font-size: 11px; padding: 2px 8px;
       border-radius: 99px; font-weight: 600;
@@ -181,18 +242,6 @@
     .status-pending  { background: #FEF3C7; color: #92400E; }
     .status-approved { background: #D1FAE5; color: #065F46; }
     .status-rejected { background: #FEE2E2; color: #991B1B; }
-    .accordion-arrow {
-      font-size: 11px; color: var(--text-muted);
-      transition: transform 0.2s ease;
-      flex-shrink: 0;
-    }
-    .accordion-item.open .accordion-arrow { transform: rotate(180deg); }
-
-    .accordion-body {
-      display: none;
-      border-top: 1px solid var(--border);
-    }
-    .accordion-item.open .accordion-body { display: block; }
 
     /* ── Meal Image ── */
     .meal-image-wrap {
@@ -335,7 +384,7 @@
 </div>
 
 <script>
-// ─── 設定區（需修改） ─────────────────────────────
+// ─── 設定區（需修改） ──────────────────────────────────
 const LIFF_ID       = '2009326025-d6EV7T42';         // LIFF App ID
 const API_URL       = 'https://huangcs.app.n8n.cloud/webhook/patient-history';
 const IMAGE_PROXY   = 'https://huangcs.app.n8n.cloud/webhook/meal-photo';
@@ -368,14 +417,14 @@ function isApproved(status) {
 function statusClass(status) {
   if (!status || status === '待審核') return 'status-pending';
   if (isApproved(status)) return 'status-approved';
-  if (status === '已駁回') return 'status-rejected';
+  if (status === '已馳回') return 'status-rejected';
   return 'status-pending';
 }
 
 function statusLabel(status) {
   if (!status || status === '待審核') return '待審核';
   if (isApproved(status)) return '✅ 已核准';
-  if (status === '已駁回') return '⚠️ 已駁回';
+  if (status === '已馳回') return '⚠️ 已馳回';
   return status;
 }
 
@@ -389,18 +438,18 @@ function scoreToStars(score) {
 function escHtml(str) {
   return String(str || '')
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    .replace(/>/ g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function formatDate(dateStr) {
-  const m = String(dateStr).match(/(\d+)\/(\d+)\/(\d+)\s*(.*)/);
+  const m = String(dateStr).match(/(\ d+)\/(\ d+)\/(\ d+)\s*(.*)/);
   if (m) return `${m[2]}月${m[3]}日 ${m[4]}`;
   return dateStr;
 }
 
 // Extract YYYY-MM-DD key from date string like "2026/3/8 下午1:30"
 function toDateKey(dateStr) {
-  const m = String(dateStr).match(/(\d{4})\/(\d+)\/(\d+)/);
+  const m = String(dateStr).match(/(\ d{4})\/(\ d+)\/(\ d+)/);
   if (!m) return '';
   return m[1] + '-' + String(m[2]).padStart(2,'0') + '-' + String(m[3]).padStart(2,'0');
 }
@@ -427,7 +476,7 @@ function renderProteinProgress(records, recommended, weight) {
     if (total >= excess && excess > 0)
       msg = '🚨 蛋白質過量喔！今日已攝取 ' + Math.round(total) + 'g，超過上限 ' + Math.round(excess) + 'g';
     else if (total >= rec)
-      msg = '🎉 恭喜達標！今日蛋白質共 ' + Math.round(total) + 'g（目標 ' + Math.round(rec) + 'g）';
+      msg = '🎉 恭喜達標！今日蛋白質共 ' + Math.round(total) + 'g，目標 ' + Math.round(rec) + 'g）';
     else
       msg = '💪 距離目標還有 ' + Math.round(rec - total) + 'g，加油！';
     document.getElementById('protein-status').textContent = msg;
@@ -548,10 +597,75 @@ function renderChart(records, recommended) {
   });
 }
 
+// Build the inner HTML for a single meal record (used inside day accordion)
+function renderMealCardBody(r) {
+  const imgUrl = r.imageId ? `${IMAGE_PROXY}?id=${r.imageId}` : '';
+  const imgHtml = imgUrl
+    ? `<img src="${imgUrl}" onerror="this.parentNode.innerHTML='<div class=img-placeholder>🍱</div>'" loading="lazy">`
+    : `<div class="img-placeholder">🍱</div>`;
+
+  const aiNote = r.aiNote
+    ? `<div class="ai-note"><div class="ai-note-label">🤖 AI 飲食建議</div>${escHtml(r.aiNote)}</div>`
+    : '';
+
+  const stars = r.nutritionScore
+    ? `<div class="score-row"><span class="score-stars">${scoreToStars(r.nutritionScore)}</span><span style="font-size:12px;color:#92400E">(${r.nutritionScore}分)</span></div>` : '';
+  const advice = r.nutritionistAdvice
+    ? `<div>${escHtml(r.nutritionistAdvice)}</div>` : '<div>（無備註）</div>';
+  const reviewHtml = `<div class="nutrition-advice">
+    <div class="nutrition-advice-label">👩‍⚕️ 營養師建議</div>
+    ${stars}${advice}
+  </div>`;
+
+  return `
+    <div class="meal-image-wrap">${imgHtml}</div>
+    <div class="meal-body">
+      <div class="foods-text">${escHtml(r.foods || '（無資料）')}</div>
+      <div class="macros-grid">
+        <div class="macro-item">
+          <div class="macro-value">${Math.round(r.calories || 0)}</div>
+          <div class="macro-label">熱量 kcal</div>
+        </div>
+        <div class="macro-item">
+          <div class="macro-value">${Math.round(r.protein || 0)}</div>
+          <div class="macro-label">蛋白質 g</div>
+        </div>
+        <div class="macro-item">
+          <div class="macro-value">${Math.round(r.carbs || 0)}</div>
+          <div class="macro-label">碳水 g</div>
+        </div>
+        <div class="macro-item">
+          <div class="macro-value">${Math.round(r.fat || 0)}</div>
+          <div class="macro-label">脂肪 g</div>
+        </div>
+        <div class="macro-item">
+          <div class="macro-value">${Math.round(r.fiber || 0)}</div>
+          <div class="macro-label">纖維 g</div>
+        </div>
+      </div>
+      ${aiNote}
+      ${reviewHtml}
+    </div>`;
+}
+
+// Extract time-of-day string from date like "2026/3/8 下午1:30"
+function formatTimeOnly(dateStr) {
+  const m = String(dateStr).match(/\d{4}\/\d+\/\d+\s*(.*)/);
+  return m ? m[1].trim() : dateStr;
+}
+
+// Format YYYY-MM-DD → "M月D日（週X）"
+function formatDayLabel(key) {
+  const parts = key.split('-');
+  const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+  const days = ['日','一','二','三','四','五','六'];
+  return `${parseInt(parts[1])}月${parseInt(parts[2])}日（週${days[d.getDay()]}）`;
+}
+
 function renderRecords(records) {
   const list = document.getElementById('records-list');
 
-  // Show only approved records
+  // Only approved records
   const reviewed = records.filter(r => isApproved(r.status));
 
   if (reviewed.length === 0) {
@@ -559,66 +673,59 @@ function renderRecords(records) {
     return;
   }
 
+  // Group by date key (YYYY-MM-DD)
+  const grouped = {};
+  reviewed.forEach(r => {
+    const key = toDateKey(r.date);
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(r);
+  });
+
+  // Sort dates descending (newest first)
+  const sortedKeys = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
   let html = '';
+  sortedKeys.forEach((dateKey, di) => {
+    const dayRecs = grouped[dateKey];
+    const totalProtein = dayRecs.reduce((s, r) => s + (r.protein || 0), 0);
+    const totalCal = dayRecs.reduce((s, r) => s + (r.calories || 0), 0);
+    const mealCount = dayRecs.length;
+    const proteinStr = Math.round(totalProtein) + 'g';
+    const dayLabel = formatDayLabel(dateKey);
+    const summary = `${mealCount} 餐 · 熱量 ${Math.round(totalCal)} kcal`;
 
-  reviewed.forEach((r, idx) => {
-    const imgUrl = r.imageId ? `${IMAGE_PROXY}?id=${r.imageId}` : '';
-    const imgHtml = imgUrl
-      ? `<img src="${imgUrl}" onerror="this.parentNode.innerHTML='<div class=img-placeholder>🍱</div>'" loading="lazy">`
-      : `<div class="img-placeholder">🍱</div>`;
-
-    const aiNote = r.aiNote
-      ? `<div class="ai-note"><div class="ai-note-label">🤖 AI 飲食建議</div>${escHtml(r.aiNote)}</div>`
-      : '';
-
-    const stars = r.nutritionScore
-      ? `<div class="score-row"><span class="score-stars">${scoreToStars(r.nutritionScore)}</span><span style="font-size:12px;color:#92400E">(${r.nutritionScore}分)</span></div>` : '';
-    const advice = r.nutritionistAdvice
-      ? `<div>${escHtml(r.nutritionistAdvice)}</div>` : '<div>（無備註）</div>';
-    const reviewHtml = `<div class="nutrition-advice">
-      <div class="nutrition-advice-label">👩‍⚕️ 營養師建議</div>
-      ${stars}${advice}
-    </div>`;
-
-    const proteinStr = r.protein ? `${Math.round(r.protein)}g` : '';
+    // Build inner meal cards for this day
+    let mealsHtml = '';
+    dayRecs.forEach((r, mi) => {
+      const cardId = `meal-${di}-${mi}`;
+      const timeStr = formatTimeOnly(r.date) || '（無時間）';
+      const proteinMini = r.protein ? `${Math.round(r.protein)}g` : '';
+      mealsHtml += `
+        <div class="meal-card" id="${cardId}">
+          <div class="meal-card-header" onclick="toggleMealCard('${cardId}')">
+            <div class="meal-card-time">🍽 ${escHtml(timeStr)}</div>
+            ${proteinMini ? `<div class="meal-card-protein">蛋白質 ${proteinMini}</div>` : ''}
+            <span class="meal-card-arrow">▼</span>
+          </div>
+          <div class="meal-card-body">
+            ${renderMealCardBody(r)}
+          </div>
+        </div>`;
+    });
 
     html += `
-    <div class="accordion-item" id="acc-${idx}">
-      <div class="accordion-header" onclick="toggleAccordion(${idx})">
-        <div class="accordion-date">${formatDate(r.date)}</div>
-        ${proteinStr ? `<div class="accordion-protein">${proteinStr}</div>` : ''}
-        <span class="status-badge ${statusClass(r.status)}">${statusLabel(r.status)}</span>
-        <span class="accordion-arrow">▼</span>
-      </div>
-      <div class="accordion-body">
-        <div class="meal-image-wrap">${imgHtml}</div>
-        <div class="meal-body">
-          <div class="foods-text">${escHtml(r.foods || '（無資料）')}</div>
-          <div class="macros-grid">
-            <div class="macro-item">
-              <div class="macro-value">${Math.round(r.calories || 0)}</div>
-              <div class="macro-label">熱量 kcal</div>
-            </div>
-            <div class="macro-item">
-              <div class="macro-value">${Math.round(r.protein || 0)}</div>
-              <div class="macro-label">蛋白質 g</div>
-            </div>
-            <div class="macro-item">
-              <div class="macro-value">${Math.round(r.carbs || 0)}</div>
-              <div class="macro-label">碳水 g</div>
-            </div>
-            <div class="macro-item">
-              <div class="macro-value">${Math.round(r.fat || 0)}</div>
-              <div class="macro-label">脂肪 g</div>
-            </div>
-            <div class="macro-item">
-              <div class="macro-value">${Math.round(r.fiber || 0)}</div>
-              <div class="macro-label">纖維 g</div>
-            </div>
-          </div>
-          ${aiNote}
-          ${reviewHtml}
+    <div class="day-accordion" id="day-${di}">
+      <div class="day-header" onclick="toggleDayAccordion(${di})">
+        <div class="day-icon">📅</div>
+        <div class="day-info">
+          <div class="day-date-label">${dayLabel}</div>
+          <div class="day-summary">${summary}</div>
         </div>
+        <div class="day-protein-badge">${proteinStr}</div>
+        <span class="day-arrow">▼</span>
+      </div>
+      <div class="day-body">
+        ${mealsHtml}
       </div>
     </div>`;
   });
@@ -626,8 +733,13 @@ function renderRecords(records) {
   list.innerHTML = html;
 }
 
-function toggleAccordion(idx) {
-  const item = document.getElementById('acc-' + idx);
+function toggleDayAccordion(di) {
+  const item = document.getElementById('day-' + di);
+  if (item) item.classList.toggle('open');
+}
+
+function toggleMealCard(cardId) {
+  const item = document.getElementById(cardId);
   if (item) item.classList.toggle('open');
 }
 
@@ -715,14 +827,14 @@ async function init() {
       }
     }
 
-    _step = '確認userId';
+    _step = '確誌userId';
     if (!userId && urlUserId) {
       userId = urlUserId;
       displayName = '患者';
     }
 
     if (!userId) {
-      showError('請在 LINE App 中開啟此頁面，或確認 LIFF 設定是否正確');
+      showError('請在 LINE App 中開啟此頁面，或確誌 LIFF 設定是否正確');
       return;
     }
 
