@@ -7,7 +7,7 @@
   <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
   <style>
     :root {
-      --green: #06C755;
+      --green: #06C755
       --green-dark: #04a847;
       --green-light: #e8f9ee;
       --blue: #1a73e8;
@@ -676,7 +676,36 @@ async function loadRecords() {
     const res = await fetch(LIST_WH, { method: 'GET' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    records = Array.isArray(data) ? data : (data.records || []);
+    const raw = Array.isArray(data) ? data : (data.records || []);
+    // Map API field names to the names used by this page
+    records = raw.map(d => ({
+      id:        d.id        || '',
+      pid:       d.pid       || '',
+      name:      d.name      || d.patientName || '',
+      line_uid:  d.line_uid  || d.lineUid     || '',
+      time:      d.time      || d.timestamp   || '',
+      img_id:    d.img_id    || d['LINE圖片ID'] || '',
+      img_url:   d.img_url   || d.photoUrl
+                   || (d['LINE圖片ID'] ? 'https://huangcs.app.n8n.cloud/webhook/line-image?id=' + d['LINE圖片ID'] : ''),
+      foods:     d.foods     || d.description || '',
+      cal:       d.cal  ?? d.calories ?? 0,
+      pro:       d.pro  ?? d.protein  ?? 0,
+      fib:       d.fib  ?? d.fiber    ?? 0,
+      carb:      d.carb ?? d.carbs    ?? 0,
+      fat:       d.fat  ?? 0,
+      sodium:    d.sodium ?? 0,
+      score:     d.score    || '60',
+      advice:    d.advice   || d.comment || '',
+      nutritionist_advice: d.nutritionist_advice || '',
+      status:    d.status === '待審核' ? 'pending'
+               : d.status === '已核准' ? 'approved'
+               : d.status === '已駁回' ? 'rejected'
+               : (d.status || 'pending'),
+      weight:         d.weight         ?? null,
+      protein_target: d.protein_target ?? null,
+      webhook:        d.webhook        || REVIEW_WH,
+      row_number:     d.row_number     || null,
+    }));
     renderQueue();
     toast(`已載入 ${records.filter(r=>r.status==='pending'||!r.status).length} 筆待審核`);
   } catch(e) {
