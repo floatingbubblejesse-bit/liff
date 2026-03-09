@@ -1126,7 +1126,20 @@ function toast(msg, ms = 3200) {
 function relTime(s) {
   if (!s) return '—';
   try {
-    const d   = new Date(s);
+    // Handle Chinese date: '2026/3/9 上午9:07:03' or '2026/3/9 下午3:07:03'
+    let str = String(s);
+    if (str.includes('上午') || str.includes('下午')) {
+      const isPM = str.includes('下午');
+      str = str.replace(/[上下]午/, '').trim();
+      if (isPM) {
+        str = str.replace(/(\d+):(\d+):(\d+)/, (m, h, mi, sc) => {
+          const hr = parseInt(h);
+          return (hr < 12 ? hr + 12 : hr) + ':' + mi + ':' + sc;
+        });
+      }
+    }
+    const d   = new Date(str);
+    if (isNaN(d.getTime())) return s;
     const now = new Date();
     const diff = now - d;
     if (diff < 60000)       return '剛剛';
