@@ -843,7 +843,6 @@ function selectRecord(i) {
   // Buttons
   const ok = !current.status || current.status === 'pending';
   document.getElementById('btnApprove').disabled = !ok;
-  document.getElementById('btnReject').disabled  = !ok;
 
   // Protein progress
   updateProteinDisplay(current);
@@ -928,6 +927,7 @@ async function fetchProteinData(lineUid) {
   let proCol = cols.findIndex(l => l.includes('蛋白質') && !l.includes('攝取量'));
   if (uidCol < 0) uidCol = 3;  // 預設 D 欄
   if (tsCol  < 0) tsCol  = 4;  // 預設 E 欄
+      let statusCol = cols.findIndex(l => l.includes('審核') || l.includes('狀態'));
 
   const today    = new Date();
   const todayStr = today.getFullYear() + '/' + (today.getMonth() + 1) + '/' + today.getDate();
@@ -941,23 +941,28 @@ async function fetchProteinData(lineUid) {
       const tsCell = row.c[tsCol] || {};
       const ts = String(tsCell.f || tsCell.v || '');
       if (!ts.startsWith(todayStr)) return;
+          // 只計入已核准的記錄
+          if (statusCol >= 0) {
+            const st = row.c[statusCol] ? String(row.c[statusCol].v || '') : '';
+            if (st !== '已核准') return;
+          }
       if (row.c[proCol] && row.c[proCol].v != null)
         consumed += parseFloat(row.c[proCol].v) || 0;
     });
   }
 
-  // 加上 queue 裡尚未審核的今日記錄（避免重複計算）
-  records.forEach(qItem => {
-    if ((qItem.line_uid || '') !== lineUid) return;
-    if (qItem.status && qItem.status !== 'pending') return;
-    try {
-      if (new Date(qItem.time || '').toDateString() !== today.toDateString()) return;
-    } catch(e) { return; }
-    const pro = parseFloat(qItem.pro || 0);
-    if (!isNaN(pro)) consumed += pro;
-  });
+// 只加上 queue 裡「已核准」的今日記錄
+      records.forEach(qItem => {
+        if ((qItem.line_uid || '') !== lineUid) return;
+        if (qItem.status !== 'approved') return;
+        try {
+          if (new Date(qItem.time || '').toDateString() !== today.toDateString()) return;
+        } catch(e) { return; }
+        const pro = parseFloat(qItem.pro || 0);
+        if (!isNaN(pro)) consumed += pro;
+      });
 
-  return { target, consumed };
+      return { target, consumed };
 }
 
 // 通用 Sheets 抓取函式
@@ -1072,7 +1077,6 @@ async function submitReview(action) {
     if (idx >= 0) records[idx].status = action === 'approve' ? 'approved' : 'rejected';
     renderQueue();
     document.getElementById('btnApprove').disabled = true;
-    document.getElementById('btnReject').disabled  = true;
     toast(action === 'approve' ? '✅ 已核准並通知病患' : '❌ 已駁回此記錄');
 
     // Auto next
