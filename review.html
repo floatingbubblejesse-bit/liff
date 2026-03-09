@@ -610,6 +610,10 @@ const PRESETS = [
   { label: '🌾 纖維不足',   text: '膳食纖維攝取不足，建議多攝取豆類、蔬菜及帶皮水果，有助腸道健康及血糖控制。' },
   { label: '✅ 飲食均衡',   text: '本餐搭配均衡，各大營養素比例適當，繼續維持良好飲食習慣，表現優秀！' },
   { label: '🍬 含糖偏高',   text: '含糖飲料或甜食攝取過多，建議以白開水、無糖飲品替代，減少添加糖攝入。' },
+  { label: '🧂 鈉含量高',   text: '本餐估計鈉含量偏高，建議選擇少鹽少醬料的烹調方式，注意加工食品標示。' },
+  { label: '⏰ 少量多餐',   text: '建議採少量多餐（每3~4小時進食），避免單餐過量，有助穩定血糖及代謝速率。' },
+  { label: '💧 多喝水',     text: '提醒每日飲水量建議達體重×30~35ml，充足水分有助代謝廢物排除及整體健康。' },
+  { label: '🥩 蛋白質不足', text: '本餐蛋白質攝取偏低，建議增加瘦肉、豆腐、蛋、豆莢等優質蛋白質來源。' },
   { label: '🌙 睡前不宜',   text: '本餐高熱量，若為晚餐或宵夜，建議下次減少精製澱粉與油脂，以免影響睡眠品質。' },
 ];
 
@@ -653,25 +657,6 @@ function renderPresets() {
   PRESETS.forEach((p, i) => {
     const el = document.createElement('div');
     el.className = 'preset-chip';
-    el.textContent = p.label;
-    el.onclick = () => {
-      const ta = document.getElementById('adviceTA');
-      ta.value = ta.value ? ta.value + '\n' + p.text : p.text;
-      el.classList.add('flash');
-      setTimeout(() => el.classList.remove('flash'), 600);
-      ta.focus();
-    };
-    grid.appendChild(el);
-  });
-}
-
-/* ── Load records from n8n list webhook ── */
-async function loadRecords() {
-  setOverlay(true, '載入待審核列表…');
-  try {
-    const res = await fetch(LIST_WH, { method: 'GET' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const ;
     el.textContent = p.label;
     el.onclick = () => {
       const ta = document.getElementById('adviceTA');
@@ -947,7 +932,7 @@ async function fetchProteinData(lineUid) {
 async function fetchGSheet(sheetName) {
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
   const text = await fetch(url).then(r => r.text());
-  return JSON.parse(text.replace(/^[]{]+/, '').replace(/\);?\s*$/, '')).table;
+  return JSON.parse(text.replace(/^[^{]+/, '').replace(/\);?\s*$/, '')).table;
 }
 
 // 把數字渲染到頁面
