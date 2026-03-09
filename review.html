@@ -32,8 +32,6 @@
       flex-direction: column;
       overflow: hidden;
     }
-
-    /* ── Header ── */
     .header {
       background: var(--green);
       color: white;
@@ -70,11 +68,7 @@
       transition: background .15s;
     }
     .btn-refresh:hover { background: rgba(255,255,255,0.3); }
-
-    /* ── Main 3-col layout ── */
     .main { display: flex; flex: 1; overflow: hidden; }
-
-    /* ── LEFT: queue ── */
     .sidebar {
       width: var(--sidebar);
       flex-shrink: 0;
@@ -98,7 +92,6 @@
     .queue { flex: 1; overflow-y: auto; }
     .queue::-webkit-scrollbar { width: 4px; }
     .queue::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
-
     .q-item {
       display: flex; align-items: center; gap: 10px;
       padding: 11px 16px;
@@ -129,7 +122,6 @@
     .q-badge.pending { background: #fff3e0; color: var(--orange); }
     .q-badge.approved { background: var(--green-light); color: var(--green-dark); }
     .q-badge.rejected { background: #ffebee; color: var(--red); }
-
     .sidebar-foot {
       padding: 12px 16px;
       border-top: 1px solid var(--border);
@@ -143,8 +135,6 @@
     }
     .btn-batch:hover { background: var(--green-dark); }
     .btn-batch:disabled { background: #ccc; cursor: not-allowed; }
-
-    /* ── CENTER: detail ── */
     .center {
       flex: 1;
       overflow-y: auto;
@@ -155,7 +145,6 @@
     }
     .center::-webkit-scrollbar { width: 5px; }
     .center::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
-
     .empty-state {
       flex: 1;
       display: flex; flex-direction: column;
@@ -165,7 +154,6 @@
     }
     .empty-state .icon { font-size: 52px; }
     .empty-state p { font-size: 14px; }
-
     .card {
       background: var(--card);
       border-radius: 12px;
@@ -179,8 +167,6 @@
       margin-bottom: 12px;
       display: flex; align-items: center; gap: 6px;
     }
-
-    /* Photo */
     .photo-wrap {
       width: 100%; border-radius: 10px; overflow: hidden;
       background: #f5f5f5; min-height: 160px;
@@ -192,12 +178,9 @@
       padding: 32px; text-align: center; color: #bbb; font-size: 13px;
     }
     .photo-placeholder span { font-size: 36px; display: block; margin-bottom: 8px; }
-
-    /* Info grid */
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
     .info-item label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 3px; }
     .info-item .val { font-size: 14px; font-weight: 600; }
-
     .food-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
     .food-chip {
       background: var(--green-light); color: var(--green-dark);
@@ -208,8 +191,41 @@
       padding: 10px 12px; font-size: 13px; color: #555; line-height: 1.6;
       margin-top: 10px; border-left: 3px solid var(--green);
     }
-
-    /* ── RIGHT: review panel ── */
+    /* ── AI 估算營養素 Grid (center display) ── */
+    .ai-nutr-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .ai-nutr-item {
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 8px;
+      text-align: center;
+    }
+    .ai-nutr-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .ai-nutr-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--blue);
+      line-height: 1.1;
+    }
+    .ai-nutr-val.missing {
+      font-size: 18px;
+      color: #c0c0c0;
+    }
+    .ai-nutr-unit {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    /* ── RIGHT Panel ── */
     .panel {
       width: var(--panel);
       flex-shrink: 0;
@@ -221,7 +237,6 @@
     }
     .panel::-webkit-scrollbar { width: 4px; }
     .panel::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
-
     .p-section {
       padding: 16px 20px;
       border-bottom: 1px solid #f0f0f0;
@@ -231,8 +246,6 @@
       color: var(--muted); text-transform: uppercase;
       letter-spacing: .4px; margin-bottom: 12px;
     }
-
-    /* Preset scripts */
     .preset-grid { display: flex; flex-wrap: wrap; gap: 6px; }
     .preset-chip {
       background: var(--blue-light); color: var(--blue);
@@ -243,9 +256,6 @@
     }
     .preset-chip:hover { background: var(--blue); color: white; }
     .preset-chip.flash { background: var(--blue); color: white; }
-    .preset-more { font-size: 11px; color: var(--blue); cursor: pointer; margin-top: 4px; background: none; border: none; padding: 0; }
-
-    /* Advice textarea */
     .advice-ta {
       width: 100%; padding: 10px 12px;
       border: 1.5px solid var(--border); border-radius: 8px;
@@ -253,8 +263,6 @@
       font-family: inherit; transition: border-color .2s; line-height: 1.5;
     }
     .advice-ta:focus { outline: none; border-color: var(--green); }
-
-    /* Score */
     .score-row { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
     .score-circle {
       width: 52px; height: 52px; border-radius: 50%;
@@ -268,8 +276,6 @@
       width: 100%; accent-color: var(--green); cursor: pointer;
       height: 4px;
     }
-
-    /* Nutrition inputs */
     .nutr-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .nutr-item label { font-size: 10px; color: var(--muted); display: block; text-align: center; margin-bottom: 4px; }
     .nutr-input {
@@ -280,8 +286,6 @@
     }
     .nutr-input:focus { outline: none; border-color: var(--green); }
     .nutr-unit { font-size: 9px; color: #bbb; text-align: center; margin-top: 2px; }
-
-    /* Action buttons */
     .action-row {
       padding: 14px 20px;
       display: flex; gap: 10px;
@@ -310,8 +314,6 @@
     }
     .btn-approve:hover { background: var(--green-dark); }
     .btn-approve:disabled, .btn-reject:disabled { opacity: .45; cursor: not-allowed; }
-
-    /* Loading & Toast */
     .overlay {
       position: fixed; inset: 0;
       background: rgba(255,255,255,.82);
@@ -327,7 +329,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .overlay-text { font-size: 14px; color: var(--green); font-weight: 600; }
-
     .toast {
       position: fixed; bottom: 20px; left: 50%;
       transform: translateX(-50%);
@@ -338,8 +339,6 @@
       white-space: nowrap; pointer-events: none;
     }
     .toast.show { opacity: 1; }
-
-    /* ── Protein Progress ── */
     .protein-section {
       margin-top: 14px;
       padding: 12px 14px;
@@ -376,8 +375,6 @@
     .protein-status-badge.progress { background: #e8f0fe; color: var(--blue); }
     .protein-status-badge.achieved { background: var(--green-light); color: var(--green-dark); }
     .protein-status-badge.excess   { background: #fff3e0; color: var(--orange); }
-
-    /* Protein summary in right panel */
     .protein-panel-box {
       background: #f5f7ff;
       border: 1px solid #dde5ff;
@@ -390,14 +387,13 @@
     }
     .protein-panel-key { font-size: 11px; color: var(--muted); }
     .protein-panel-val { font-size: 13px; font-weight: 700; }
-
-    /* Responsive */
     @media (max-width: 1100px) {
       :root { --panel: 340px; }
     }
     @media (max-width: 860px) {
       :root { --sidebar: 230px; --panel: 300px; }
       .nutr-grid { grid-template-columns: repeat(3, 1fr); }
+      .ai-nutr-grid { grid-template-columns: repeat(3, 1fr); }
     }
     @media (max-width: 640px) {
       body { overflow: auto; }
@@ -406,21 +402,16 @@
       .queue { display: flex; flex-direction: row; overflow-x: auto; overflow-y: hidden; }
       .q-item { min-width: 160px; flex-shrink: 0; }
       .panel { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+      .ai-nutr-grid { grid-template-columns: repeat(3, 1fr); }
     }
   </style>
 </head>
 <body>
-
-<!-- Loading overlay -->
 <div class="overlay" id="overlay">
   <div class="spinner"></div>
   <div class="overlay-text" id="overlayText">連線中…</div>
 </div>
-
-<!-- Toast -->
 <div class="toast" id="toast"></div>
-
-<!-- Header -->
 <header class="header">
   <div class="header-left">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
@@ -436,11 +427,7 @@
     <button class="btn-refresh" onclick="loadRecords()">⟳ 重整</button>
   </div>
 </header>
-
-<!-- Main -->
 <div class="main">
-
-  <!-- ── LEFT Sidebar ── -->
   <div class="sidebar">
     <div class="sidebar-head">
       <h2>待審核列表</h2>
@@ -453,14 +440,11 @@
       </button>
     </div>
   </div>
-
-  <!-- ── CENTER ── -->
   <div class="center" id="center">
     <div class="empty-state" id="emptyState">
       <span class="icon">📋</span>
       <p>請從左側選擇一筆記錄</p>
     </div>
-
     <!-- Photo card -->
     <div class="card" id="photoCard" style="display:none">
       <div class="card-title">📸 餐食照片</div>
@@ -468,7 +452,6 @@
         <div class="photo-placeholder"><span>🍽️</span>載入中…</div>
       </div>
     </div>
-
     <!-- Patient info card -->
     <div class="card" id="patientCard" style="display:none">
       <div class="card-title">👤 病患資訊</div>
@@ -478,7 +461,6 @@
         <div class="info-item"><label>分析時間</label><div class="val" id="dTime">—</div></div>
         <div class="info-item"><label>記錄 ID</label><div class="val" id="dId" style="font-size:12px;word-break:break-all">—</div></div>
       </div>
-
       <!-- Protein Progress -->
       <div id="proteinSection" style="display:none; margin-top:14px">
         <div class="card-title" style="margin-bottom:6px">🥩 每日蛋白質攝取進度</div>
@@ -496,23 +478,56 @@
           </div>
         </div>
       </div>
-
+      <!-- 識別食物 -->
       <div style="margin-top:14px">
         <div class="card-title" style="margin-bottom:6px">🍱 識別食物</div>
         <div class="food-chips" id="foodChips"></div>
       </div>
-
+      <!-- ── AI 估算營養素 ── -->
+      <div style="margin-top:14px" id="aiNutrSection">
+        <div class="card-title" style="margin-bottom:6px">🤖 AI 估算營養素</div>
+        <div class="ai-nutr-grid">
+          <div class="ai-nutr-item">
+            <div class="ai-nutr-label">熱量</div>
+            <div class="ai-nutr-val" id="aiCal">—</div>
+            <div class="ai-nutr-unit">kcal</div>
+          </div>
+          <div class="ai-nutr-item">
+            <div class="ai-nutr-label">蛋白質</div>
+            <div class="ai-nutr-val" id="aiPro">—</div>
+            <div class="ai-nutr-unit">g</div>
+          </div>
+          <div class="ai-nutr-item">
+            <div class="ai-nutr-label">脂肪</div>
+            <div class="ai-nutr-val" id="aiFat">—</div>
+            <div class="ai-nutr-unit">g</div>
+          </div>
+          <div class="ai-nutr-item">
+            <div class="ai-nutr-label">醣類</div>
+            <div class="ai-nutr-val" id="aiCarb">—</div>
+            <div class="ai-nutr-unit">g</div>
+          </div>
+          <div class="ai-nutr-item">
+            <div class="ai-nutr-label">鈉</div>
+            <div class="ai-nutr-val" id="aiSodium">—</div>
+            <div class="ai-nutr-unit">mg</div>
+          </div>
+          <div class="ai-nutr-item">
+            <div class="ai-nutr-label">纖維</div>
+            <div class="ai-nutr-val" id="aiFib">—</div>
+            <div class="ai-nutr-unit">g</div>
+          </div>
+        </div>
+      </div>
+      <!-- AI 初始建議 -->
       <div style="margin-top:14px">
-        <div class="card-title" style="margin-bottom:4px">🤖 AI 初始建議</div>
+        <div class="card-title" style="margin-bottom:4px">💡 AI 初始建議</div>
         <div class="ai-advice-box" id="aiAdvice">—</div>
       </div>
     </div>
   </div>
-
   <!-- ── RIGHT Panel ── -->
   <div class="panel" id="panel">
-
-    <!-- Protein Summary (shown when protein_target available) -->
     <div class="p-section" id="panelProteinSection" style="display:none">
       <h3>🥩 蛋白質達標狀況</h3>
       <div class="protein-panel-box">
@@ -530,20 +545,14 @@
         </div>
       </div>
     </div>
-
-    <!-- Presets -->
     <div class="p-section">
       <h3>💬 常用建議劇本</h3>
       <div class="preset-grid" id="presetGrid"></div>
     </div>
-
-    <!-- Advice textarea -->
     <div class="p-section">
       <h3>📝 審核建議（可編輯）</h3>
       <textarea class="advice-ta" id="adviceTA" rows="4" placeholder="點選上方劇本快速填入，或直接輸入…"></textarea>
     </div>
-
-    <!-- Score -->
     <div class="p-section">
       <h3>⭐ 調整評分</h3>
       <div class="score-row">
@@ -556,8 +565,6 @@
       <input type="range" id="scoreSlider" min="0" max="100" value="60"
              oninput="updateScore(+this.value)">
     </div>
-
-    <!-- Nutrition -->
     <div class="p-section">
       <h3>📊 營養數值（可調整）</h3>
       <div class="nutr-grid">
@@ -588,23 +595,16 @@
         </div>
       </div>
     </div>
-
-    <!-- Actions -->
     <div class="action-row">
       <button class="btn-approve" id="btnApprove" disabled onclick="submitReview('approve')">✓ 核准並送出</button>
     </div>
-
-  </div><!-- /panel -->
-</div><!-- /main -->
-
+  </div>
+</div>
 <script>
-/* ── Config ── */
 const LIFF_ID      = '2009326025-0mhpcsM1';
 const LIST_WH      = 'https://huangcs.app.n8n.cloud/webhook/meal-nutrition-review-list';
 const REVIEW_WH    = 'https://huangcs.app.n8n.cloud/webhook/meal-nutrition-review';
 const SHEET_ID     = '1M2SzVfAM8I9RnuTj6_nE9Iawn9obJexo2xHl_Lyf1eQ';
-
-/* ── Preset scripts ── */
 const PRESETS = [
   { label: '🥦 蔬菜不足',   text: '蔬菜攝取明顯不足，建議每餐至少1份深色蔬菜（菠菜、花椰菜），補充纖維並增加飽足感。' },
   { label: '🍗 蛋白質良好', text: '優質蛋白質攝取良好，來源選擇佳，請繼續保持此飲食習慣。' },
@@ -619,15 +619,11 @@ const PRESETS = [
   { label: '🥩 蛋白質不足', text: '本餐蛋白質攝取偏低，建議增加瘦肉、豆腐、蛋、豆莢等優質蛋白質來源。' },
   { label: '🌙 睡前不宜',   text: '本餐高熱量，若為晚餐或宵夜，建議下次減少精製澱粉與油脂，以免影響睡眠品質。' },
 ];
-
-/* ── State ── */
 let records       = [];
-let current       = null;   // current record object
+let current       = null;
 let reviewerUID   = null;
 let reviewerName  = '';
 let allSel        = false;
-
-/* ── Init ── */
 async function init() {
   try {
     await liff.init({ liffId: LIFF_ID });
@@ -642,10 +638,7 @@ async function init() {
     reviewerName = '測試模式';
     document.getElementById('reviewerName').textContent = '測試模式';
   }
-
   renderPresets();
-
-  // Single-record mode (URL params from old flow)
   const sp = new URLSearchParams(window.location.search);
   if (sp.get('id') || sp.get('name')) {
     loadFromParams(sp);
@@ -653,8 +646,6 @@ async function init() {
     await loadRecords();
   }
 }
-
-/* ── Render presets ── */
 function renderPresets() {
   const grid = document.getElementById('presetGrid');
   PRESETS.forEach((p, i) => {
@@ -671,8 +662,6 @@ function renderPresets() {
     grid.appendChild(el);
   });
 }
-
-/* ── Load records from n8n list webhook ── */
 async function loadRecords() {
   setOverlay(true, '載入待審核列表…');
   try {
@@ -680,7 +669,6 @@ async function loadRecords() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     const raw = Array.isArray(data) ? data : (data.records || []);
-    // Map API field names to the names used by this page
     records = raw.map(d => ({
       id:        d.id        || '',
       pid:       d.pid       || '',
@@ -716,8 +704,6 @@ async function loadRecords() {
   }
   setOverlay(false);
 }
-
-/* ── Load single record from URL params (backward compat) ── */
 function loadFromParams(sp) {
   const r = {
     id:      sp.get('id')     || 'PARAM_' + Date.now(),
@@ -742,12 +728,9 @@ function loadFromParams(sp) {
   selectRecord(0);
   setOverlay(false);
 }
-
-/* ── Render left queue ── */
 function renderQueue() {
   const pending = records.filter(r => !r.status || r.status === 'pending').length;
   document.getElementById('pendingBadge').textContent = `待審核 ${pending} 筆`;
-
   const q = document.getElementById('queue');
   if (records.length === 0) {
     q.innerHTML = '<div style="padding:24px;text-align:center;color:#bbb;font-size:13px">目前沒有待審核記錄</div>';
@@ -760,14 +743,12 @@ function renderQueue() {
     item.className = 'q-item' +
       (current && current.id === r.id ? ' active' : '') +
       (!isPending ? ' done' : '');
-
     const initial = (r.name || '?').charAt(0).toUpperCase();
     const badge = r.status === 'approved' ? 'approved' :
                   r.status === 'rejected' ? 'rejected' : 'pending';
     const badgeText = badge === 'approved' ? '已核准' : badge === 'rejected' ? '已駁回' : '待審核';
-
     item.onclick = function(e) { if (e.target.classList.contains('q-check')) return; selectRecord(i); };
-      item.innerHTML = `
+    item.innerHTML = `
       <input type="checkbox" class="q-check" data-i="${i}"
         ${!isPending ? 'disabled' : ''}
         onclick="e=>e.stopPropagation()" onchange="countSel()">
@@ -780,26 +761,16 @@ function renderQueue() {
     q.appendChild(item);
   });
 }
-
-/* ── Select a record ── */
 function selectRecord(i) {
   current = records[i];
-
-  // Re-render queue to update active
   renderQueue();
-
-  // Show cards
   document.getElementById('emptyState').style.display  = 'none';
   document.getElementById('photoCard').style.display   = 'block';
   document.getElementById('patientCard').style.display = 'block';
-
-  // Detail fields
   document.getElementById('dName').textContent = current.name  || '未知';
   document.getElementById('dPid').textContent  = current.pid   || '—';
   document.getElementById('dTime').textContent = relTime(current.time);
   document.getElementById('dId').textContent   = current.id    || '—';
-
-  // Food chips
   const fc = document.getElementById('foodChips');
   fc.innerHTML = '';
   (current.foods || '').split(/[,，、\n]/).map(f=>f.trim()).filter(Boolean).forEach(f => {
@@ -809,25 +780,34 @@ function selectRecord(i) {
     fc.appendChild(el);
   });
   if (!fc.children.length) fc.innerHTML = '<span style="color:#bbb;font-size:12px">無資料</span>';
-
-  // AI advice
+  // ── AI 估算營養素 填值 ──
+  function fillNutr(id, val, isInt) {
+    const el = document.getElementById(id);
+    const num = parseFloat(val);
+    if (!isNaN(num) && num > 0) {
+      el.textContent = isInt ? Math.round(num) : num;
+      el.className = 'ai-nutr-val';
+    } else {
+      el.textContent = '--';
+      el.className = 'ai-nutr-val missing';
+    }
+  }
+  fillNutr('aiCal',    current.cal,    true);
+  fillNutr('aiPro',    current.pro,    false);
+  fillNutr('aiFat',    current.fat,    false);
+  fillNutr('aiCarb',   current.carb,   false);
+  fillNutr('aiSodium', current.sodium, true);
+  fillNutr('aiFib',    current.fib,    false);
   document.getElementById('aiAdvice').textContent = current.advice || '（無建議）';
-
-  // Photo
   const pw = document.getElementById('photoWrap');
   if (current.img_url) {
     pw.innerHTML = `<img src="${current.img_url}" alt="餐食照片"
       onerror="this.parentElement.innerHTML='<div class=\\'photo-placeholder\\'><span>🍽️</span>照片無法載入</div>'">`;
   } else {
     pw.innerHTML = `<div class="photo-placeholder">
-      <span>📷</span>
-      照片尚未整合<br>
-      <span style="font-size:11px;display:block;margin-top:4px;color:#ccc">
-        需在 n8n 工作流程中儲存圖片 URL
-      </span></div>`;
+      <span>📷</span>照片尚未整合<br>
+      <span style="font-size:11px;display:block;margin-top:4px;color:#ccc">需在 n8n 工作流程中儲存圖片 URL</span></div>`;
   }
-
-  // Panel form
   document.getElementById('adviceTA').value = current.advice || '';
   const sc = parseInt(current.score) || 60;
   document.getElementById('scoreSlider').value = sc;
@@ -837,16 +817,10 @@ function selectRecord(i) {
   document.getElementById('vFib').value  = current.fib  || '';
   document.getElementById('vCarb').value = current.carb || '';
   document.getElementById('vFat').value  = current.fat  || '';
-
-  // Buttons
   const ok = !current.status || current.status === 'pending';
   document.getElementById('btnApprove').disabled = !ok;
-
-  // Protein progress
   updateProteinDisplay(current);
 }
-
-/* ── Score display ── */
 function updateScore(v) {
   v = +v;
   const c = document.getElementById('scoreCircle');
@@ -858,22 +832,15 @@ function updateScore(v) {
   else if (v >= 40) { c.style.background = '#e65100'; g.textContent = '待改善 ⚠️'; }
   else              { c.style.background = '#c62828'; g.textContent = '不佳 ❌'; }
 }
-
-/* ── Protein Progress ── */
-
-// 主入口：選到記錄時呼叫，先顯示「計算中」，再非同步抓 Sheets
 function updateProteinDisplay(r) {
   const lineUid = r.line_uid || '';
   const section      = document.getElementById('proteinSection');
   const panelSection = document.getElementById('panelProteinSection');
-
   if (!lineUid) {
     section.style.display      = 'none';
     panelSection.style.display = 'none';
     return;
   }
-
-  // 先顯示「計算中」讓使用者知道在跑
   section.style.display      = 'block';
   panelSection.style.display = 'block';
   document.getElementById('proteinTarget').textContent     = '計算中…';
@@ -882,16 +849,13 @@ function updateProteinDisplay(r) {
   document.getElementById('panelProteinToday').textContent  = '計算中…';
   document.getElementById('proteinStatusBadge').textContent = '計算中…';
   document.getElementById('panelProteinStatus').textContent = '計算中…';
-
   fetchProteinData(lineUid)
     .then(({ target, consumed }) => {
-      // 防止使用者已切換到其他記錄
       if (!current || current.line_uid !== lineUid) return;
       renderProteinNumbers(target, consumed, parseFloat(r.weight) || null);
     })
     .catch(err => {
       console.warn('Sheets 抓取失敗，改用 queue 估算:', err);
-      // Fallback：只用 queue 裡的資料估算
       const target = parseFloat(r.protein_target) || null;
       const todayStr = new Date().toDateString();
       const consumed = records
@@ -901,35 +865,26 @@ function updateProteinDisplay(r) {
       renderProteinNumbers(target, consumed, parseFloat(r.weight) || null);
     });
 }
-
-// 從 Google Sheets 抓取每日目標 + 今日已攝取
 async function fetchProteinData(lineUid) {
   const [clientTable, mealTable] = await Promise.all([
     fetchGSheet('客戶清單'),
     fetchGSheet('餐食分析紀錄'),
   ]);
-
-  // ── 1. 每日蛋白質目標（客戶清單 H欄 = index 7）──
   let target = null;
   (clientTable.rows || []).slice(1).forEach(row => {
     const uid = row.c && row.c[0] ? String(row.c[0].v || '') : '';
     if (uid === lineUid && row.c[7] && row.c[7].v != null)
       target = parseFloat(row.c[7].v);
   });
-
-  // ── 2. 今日已攝取（餐食分析紀錄）──
   const cols = (mealTable.cols || []).map(c => c ? (c.label || '') : '');
-  // 動態找欄位
   let uidCol = cols.findIndex(l => l.includes('LINE UID') || l === 'LINE_UID');
   let tsCol  = cols.findIndex(l => l.includes('分析時間'));
   let proCol = cols.findIndex(l => l.includes('蛋白質') && !l.includes('攝取量'));
-  if (uidCol < 0) uidCol = 3;  // 預設 D 欄
-  if (tsCol  < 0) tsCol  = 4;  // 預設 E 欄
-      let statusCol = cols.findIndex(l => l.includes('審核') || l.includes('狀態'));
-
+  if (uidCol < 0) uidCol = 3;
+  if (tsCol  < 0) tsCol  = 4;
+  let statusCol = cols.findIndex(l => l.includes('審核') || l.includes('狀態'));
   const today    = new Date();
   const todayStr = today.getFullYear() + '/' + (today.getMonth() + 1) + '/' + today.getDate();
-
   let consumed = 0;
   if (proCol >= 0) {
     (mealTable.rows || []).slice(1).forEach(row => {
@@ -939,54 +894,42 @@ async function fetchProteinData(lineUid) {
       const tsCell = row.c[tsCol] || {};
       const ts = String(tsCell.f || tsCell.v || '');
       if (!ts.startsWith(todayStr)) return;
-          // 只計入已核准的記錄
-          if (statusCol >= 0) {
-            const st = row.c[statusCol] ? String(row.c[statusCol].v || '') : '';
-            if (st !== '已核准') return;
-          }
+      if (statusCol >= 0) {
+        const st = row.c[statusCol] ? String(row.c[statusCol].v || '') : '';
+        if (st !== '已核准') return;
+      }
       if (row.c[proCol] && row.c[proCol].v != null)
         consumed += parseFloat(row.c[proCol].v) || 0;
     });
   }
-
-// 只加上 queue 裡「已核准」的今日記錄
-      records.forEach(qItem => {
-        if ((qItem.line_uid || '') !== lineUid) return;
-        if (qItem.status !== 'approved') return;
-        try {
-          if (new Date(qItem.time || '').toDateString() !== today.toDateString()) return;
-        } catch(e) { return; }
-        const pro = parseFloat(qItem.pro || 0);
-        if (!isNaN(pro)) consumed += pro;
-      });
-
-      return { target, consumed };
+  records.forEach(qItem => {
+    if ((qItem.line_uid || '') !== lineUid) return;
+    if (qItem.status !== 'approved') return;
+    try {
+      if (new Date(qItem.time || '').toDateString() !== today.toDateString()) return;
+    } catch(e) { return; }
+    const pro = parseFloat(qItem.pro || 0);
+    if (!isNaN(pro)) consumed += pro;
+  });
+  return { target, consumed };
 }
-
-// 通用 Sheets 抓取函式
 async function fetchGSheet(sheetName) {
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
   const text = await fetch(url).then(r => r.text());
   return JSON.parse(text.replace(/^[^{]+/, '').replace(/\);?\s*$/, '')).table;
 }
-
-// 把數字渲染到頁面
 function renderProteinNumbers(target, consumed, weight) {
   const section      = document.getElementById('proteinSection');
   const panelSection = document.getElementById('panelProteinSection');
-
   if (!target) {
     section.style.display      = 'none';
     panelSection.style.display = 'none';
     return;
   }
-
   section.style.display      = 'block';
   panelSection.style.display = 'block';
-
   const excessThreshold = weight ? weight * 2 : null;
   const pct = Math.min(100, (consumed / target) * 100);
-
   let statusText, statusClass, barColor;
   if (excessThreshold !== null && consumed >= excessThreshold) {
     statusText  = '蛋白質過量喔！';
@@ -1002,10 +945,7 @@ function renderProteinNumbers(target, consumed, weight) {
     statusClass = 'protein-status-badge progress';
     barColor    = 'var(--blue)';
   }
-
   const todayText = consumed.toFixed(1) + ' g';
-
-  // CENTER 面板
   document.getElementById('proteinTarget').textContent       = target.toFixed(1) + ' g';
   document.getElementById('proteinToday').textContent        = todayText;
   document.getElementById('proteinBarFill').style.width      = pct + '%';
@@ -1013,16 +953,12 @@ function renderProteinNumbers(target, consumed, weight) {
   const badge = document.getElementById('proteinStatusBadge');
   badge.textContent = statusText;
   badge.className   = statusClass;
-
-  // RIGHT PANEL
   document.getElementById('panelProteinTarget').textContent = target.toFixed(1) + ' g';
   document.getElementById('panelProteinToday').textContent  = todayText;
   const panelBadge = document.getElementById('panelProteinStatus');
   panelBadge.textContent = statusText;
   panelBadge.className   = statusClass;
 }
-
-/* ── Select all ── */
 function toggleSelectAll() {
   allSel = !allSel;
   document.querySelectorAll('.q-check:not(:disabled)').forEach(c => c.checked = allSel);
@@ -1034,15 +970,12 @@ function countSel() {
   document.getElementById('selCount').textContent = n;
   document.getElementById('btnBatch').disabled = n === 0;
 }
-
-/* ── Batch approve ── */
 async function batchApprove() {
   const checked = [...document.querySelectorAll('.q-check:checked')];
   if (!checked.length) return;
   const score  = document.getElementById('scoreSlider').value;
   const advice = document.getElementById('adviceTA').value;
   if (!confirm(`批次核准 ${checked.length} 筆記錄？\n評分：${score} 分`)) return;
-
   setOverlay(true, `批次核准中 0 / ${checked.length}…`);
   let ok = 0;
   for (const c of checked) {
@@ -1059,15 +992,12 @@ async function batchApprove() {
   countSel();
   toast(`✅ 批次核准完成，成功 ${ok} 筆`);
 }
-
-/* ── Single review ── */
 async function submitReview(action) {
   if (!current) return;
   const score  = document.getElementById('scoreSlider').value;
   const advice = document.getElementById('adviceTA').value;
   const label  = action === 'approve' ? '核准' : '駁回';
   if (!confirm(`確定${label}「${current.name}」？`)) return;
-
   setOverlay(true, `送出${label}中…`);
   try {
     await post(current.webhook || REVIEW_WH, buildPayload(current, action, score, advice));
@@ -1076,8 +1006,6 @@ async function submitReview(action) {
     renderQueue();
     document.getElementById('btnApprove').disabled = true;
     toast(action === 'approve' ? '✅ 已核准並通知病患' : '❌ 已駁回此記錄');
-
-    // Auto next
     const next = records.findIndex(r => !r.status || r.status === 'pending');
     if (next >= 0) setTimeout(() => selectRecord(next), 500);
   } catch(e) {
@@ -1085,8 +1013,6 @@ async function submitReview(action) {
   }
   setOverlay(false);
 }
-
-/* ── Helpers ── */
 function buildPayload(r, action, score, advice) {
   return {
     action,
@@ -1102,7 +1028,6 @@ function buildPayload(r, action, score, advice) {
     fat:  parseFloat(document.getElementById('vFat').value)  || r.fat  || 0,
   };
 }
-
 async function post(url, body) {
   const r = await fetch(url, {
     method: 'POST',
@@ -1112,13 +1037,11 @@ async function post(url, body) {
   if (!r.ok) throw new Error('HTTP ' + r.status);
   return r;
 }
-
 function setOverlay(show, text = '處理中…') {
   const el = document.getElementById('overlay');
   el.style.display = show ? 'flex' : 'none';
   document.getElementById('overlayText').textContent = text;
 }
-
 let _toastTimer;
 function toast(msg, ms = 3200) {
   const t = document.getElementById('toast');
@@ -1127,11 +1050,9 @@ function toast(msg, ms = 3200) {
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 }
-
 function relTime(s) {
   if (!s) return '—';
   try {
-    // Handle Chinese date: '2026/3/9 上午9:07:03' or '2026/3/9 下午3:07:03'
     let str = String(s);
     if (str.includes('上午') || str.includes('下午')) {
       const isPM = str.includes('下午');
@@ -1154,15 +1075,12 @@ function relTime(s) {
            d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
   } catch(e) { return s; }
 }
-
 function dec(v) {
   try { return v ? decodeURIComponent(v) : ''; } catch(e) { return v || ''; }
 }
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
-
-// Start
 init();
 </script>
 </body>
