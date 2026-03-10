@@ -819,15 +819,7 @@ function selectRecord(i) {
   updateProteinDisplay(current);
 }
 function updateScore(v) {
-  v = +v;
-  const c = document.getElementById('scoreCircle');
-  const g = document.getElementById('scoreGrade');
-  c.textContent = v;
-  if      (v >= 85) { c.style.background = '#2e7d32'; g.textContent = '優秀 🌟'; }
-  else if (v >= 70) { c.style.background = '#388e3c'; g.textContent = '良好 👍'; }
-  else if (v >= 60) { c.style.background = '#f57c00'; g.textContent = '尚可 🆗'; }
-  else if (v >= 40) { c.style.background = '#e65100'; g.textContent = '待改善 ⚠️'; }
-  else              { c.style.background = '#c62828'; g.textContent = '不佳 ❌'; }
+  /* 調整評分已移除，此函式保留以避免其他地方呼叫出錯 */
 }
 function updateProteinDisplay(r) {
   const lineUid = r.line_uid || '';
