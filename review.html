@@ -739,7 +739,8 @@ function renderQueue() {
     item.className = 'q-item' +
       (current && current.id === r.id ? ' active' : '') +
       (!isPending ? ' done' : '');
-    const initial = (r.name || '?').charAt(0).toUpperCase();
+    const cnName = (r.id || '').match(/^[\u4e00-\u9fff]+/)?.[0] || r.name || '未知';
+    const initial = cnName.charAt(0);
     const badge = r.status === 'approved' ? 'approved' :
                   r.status === 'rejected' ? 'rejected' : 'pending';
     const badgeText = badge === 'approved' ? '已核准' : badge === 'rejected' ? '已駁回' : '待審核';
@@ -750,7 +751,7 @@ function renderQueue() {
         onclick="e=>e.stopPropagation()" onchange="countSel()">
       <div class="q-avatar">${initial}</div>
       <div class="q-info">
-        <div class="q-name">${esc(r.name || '未知')}</div>
+        <div class="q-name">${esc(cnName)}</div>
         <div class="q-meta">${esc(r.pid || '')} · ${relTime(r.time)}</div>
       </div>
       <span class="q-badge ${badge}">${badgeText}</span>`;
