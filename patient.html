@@ -4,12 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>我的飲食紀錄</title>
-  <!-- iOS WKWebView history patch — must be before LIFF SDK -->
   <script>
   (function() {
-    // Suppress ALL errors from history.replaceState/pushState on iOS WKWebView.
-    // LIFF SDK calls these to clean auth params from URL, and iOS WKWebView
-    // throws "The string did not match the expected pattern." for certain URLs.
     var _origReplace = history.replaceState.bind(history);
     var _origPush    = history.pushState.bind(history);
     history.replaceState = function(s, t, u) { try { _origReplace(s, t, u); } catch(e) { console.warn('[iOS patch] replaceState suppressed:', e && e.message); } };
@@ -40,8 +36,6 @@
       min-height: 100vh;
       padding-bottom: 32px;
     }
-
-    /* ── Loading ── */
     #loading {
       position: fixed; inset: 0;
       display: flex; flex-direction: column;
@@ -59,8 +53,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     #loading p { color: var(--text-muted); font-size: 14px; }
-
-    /* ── Header ── */
     header {
       background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
       padding: 20px 16px 24px;
@@ -86,8 +78,6 @@
     }
     .header-info h1 { font-size: 18px; font-weight: 600; }
     .header-info p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
-
-    /* ── Protein Progress ── */
     .protein-card {
       background: rgba(255,255,255,0.18);
       border-radius: 12px;
@@ -112,8 +102,6 @@
       margin-top: 8px; font-size: 12px;
       text-align: center; opacity: 0.95;
     }
-
-    /* ── Stats Row ── */
     .stats-row {
       display: grid; grid-template-columns: repeat(3, 1fr);
       gap: 8px; padding: 12px 16px;
@@ -125,16 +113,12 @@
     }
     .stat-value { font-size: 20px; font-weight: 700; color: var(--primary-dark); }
     .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-
-    /* ── Section ── */
     .section-title {
       padding: 16px 16px 8px;
       font-size: 14px; font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase; letter-spacing: 0.05em;
     }
-
-    /* ── Protein Chart ── */
     .chart-card {
       background: var(--card);
       border-radius: 14px;
@@ -146,8 +130,6 @@
       display: block;
       width: 100% !important;
     }
-
-    /* ── Day Accordion (outer) ── */
     .day-accordion {
       background: var(--card);
       border-radius: 14px;
@@ -186,7 +168,6 @@
       flex-shrink: 0;
     }
     .day-accordion.open .day-arrow { transform: rotate(180deg); }
-
     .day-body {
       display: none;
       border-top: 1px solid var(--border);
@@ -194,8 +175,6 @@
       background: #FAFFFE;
     }
     .day-accordion.open .day-body { display: block; }
-
-    /* ── Meal Card (inner, inside a day) ── */
     .meal-card {
       background: var(--card);
       border-radius: 10px;
@@ -232,8 +211,6 @@
       border-top: 1px solid var(--border);
     }
     .meal-card.open .meal-card-body { display: block; }
-
-    /* ── Status badge ── */
     .status-badge {
       font-size: 11px; padding: 2px 8px;
       border-radius: 99px; font-weight: 600;
@@ -242,8 +219,6 @@
     .status-pending  { background: #FEF3C7; color: #92400E; }
     .status-approved { background: #D1FAE5; color: #065F46; }
     .status-rejected { background: #FEE2E2; color: #991B1B; }
-
-    /* ── Meal Image ── */
     .meal-image-wrap {
       width: 100%; height: 200px; overflow: hidden;
       background: #f0f4f8;
@@ -257,14 +232,11 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 48px; background: var(--primary-light);
     }
-
     .meal-body { padding: 12px 14px; }
     .foods-text {
       font-size: 14px; color: var(--text);
       line-height: 1.5; margin-bottom: 12px;
     }
-
-    /* ── Macros Grid ── */
     .macros-grid {
       display: grid; grid-template-columns: repeat(5, 1fr);
       gap: 6px; margin-bottom: 12px;
@@ -278,8 +250,6 @@
       color: var(--primary-dark);
     }
     .macro-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
-
-    /* ── AI Note ── */
     .ai-note {
       background: #F0FFF4;
       border-left: 3px solid var(--primary);
@@ -292,8 +262,6 @@
       font-size: 11px; font-weight: 700;
       color: var(--primary); margin-bottom: 4px;
     }
-
-    /* ── Nutritionist Advice ── */
     .nutrition-advice {
       background: #FFF8E1;
       border-left: 3px solid var(--warning);
@@ -311,41 +279,30 @@
       margin-bottom: 4px;
     }
     .score-stars { color: var(--warning); font-size: 14px; }
-
-    /* ── No Records ── */
     .empty-state {
       text-align: center; padding: 48px 24px;
       color: var(--text-muted);
     }
     .empty-icon { font-size: 48px; margin-bottom: 12px; }
-
-    /* ── Error ── */
     #error-screen {
       display: none; padding: 32px 24px; text-align: center;
     }
     #error-screen .error-icon { font-size: 56px; margin-bottom: 16px; }
     #error-screen h2 { font-size: 18px; margin-bottom: 8px; }
     #error-screen p { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
-
     #main { display: none; }
   </style>
 </head>
 <body>
-
-<!-- Loading -->
 <div id="loading">
   <div class="spinner"></div>
   <p>載入中…</p>
 </div>
-
-<!-- Error -->
 <div id="error-screen">
   <div class="error-icon">🔒</div>
   <h2>無法載入</h2>
   <p id="error-msg">請在 LINE App 中開啟此頁面</p>
 </div>
-
-<!-- Main -->
 <div id="main">
   <header>
     <div class="header-top">
@@ -368,39 +325,29 @@
       <div class="protein-status" id="protein-status">計算中…</div>
     </div>
   </header>
-
-  <!-- Today stats -->
   <div class="stats-row" id="stats-row"></div>
-
-  <!-- Protein Trend Chart -->
   <div class="section-title">蛋白質趨勢</div>
   <div class="chart-card">
     <canvas id="protein-chart" height="160"></canvas>
   </div>
-
-  <!-- Approved Records Accordion -->
-  <div class="section-title">核准紀錄</div>
+  <!-- ★ 改動3：核准紀錄 → 每日紀錄 -->
+  <div class="section-title">每日紀錄</div>
   <div id="records-list"></div>
 </div>
-
 <script>
-// ─── 設定區（需修改） ──────────────────────────────────
-const LIFF_ID       = '2009326025-d6EV7T42';         // LIFF App ID
+const LIFF_ID       = '2009326025-d6EV7T42';
 const API_URL       = 'https://huangcs.app.n8n.cloud/webhook/patient-history';
 const IMAGE_PROXY   = 'https://huangcs.app.n8n.cloud/webhook/meal-photo';
-// ─────────────────────────────────────────────────
 
 function showError(msg) {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('error-screen').style.display = 'block';
   document.getElementById('error-msg').textContent = msg || '請在 LINE App 中開啟此頁面';
 }
-
 function getTaipeiToday() {
   const now = new Date(Date.now() + 8 * 3600000);
-  return now.toISOString().split('T')[0]; // YYYY-MM-DD
+  return now.toISOString().split('T')[0];
 }
-
 function isToday(dateStr) {
   const today = getTaipeiToday();
   const d = String(dateStr || '');
@@ -409,66 +356,53 @@ function isToday(dateStr) {
   const day   = String(parseInt(today.split('-')[2]));
   return d.includes(today) || d.startsWith(year + '/' + month + '/' + day);
 }
-
 function isApproved(status) {
   return status === '已核准' || status === '已審核';
 }
-
 function statusClass(status) {
   if (!status || status === '待審核') return 'status-pending';
   if (isApproved(status)) return 'status-approved';
   if (status === '已馳回') return 'status-rejected';
   return 'status-pending';
 }
-
 function statusLabel(status) {
   if (!status || status === '待審核') return '待審核';
   if (isApproved(status)) return '✅ 已核准';
   if (status === '已馳回') return '⚠️ 已馳回';
   return status;
 }
-
 function scoreToStars(score) {
   const n = parseFloat(score);
   if (isNaN(n)) return '';
   const full = Math.round(n);
   return '★'.repeat(Math.min(full, 5)) + '☆'.repeat(Math.max(0, 5 - full));
 }
-
 function escHtml(str) {
   return String(str || '')
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
 function formatDate(dateStr) {
   const m = String(dateStr).match(/(\d+)\/(\d+)\/(\d+)\s*(.*)/);
   if (m) return `${m[2]}月${m[3]}日 ${m[4]}`;
   return dateStr;
 }
-
-// Extract YYYY-MM-DD key from date string like "2026/3/8 下午1:30"
 function toDateKey(dateStr) {
   const m = String(dateStr).match(/(\d{4})\/(\d+)\/(\d+)/);
   if (!m) return '';
   return m[1] + '-' + String(m[2]).padStart(2,'0') + '-' + String(m[3]).padStart(2,'0');
 }
-
-// Format YYYY-MM-DD → "M/D"
 function formatDateKey(key) {
   const parts = key.split('-');
   return parseInt(parts[1]) + '/' + parseInt(parts[2]);
 }
-
 function renderProteinProgress(records, recommended, weight) {
   const todayRecs = records.filter(r => isToday(r.date));
   const total = todayRecs.reduce((s, r) => s + (r.protein || 0), 0);
   const excess = weight * 2;
   const rec = recommended || 0;
-
   document.getElementById('protein-text').textContent =
     Math.round(total) + 'g' + (rec ? ' / ' + Math.round(rec) + 'g' : '');
-
   if (rec > 0) {
     const pct = Math.min((total / excess) * 100, 100);
     document.getElementById('protein-bar').style.width = pct + '%';
@@ -484,7 +418,6 @@ function renderProteinProgress(records, recommended, weight) {
     document.getElementById('protein-bar').style.width = '0%';
     document.getElementById('protein-status').textContent = '今日攝取：' + Math.round(total) + 'g';
   }
-
   const cal  = todayRecs.reduce((s, r) => s + (r.calories || 0), 0);
   document.getElementById('stats-row').innerHTML = `
     <div class="stat-card">
@@ -501,33 +434,24 @@ function renderProteinProgress(records, recommended, weight) {
     </div>
   `;
 }
-
 function renderChart(records, recommended) {
-  // Only use approved records for the trend
-  const approved = records.filter(r => isApproved(r.status));
-
-  // Group protein by date key
+  // ★ 改動1：所有紀錄都納入趨勢圖（不再過濾核准狀態）
   const byDate = {};
-  approved.forEach(r => {
+  records.forEach(r => {
     const key = toDateKey(r.date);
     if (!key) return;
     byDate[key] = (byDate[key] || 0) + (r.protein || 0);
   });
-
   const keys = Object.keys(byDate).sort();
-
   if (keys.length === 0) {
     document.querySelector('.chart-card').style.display = 'none';
     document.querySelector('.section-title').style.display = 'none';
     return;
   }
-
   const labels = keys.map(formatDateKey);
   const values = keys.map(k => Math.round(byDate[k]));
   const rec = recommended || 0;
-
   const ctx = document.getElementById('protein-chart').getContext('2d');
-
   const datasets = [
     {
       label: '每日蛋白質 (g)',
@@ -541,7 +465,6 @@ function renderChart(records, recommended) {
       tension: 0.3,
     }
   ];
-
   if (rec > 0) {
     datasets.push({
       label: '建議攝取量',
@@ -554,7 +477,6 @@ function renderChart(records, recommended) {
       tension: 0,
     });
   }
-
   new Chart(ctx, {
     type: 'line',
     data: { labels, datasets },
@@ -596,18 +518,14 @@ function renderChart(records, recommended) {
     }
   });
 }
-
-// Build the inner HTML for a single meal record (used inside day accordion)
 function renderMealCardBody(r) {
   const imgUrl = r.imageId ? `${IMAGE_PROXY}?id=${r.imageId}` : '';
   const imgHtml = imgUrl
     ? `<img src="${imgUrl}" onerror="this.parentNode.innerHTML='<div class=img-placeholder>🍱</div>'" loading="lazy">`
     : `<div class="img-placeholder">🍱</div>`;
-
   const aiNote = r.aiNote
     ? `<div class="ai-note"><div class="ai-note-label">🤖 AI 飲食建議</div>${escHtml(r.aiNote)}</div>`
     : '';
-
   const stars = r.nutritionScore
     ? `<div class="score-row"><span class="score-stars">${scoreToStars(r.nutritionScore)}</span><span style="font-size:12px;color:#92400E">(${r.nutritionScore}分)</span></div>` : '';
   const advice = r.nutritionistAdvice
@@ -616,7 +534,6 @@ function renderMealCardBody(r) {
     <div class="nutrition-advice-label">👩‍⚕️ 營養師建議</div>
     ${stars}${advice}
   </div>`;
-
   return `
     <div class="meal-image-wrap">${imgHtml}</div>
     <div class="meal-body">
@@ -647,43 +564,30 @@ function renderMealCardBody(r) {
       ${reviewHtml}
     </div>`;
 }
-
-// Extract time-of-day string from date like "2026/3/8 下午1:30"
 function formatTimeOnly(dateStr) {
   const m = String(dateStr).match(/\d{4}\/\d+\/\d+\s*(.*)/);
   return m ? m[1].trim() : dateStr;
 }
-
-// Format YYYY-MM-DD → "M月D日（週X）"
 function formatDayLabel(key) {
   const parts = key.split('-');
   const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
   const days = ['日','一','二','三','四','五','六'];
   return `${parseInt(parts[1])}月${parseInt(parts[2])}日（週${days[d.getDay()]}）`;
 }
-
 function renderRecords(records) {
   const list = document.getElementById('records-list');
-
-  // Only approved records
-  const reviewed = records.filter(r => isApproved(r.status));
-
-  if (reviewed.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>尚無核准的紀錄</p></div>`;
+  // ★ 改動2：所有紀錄都直接顯示（不再過濾核准狀態）
+  if (records.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>尚無紀錄</p></div>`;
     return;
   }
-
-  // Group by date key (YYYY-MM-DD)
   const grouped = {};
-  reviewed.forEach(r => {
+  records.forEach(r => {
     const key = toDateKey(r.date);
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(r);
   });
-
-  // Sort dates descending (newest first)
   const sortedKeys = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
-
   let html = '';
   sortedKeys.forEach((dateKey, di) => {
     const dayRecs = grouped[dateKey];
@@ -693,8 +597,6 @@ function renderRecords(records) {
     const proteinStr = Math.round(totalProtein) + 'g';
     const dayLabel = formatDayLabel(dateKey);
     const summary = `${mealCount} 餐 · 熱量 ${Math.round(totalCal)} kcal`;
-
-    // Build inner meal cards for this day
     let mealsHtml = '';
     dayRecs.forEach((r, mi) => {
       const cardId = `meal-${di}-${mi}`;
@@ -712,7 +614,6 @@ function renderRecords(records) {
           </div>
         </div>`;
     });
-
     html += `
     <div class="day-accordion" id="day-${di}">
       <div class="day-header" onclick="toggleDayAccordion(${di})">
@@ -729,20 +630,16 @@ function renderRecords(records) {
       </div>
     </div>`;
   });
-
   list.innerHTML = html;
 }
-
 function toggleDayAccordion(di) {
   const item = document.getElementById('day-' + di);
   if (item) item.classList.toggle('open');
 }
-
 function toggleMealCard(cardId) {
   const item = document.getElementById(cardId);
   if (item) item.classList.toggle('open');
 }
-
 async function fetchRecords(userId) {
   const resp = await fetch(`${API_URL}?userId=${encodeURIComponent(userId)}`);
   const text = await resp.text();
@@ -754,38 +651,27 @@ async function fetchRecords(userId) {
     throw new Error('API JSON 解析失敗: ' + text.substring(0, 120));
   }
 }
-
 async function init() {
   let _step = '啟動';
   try {
     _step = '讀取URL';
     const urlParams = new URLSearchParams(location.search);
     const urlUserId = urlParams.get('userId');
-
-    // ── iOS fix: strip legacy liff.state if present (old-style LIFF redirect) ──
-    // Note: LIFF 2.x uses code+state for OAuth — those must be kept for liff.init().
-    // The history.replaceState patch above handles the WKWebView "pattern" error for
-    // any history API calls the LIFF SDK makes during auth processing.
     if (urlParams.has('liff.state') && !sessionStorage.getItem('_liff_stripped')) {
       sessionStorage.setItem('_liff_stripped', '1');
       urlParams.delete('liff.state');
       try {
-        // MUST use absolute URL — relative paths may throw on iOS WKWebView in LINE
         const cleanUrl = (location.origin || '') + location.pathname +
           (urlParams.toString() ? '?' + urlParams.toString() : '');
         window.location.replace(cleanUrl);
-        return; // wait for reload
+        return;
       } catch (navErr) {
-        // If redirect itself throws, fall through to liff.init() —
-        // the history.replaceState patch above will handle the WKWebView error
         console.warn('iOS redirect failed, falling through:', navErr && navErr.message);
       }
     }
-
     let userId = null;
     let displayName = null;
     let pictureUrl = null;
-
     if (LIFF_ID && LIFF_ID !== 'YOUR_LIFF_ID_HERE') {
       try {
         _step = 'liff.init';
@@ -799,21 +685,16 @@ async function init() {
         pictureUrl  = profile.pictureUrl;
         _step = '已取得用戶';
       } catch (liffErr) {
-        // Comprehensive error info for diagnostics
         const eMsg  = (liffErr && liffErr.message) ? String(liffErr.message) : String(liffErr);
         const eName = (liffErr && liffErr.name) ? liffErr.name
                     : (liffErr && liffErr.constructor && liffErr.constructor.name) || 'Error';
         const eCode = (liffErr && liffErr.code) ? String(liffErr.code) : '';
         console.warn('LIFF failed at [' + _step + ']:', eName, eCode, eMsg, liffErr);
-
-        // Always retry once on first LIFF failure (catches any iOS variant)
         if (!sessionStorage.getItem('_liff_retry')) {
           sessionStorage.setItem('_liff_retry', '1');
           location.reload();
           return;
         }
-
-        // Second failure — show diagnostic info including step
         const isPatternErr = eMsg.indexOf('did not match') !== -1
           || eMsg.indexOf('pattern') !== -1
           || eName === 'SyntaxError';
@@ -821,56 +702,45 @@ async function init() {
           showError('iOS 相容性問題 [' + _step + ']，請關閉此視窗後重新點選選單按鈕開啟');
           return;
         }
-        // For other errors, show detailed message
         showError('LIFF 初始化失敗 [' + _step + ']，請重新開啟\n[' + eName + (eCode ? '/' + eCode : '') + ']: ' + eMsg);
         return;
       }
     }
-
     _step = '確誌userId';
     if (!userId && urlUserId) {
       userId = urlUserId;
       displayName = '患者';
     }
-
     if (!userId) {
       showError('請在 LINE App 中開啟此頁面，或確誌 LIFF 設定是否正確');
       return;
     }
-
     _step = '更新介面';
     if (pictureUrl) {
       document.getElementById('avatar-wrap').innerHTML =
         `<img class="avatar" src="${pictureUrl}" alt="avatar">`;
     }
     document.getElementById('patient-name').textContent = displayName || '您好';
-
     _step = '載入紀錄';
     const data = await fetchRecords(userId);
-
     if (data.patient?.name) {
       document.getElementById('patient-name').textContent = data.patient.name;
     }
-
     _step = '渲染介面';
     const recs = data.records || [];
     const rec  = data.patient?.recommendedProtein || 0;
     const wt   = data.patient?.weight || 0;
-
     renderProteinProgress(recs, rec, wt);
     renderChart(recs, rec);
     renderRecords(recs);
-
     document.getElementById('loading').style.display = 'none';
     document.getElementById('main').style.display = 'block';
     _step = '完成';
-
   } catch (err) {
     console.error('Error at [' + _step + ']:', err);
     showError('載入失敗 [' + _step + ']：' + (err && err.message ? err.message : String(err)));
   }
 }
-
 init();
 </script>
 </body>
