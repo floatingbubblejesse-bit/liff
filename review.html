@@ -808,11 +808,12 @@ function selectRecord(i) {
   const sc = parseInt(current.score) || 60;
   document.getElementById('scoreSlider').value = sc;
   updateScore(sc);
-  document.getElementById('vCal').value  = current.cal  || '';
-  document.getElementById('vPro').value  = current.pro  || '';
-  document.getElementById('vFib').value  = current.fib  || '';
-  document.getElementById('vCarb').value = current.carb || '';
-  document.getElementById('vFat').value  = current.fat  || '';
+  const _nv = v => { const n = parseFloat(v); return isNaN(n) ? '' : n; };
+  document.getElementById('vCal').value  = _nv(current.cal);
+  document.getElementById('vPro').value  = _nv(current.pro);
+  document.getElementById('vFib').value  = _nv(current.fib);
+  document.getElementById('vCarb').value = _nv(current.carb);
+  document.getElementById('vFat').value  = _nv(current.fat);
   const ok = !current.status || current.status === 'pending';
   document.getElementById('btnApprove').disabled = !ok;
   updateProteinDisplay(current);
