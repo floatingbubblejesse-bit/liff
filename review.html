@@ -559,18 +559,8 @@
       <h3>📝 審核建議（可編輯）</h3>
       <textarea class="advice-ta" id="adviceTA" rows="4" placeholder="點選上方劇本快速填入，或直接輸入…"></textarea>
     </div>
-    <div class="p-section">
-      <h3>⭐ 調整評分</h3>
-      <div class="score-row">
-        <div class="score-circle" id="scoreCircle">—</div>
-        <div class="score-info">
-          <div class="grade" id="scoreGrade">—</div>
-          <div class="hint">拖曳滑桿調整分數</div>
-        </div>
-      </div>
-      <input type="range" id="scoreSlider" min="0" max="100" value="60"
-             oninput="updateScore(+this.value)">
-    </div>
+    <!-- 調整評分已移除 -->
+    <input type="hidden" id="scoreSlider" value="60">
     <div class="p-section">
       <h3>📊 營養數值（可調整）</h3>
       <div class="nutr-grid">
