@@ -16,149 +16,99 @@
 :root {
   --primary: #3DAE8F;
   --primary-dark: #2E8B6E;
+  --primary-light: #E8F7F3;
+  --gold: #D4AF37;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
   font-family: -apple-system,'PingFang TC','Microsoft JhengHei',sans-serif;
-  background: #000;
+  background: linear-gradient(160deg, #0D0D0D 0%, #1a1a2e 100%);
   color: #fff;
-  height: 100vh;
-  overflow: hidden;
-  position: relative;
-}
-
-/* ── Loading ── */
-#loading {
-  position: fixed; inset: 0;
+  min-height: 100vh;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  background: #111; z-index: 9999; gap: 12px;
-}
-.spinner {
-  width: 40px; height: 40px;
-  border: 3px solid #333; border-top-color: var(--primary);
-  border-radius: 50%; animation: spin .7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-#loading p { color: #999; font-size: 14px; }
-
-/* ── Top Bar ── */
-.top-bar {
-  position: absolute; top: 0; left: 0; right: 0;
-  padding: 12px 16px; z-index: 20;
-  display: flex; justify-content: space-between; align-items: center;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%);
-}
-.close-btn {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: rgba(255,255,255,0.2); border: none;
-  color: #fff; font-size: 20px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
 }
 
-/* ── Level Indicator ── */
-.level-badge {
-  display: flex; align-items: center; gap: 6px;
-  background: rgba(0,0,0,0.5); border-radius: 20px;
-  padding: 5px 12px; font-size: 12px; font-weight: 600;
-  transition: background .3s;
-}
-.level-badge.ok { background: rgba(76,175,80,0.75); }
-.level-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #F5A623; transition: background .3s;
-}
-.level-badge.ok .level-dot { background: #fff; }
-
-/* ── Video ── */
-.video-wrap {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-}
-.video-wrap video {
-  width: 100%; height: 100%; object-fit: cover;
+/* ── Main Card ── */
+.card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(212,175,55,0.25);
+  border-radius: 24px;
+  padding: 36px 28px;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  backdrop-filter: blur(10px);
 }
 
-/* ── Crosshair Overlay ── */
-.overlay {
-  position: absolute; inset: 0;
-  pointer-events: none; z-index: 10;
+.card-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
 }
 
-/* Center cross */
-.cross {
-  position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%,-50%);
-  width: 44px; height: 44px;
-}
-.cross::before, .cross::after {
-  content: ''; position: absolute;
-  background: rgba(255,255,255,0.7);
-}
-.cross::before {
-  top: 0; bottom: 0; left: 50%; width: 1.5px;
-  transform: translateX(-50%);
-}
-.cross::after {
-  left: 0; right: 0; top: 50%; height: 1.5px;
-  transform: translateY(-50%);
+.card-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #F0D060;
 }
 
-/* Plate circle guide */
-.plate-circle {
-  position: absolute; top: 50%; left: 50%;
-  width: 72vw; height: 72vw;
-  max-width: 320px; max-height: 320px;
-  border: 1.5px dashed rgba(255,255,255,0.4);
+.card-desc {
+  font-size: 14px;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+/* ── Shutter Button ── */
+.shutter-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 24px;
+}
+.shutter-btn {
+  width: 80px; height: 80px;
   border-radius: 50%;
-  transform: translate(-50%,-50%);
-}
-
-/* Corner brackets */
-.bracket {
-  position: absolute; width: 26px; height: 26px;
-  border-color: rgba(255,255,255,0.55); border-style: solid;
-}
-.bracket.tl { top: 12%; left: 8%;  border-width: 2px 0 0 2px; }
-.bracket.tr { top: 12%; right: 8%; border-width: 2px 2px 0 0; }
-.bracket.bl { bottom: 20%; left: 8%;  border-width: 0 0 2px 2px; }
-.bracket.br { bottom: 20%; right: 8%; border-width: 0 2px 2px 0; }
-
-/* Guide text */
-.guide-text {
-  position: absolute; bottom: 22%; left: 0; right: 0;
-  text-align: center; font-size: 13px; font-weight: 500;
-  color: rgba(255,255,255,0.85);
-  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
-}
-
-/* Card tip */
-.card-tip {
-  position: absolute; top: 10%; left: 0; right: 0;
-  text-align: center; font-size: 12px;
-  color: rgba(255,255,255,0.7);
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-}
-
-/* ── Bottom Bar ── */
-.bottom-bar {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  padding: 16px 20px 36px; z-index: 20;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border: 4px solid rgba(255,255,255,0.3);
+  cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
-}
-.shutter {
-  width: 68px; height: 68px; border-radius: 50%;
-  background: #fff; border: 4px solid rgba(255,255,255,0.4);
-  cursor: pointer; position: relative;
   -webkit-tap-highlight-color: transparent;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(61,174,143,0.4);
+  transition: transform .15s;
 }
-.shutter::after {
-  content: ''; position: absolute; inset: 4px;
-  border-radius: 50%; background: #fff;
-  border: 2px solid rgba(0,0,0,0.1);
+.shutter-btn:active { transform: scale(0.9); }
+.shutter-btn::after {
+  content: ''; position: absolute; inset: 5px;
+  border-radius: 50%; border: 2px solid rgba(255,255,255,0.5);
 }
-.shutter:active { transform: scale(0.9); }
+.shutter-icon {
+  font-size: 32px;
+  color: #fff;
+  z-index: 1;
+}
+
+/* Hidden file input */
+#fileInput { display: none; }
+
+/* ── Tips ── */
+.tips {
+  text-align: left;
+  width: 100%;
+}
+.tip {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.5;
+}
+.tip:first-child { border-top: none; }
+.tip-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.tip strong { color: #F0D060; }
 
 /* ── Preview ── */
 .preview-screen {
@@ -181,60 +131,51 @@ body {
 .prev-btn.retry { background: rgba(255,255,255,0.2); color: #fff; }
 .prev-btn.send  { background: var(--primary); color: #fff; }
 
-/* ── Error ── */
-#error-screen {
+/* ── Uploading overlay ── */
+.uploading {
   display: none; position: fixed; inset: 0;
-  background: #111; z-index: 9999;
-  flex-direction: column; align-items: center; justify-content: center;
-  padding: 32px; text-align: center; gap: 12px;
+  background: rgba(0,0,0,0.8); z-index: 9999;
+  flex-direction: column; align-items: center; justify-content: center; gap: 16px;
 }
-#error-screen.active { display: flex; }
-.error-icon { font-size: 56px; }
-#error-screen h2 { font-size: 18px; }
-#error-screen p { color: #999; font-size: 14px; line-height: 1.6; }
+.uploading.active { display: flex; }
+.uploading .spinner {
+  width: 48px; height: 48px;
+  border: 3px solid #333; border-top-color: var(--primary);
+  border-radius: 50%; animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.uploading p { color: #ccc; font-size: 15px; }
 </style>
 </head>
 <body>
 
-<!-- Loading -->
-<div id="loading">
-  <div class="spinner"></div>
-  <p>開啟相機中…</p>
-</div>
+<!-- Main Interface -->
+<div class="card">
+  <div class="card-icon">📸</div>
+  <div class="card-title">拍攝餐食照片</div>
+  <div class="card-desc">拍攝您的餐點，AI 將自動分析營養成分</div>
 
-<!-- Error -->
-<div id="error-screen">
-  <div class="error-icon">📷</div>
-  <h2 id="error-title">無法開啟相機</h2>
-  <p id="error-msg">請確認已授予相機權限</p>
-</div>
-
-<!-- Camera View -->
-<div class="top-bar">
-  <button class="close-btn" onclick="closeCamera()">✕</button>
-  <div class="level-badge" id="levelBadge">
-    <div class="level-dot"></div>
-    <span id="levelText">偵測角度中</span>
+  <div class="shutter-wrap">
+    <label class="shutter-btn" for="fileInput">
+      <span class="shutter-icon">📷</span>
+    </label>
+    <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="onPhotoSelected(event)">
   </div>
-</div>
 
-<div class="video-wrap">
-  <video id="video" autoplay playsinline muted></video>
-</div>
-
-<div class="overlay">
-  <div class="bracket tl"></div>
-  <div class="bracket tr"></div>
-  <div class="bracket bl"></div>
-  <div class="bracket br"></div>
-  <div class="plate-circle"></div>
-  <div class="cross"></div>
-  <div class="card-tip">💳 建議將健保卡放在食物旁邊，提升估算精準度</div>
-  <div class="guide-text">📐 請將手機平行於餐盤正上方俯拍</div>
-</div>
-
-<div class="bottom-bar">
-  <button class="shutter" id="shutterBtn" onclick="capture()"></button>
+  <div class="tips">
+    <div class="tip">
+      <span class="tip-icon">📐</span>
+      <span>請將手機<strong>平行於餐盤正上方俯拍</strong>，避免斜拍造成體積失真</span>
+    </div>
+    <div class="tip">
+      <span class="tip-icon">💳</span>
+      <span>建議將<strong>健保卡、信用卡或悠遊卡</strong>放在食物旁邊，AI 可更精準估算份量</span>
+    </div>
+    <div class="tip">
+      <span class="tip-icon">💡</span>
+      <span>確保光線充足，避免陰影遮擋食物</span>
+    </div>
+  </div>
 </div>
 
 <!-- Preview -->
@@ -242,127 +183,80 @@ body {
   <img id="previewImg" src="" alt="preview">
   <div class="preview-actions">
     <button class="prev-btn retry" onclick="retake()">重拍</button>
-    <button class="prev-btn send" onclick="send()">✓ 上傳分析</button>
+    <button class="prev-btn send" id="sendBtn" onclick="send()">✓ 上傳分析</button>
   </div>
 </div>
 
-<canvas id="canvas" style="display:none"></canvas>
+<!-- Uploading overlay -->
+<div class="uploading" id="uploading">
+  <div class="spinner"></div>
+  <p>AI 正在分析您的餐食…</p>
+</div>
 
 <script>
 // ── Config ──
-const LIFF_ID   = '2009326025-d6EV7T42';
+const LIFF_ID   = '2009326025-eVoyT2Ku';
 const UPLOAD_URL = 'https://huangcs.app.n8n.cloud/webhook/meal-upload';
 
-let _stream = null;
 let _userId = null;
+let _selectedFile = null;
 
-// ── Close / Back ──
+// ── Close ──
 function closeCamera() {
-  stopStream();
   if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
     liff.closeWindow();
   } else {
     window.close();
-    // fallback
     history.back();
   }
 }
 
-// ── Camera ──
-async function startCamera() {
-  try {
-    _stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
-      audio: false
-    });
-    document.getElementById('video').srcObject = _stream;
-    document.getElementById('loading').style.display = 'none';
-  } catch (err) {
-    console.error('Camera error:', err);
-    showError('無法開啟相機', '請確認已授予相機權限，並重新開啟此頁面。');
-  }
+// ── Photo Selected (from native camera) ──
+function onPhotoSelected(e) {
+  var file = e.target.files && e.target.files[0];
+  if (!file) return;
+  _selectedFile = file;
+
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    document.getElementById('previewImg').src = ev.target.result;
+    document.getElementById('previewScreen').classList.add('active');
+  };
+  reader.readAsDataURL(file);
 }
 
-function stopStream() {
-  if (_stream) { _stream.getTracks().forEach(t => t.stop()); _stream = null; }
-}
-
-function showError(title, msg) {
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('error-title').textContent = title;
-  document.getElementById('error-msg').textContent = msg;
-  document.getElementById('error-screen').classList.add('active');
-}
-
-// ── Gyroscope / Level ──
-function initGyro() {
-  if (typeof DeviceOrientationEvent === 'undefined') return;
-  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-    DeviceOrientationEvent.requestPermission().then(function(s) {
-      if (s === 'granted') window.addEventListener('deviceorientation', onOrientation);
-    }).catch(function(){});
-  } else {
-    window.addEventListener('deviceorientation', onOrientation);
-  }
-}
-
-function onOrientation(e) {
-  if (e.beta === null || e.gamma === null) return;
-  var beta = e.beta, gamma = e.gamma;
-  // phone flat face-up: beta~0, gamma~0
-  // phone flat face-down (camera down): beta~±180, gamma~0
-  var tilt = Math.sqrt(
-    Math.pow(Math.min(Math.abs(beta), Math.abs(180 - Math.abs(beta))), 2) +
-    Math.pow(gamma, 2)
-  );
-  var badge = document.getElementById('levelBadge');
-  var text  = document.getElementById('levelText');
-  if (tilt < 12) {
-    badge.classList.add('ok');
-    text.textContent = '✓ 角度正確';
-  } else {
-    badge.classList.remove('ok');
-    text.textContent = '請保持水平 (' + Math.round(tilt) + '°)';
-  }
-}
-
-// ── Capture ──
-function capture() {
-  var v = document.getElementById('video');
-  var c = document.getElementById('canvas');
-  c.width  = v.videoWidth;
-  c.height = v.videoHeight;
-  c.getContext('2d').drawImage(v, 0, 0);
-  document.getElementById('previewImg').src = c.toDataURL('image/jpeg', 0.92);
-  document.getElementById('previewScreen').classList.add('active');
-}
-
+// ── Retake ──
 function retake() {
   document.getElementById('previewScreen').classList.remove('active');
+  _selectedFile = null;
+  // Reset file input so same file can be re-selected
+  document.getElementById('fileInput').value = '';
 }
 
+// ── Send ──
 async function send() {
-  var c = document.getElementById('canvas');
-  var blob = await new Promise(function(r){ c.toBlob(r, 'image/jpeg', 0.92); });
+  if (!_selectedFile) return;
+
+  document.getElementById('previewScreen').classList.remove('active');
+  document.getElementById('uploading').classList.add('active');
+
   var fd = new FormData();
-  fd.append('image', blob, 'meal_' + Date.now() + '.jpg');
+  fd.append('image', _selectedFile, 'meal_' + Date.now() + '.jpg');
   fd.append('userId', _userId || '');
 
   try {
-    document.querySelector('.prev-btn.send').textContent = '上傳中…';
-    document.querySelector('.prev-btn.send').disabled = true;
-
     var resp = await fetch(UPLOAD_URL, { method: 'POST', body: fd });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
 
+    document.getElementById('uploading').classList.remove('active');
     alert('✅ 照片已上傳，AI 正在分析中！');
-    document.getElementById('previewScreen').classList.remove('active');
     closeCamera();
   } catch (err) {
+    document.getElementById('uploading').classList.remove('active');
     console.error('Upload error:', err);
     alert('上傳失敗: ' + (err.message || err));
-    document.querySelector('.prev-btn.send').textContent = '✓ 上傳分析';
-    document.querySelector('.prev-btn.send').disabled = false;
+    // Show preview again for retry
+    document.getElementById('previewScreen').classList.add('active');
   }
 }
 
@@ -375,7 +269,6 @@ async function init() {
       var profile = await liff.getProfile();
       _userId = profile.userId;
     }
-    // fallback userId from URL
     if (!_userId) {
       var p = new URLSearchParams(location.search);
       _userId = p.get('userId') || '';
@@ -383,9 +276,6 @@ async function init() {
   } catch (err) {
     console.warn('LIFF init error:', err);
   }
-
-  await startCamera();
-  initGyro();
 }
 
 init();
