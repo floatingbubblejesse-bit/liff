@@ -341,33 +341,40 @@
     .toast.show { opacity: 1; }
     .protein-section {
       margin-top: 14px;
-      padding: 12px 14px;
-      background: #f5f7ff;
-      border-radius: 10px;
-      border: 1px solid #dde5ff;
+      background: linear-gradient(135deg, var(--green-dark) 0%, var(--green) 100%);
+      border-radius: 12px;
+      padding: 14px;
+      color: white;
+    }
+    .protein-card {
+      background: rgba(255,255,255,0.18);
+      border-radius: 12px;
+      padding: 14px;
     }
     .protein-header {
       display: flex; justify-content: space-between;
       align-items: center; margin-bottom: 8px;
     }
-    .protein-label { font-size: 12px; color: var(--muted); font-weight: 600; }
-    .protein-target-val { font-size: 13px; font-weight: 700; color: var(--blue); }
-    .protein-bar-bg {
-      width: 100%; height: 8px;
-      background: #e2e8f0; border-radius: 10px;
-      overflow: hidden; margin-bottom: 8px;
+    .protein-label { font-size: 13px; opacity: 0.9; }
+    .protein-value { font-size: 13px; font-weight: 600; }
+    .progress-bar-bg {
+      background: rgba(255,255,255,0.3);
+      border-radius: 99px;
+      height: 8px;
+      overflow: hidden;
     }
-    .protein-bar-fill {
-      height: 100%; border-radius: 10px;
-      background: var(--blue);
-      transition: width .5s ease, background .3s;
-      width: 0%;
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: white;
+      transition: width 0.8s ease;
     }
-    .protein-row {
-      display: flex; justify-content: space-between; align-items: center;
+    .protein-status {
+      margin-top: 8px;
+      font-size: 12px;
+      text-align: center;
+      opacity: 0.95;
     }
-    .protein-today { font-size: 13px; color: var(--text); }
-    .protein-today strong { font-weight: 700; }
     .protein-status-badge {
       font-size: 11px; font-weight: 700;
       padding: 3px 10px; border-radius: 20px;
@@ -465,16 +472,15 @@
       <div id="proteinSection" style="display:none; margin-top:14px">
         <div class="card-title" style="margin-bottom:6px">🥩 每日蛋白質攝取進度</div>
         <div class="protein-section">
-          <div class="protein-header">
-            <span class="protein-label">每日建議攝取量</span>
-            <span class="protein-target-val" id="proteinTarget">— g</span>
-          </div>
-          <div class="protein-bar-bg">
-            <div class="protein-bar-fill" id="proteinBarFill"></div>
-          </div>
-          <div class="protein-row">
-            <span class="protein-today">今日已攝取：<strong id="proteinToday">—</strong></span>
-            <span class="protein-status-badge progress" id="proteinStatusBadge">計算中…</span>
+          <div class="protein-card">
+            <div class="protein-header">
+              <span class="protein-label">今日蛋白質進度</span>
+              <span class="protein-value" id="proteinText">—</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="proteinBarFill" style="width:0%"></div>
+            </div>
+            <div class="protein-status" id="proteinStatus">計算中…</div>
           </div>
         </div>
       </div>
@@ -843,11 +849,11 @@ function updateProteinDisplay(r) {
   }
   section.style.display      = 'block';
   panelSection.style.display = 'block';
-  document.getElementById('proteinTarget').textContent     = '計算中…';
-  document.getElementById('proteinToday').textContent      = '計算中…';
+  document.getElementById('proteinText').textContent        = '—';
+  document.getElementById('proteinBarFill').style.width     = '0%';
+  document.getElementById('proteinStatus').textContent      = '計算中…';
   document.getElementById('panelProteinTarget').textContent = '計算中…';
   document.getElementById('panelProteinToday').textContent  = '計算中…';
-  document.getElementById('proteinStatusBadge').textContent = '計算中…';
   document.getElementById('panelProteinStatus').textContent = '計算中…';
   fetchProteinData(lineUid)
     .then(({ target, consumed }) => {
@@ -928,36 +934,46 @@ function renderProteinNumbers(target, consumed, weight) {
   }
   section.style.display      = 'block';
   panelSection.style.display = 'block';
-  const excessThreshold = weight ? weight * 2 : null;
-  const pct = Math.min(100, (consumed / target) * 100);
-  let statusText, statusClass, barColor;
-  if (excessThreshold !== null && consumed >= excessThreshold) {
-    statusText  = '蛋白質過量喔！';
-    statusClass = 'protein-status-badge excess';
-    barColor    = 'var(--orange)';
-  } else if (consumed >= target) {
-    statusText  = '🎉 恭喜達標！';
-    statusClass = 'protein-status-badge achieved';
-    barColor    = 'var(--green)';
+
+  const total = consumed;
+  const excess = weight ? weight * 2 : 0;
+  const rec = target || 0;
+
+  // — 與 patient.html 完全一致的顯示格式 —
+  document.getElementById('proteinText').textContent =
+    Math.round(total) + 'g' + (rec ? ' / ' + Math.round(rec) + 'g' : '');
+
+  // — 進度條：以 excess (體重×2) 為滿格，與 patient.html 一致 —
+  if (rec > 0) {
+    const pct = excess > 0 ? Math.min((total / excess) * 100, 100) : 0;
+    document.getElementById('proteinBarFill').style.width = pct + '%';
+
+    let msg = '';
+    if (total >= excess && excess > 0) {
+      msg = '🚨 蛋白質過量喔！今日已攝取 ' + Math.round(total) + 'g，超過上限 ' + Math.round(excess) + 'g';
+    } else if (total >= rec) {
+      msg = '🎉 恭喜達標！今日蛋白質共 ' + Math.round(total) + 'g，目標 ' + Math.round(rec) + 'g）';
+    } else {
+      msg = '💪 距離目標還有 ' + Math.round(rec - total) + 'g，加油！';
+    }
+    document.getElementById('proteinStatus').textContent = msg;
   } else {
-    const remaining = (target - consumed).toFixed(1);
-    statusText  = `還需 ${remaining}g 才達標`;
-    statusClass = 'protein-status-badge progress';
-    barColor    = 'var(--blue)';
+    document.getElementById('proteinBarFill').style.width = '0%';
+    document.getElementById('proteinStatus').textContent = '今日攝取：' + Math.round(total) + 'g';
   }
-  const todayText = consumed.toFixed(1) + ' g';
-  document.getElementById('proteinTarget').textContent       = target.toFixed(1) + ' g';
-  document.getElementById('proteinToday').textContent        = todayText;
-  document.getElementById('proteinBarFill').style.width      = pct + '%';
-  document.getElementById('proteinBarFill').style.background = barColor;
-  const badge = document.getElementById('proteinStatusBadge');
-  badge.textContent = statusText;
-  badge.className   = statusClass;
-  document.getElementById('panelProteinTarget').textContent = target.toFixed(1) + ' g';
-  document.getElementById('panelProteinToday').textContent  = todayText;
+
+  // — 右側面板同步更新 —
+  document.getElementById('panelProteinTarget').textContent = rec ? Math.round(rec) + ' g' : '—';
+  document.getElementById('panelProteinToday').textContent  = Math.round(total) + ' g';
+  let panelStatus = '';
+  if (total >= excess && excess > 0) panelStatus = '🚨 過量';
+  else if (total >= rec && rec > 0) panelStatus = '🎉 已達標';
+  else if (rec > 0) panelStatus = '💪 還差 ' + Math.round(rec - total) + 'g';
   const panelBadge = document.getElementById('panelProteinStatus');
-  panelBadge.textContent = statusText;
-  panelBadge.className   = statusClass;
+  panelBadge.textContent = panelStatus || '—';
+  panelBadge.className   = total >= excess && excess > 0 ? 'protein-status-badge excess'
+                         : total >= rec && rec > 0       ? 'protein-status-badge achieved'
+                         :                                  'protein-status-badge progress';
 }
 function toggleSelectAll() {
   allSel = !allSel;
