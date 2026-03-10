@@ -856,9 +856,9 @@ function updateProteinDisplay(r) {
   document.getElementById('panelProteinToday').textContent  = '計算中…';
   document.getElementById('panelProteinStatus').textContent = '計算中…';
   fetchProteinData(lineUid)
-    .then(({ target, consumed }) => {
+    .then(({ target, consumed, weight }) => {
       if (!current || current.line_uid !== lineUid) return;
-      renderProteinNumbers(target, consumed, parseFloat(r.weight) || null);
+      renderProteinNumbers(target, consumed, weight || parseFloat(r.weight) || null);
     })
     .catch(err => {
       console.warn('Sheets 抓取失敗，改用 queue 估算:', err);
@@ -871,53 +871,35 @@ function updateProteinDisplay(r) {
       renderProteinNumbers(target, consumed, parseFloat(r.weight) || null);
     });
 }
+/* ── 與 patient.html 完全一致：呼叫同一個 API 取得蛋白質資料 ── */
+const PATIENT_API = 'https://huangcs.app.n8n.cloud/webhook/patient-history';
+
+function _getTaipeiToday() {
+  const now = new Date(Date.now() + 8 * 3600000);
+  return now.toISOString().split('T')[0]; // YYYY-MM-DD
+}
+function _isToday(dateStr) {
+  const today = _getTaipeiToday();
+  const d = String(dateStr || '');
+  const year = today.split('-')[0];
+  const month = String(parseInt(today.split('-')[1]));
+  const day   = String(parseInt(today.split('-')[2]));
+  return d.includes(today) || d.startsWith(year + '/' + month + '/' + day);
+}
+
 async function fetchProteinData(lineUid) {
-  const [clientTable, mealTable] = await Promise.all([
-    fetchGSheet('客戶清單'),
-    fetchGSheet('餐食分析紀錄'),
-  ]);
-  let target = null;
-  (clientTable.rows || []).slice(1).forEach(row => {
-    const uid = row.c && row.c[0] ? String(row.c[0].v || '') : '';
-    if (uid === lineUid && row.c[7] && row.c[7].v != null)
-      target = parseFloat(row.c[7].v);
-  });
-  const cols = (mealTable.cols || []).map(c => c ? (c.label || '') : '');
-  let uidCol = cols.findIndex(l => l.includes('LINE UID') || l === 'LINE_UID');
-  let tsCol  = cols.findIndex(l => l.includes('分析時間'));
-  let proCol = cols.findIndex(l => l.includes('蛋白質') && !l.includes('攝取量'));
-  if (uidCol < 0) uidCol = 3;
-  if (tsCol  < 0) tsCol  = 4;
-  let statusCol = cols.findIndex(l => l.includes('審核') || l.includes('狀態'));
-  const today    = new Date();
-  const todayStr = today.getFullYear() + '/' + (today.getMonth() + 1) + '/' + today.getDate();
-  let consumed = 0;
-  if (proCol >= 0) {
-    (mealTable.rows || []).slice(1).forEach(row => {
-      if (!row.c) return;
-      const uid = row.c[uidCol] ? String(row.c[uidCol].v || '') : '';
-      if (uid !== lineUid) return;
-      const tsCell = row.c[tsCol] || {};
-      const ts = String(tsCell.f || tsCell.v || '');
-      if (!ts.startsWith(todayStr)) return;
-      if (statusCol >= 0) {
-        const st = row.c[statusCol] ? String(row.c[statusCol].v || '') : '';
-        if (st !== '已核准') return;
-      }
-      if (row.c[proCol] && row.c[proCol].v != null)
-        consumed += parseFloat(row.c[proCol].v) || 0;
-    });
-  }
-  records.forEach(qItem => {
-    if ((qItem.line_uid || '') !== lineUid) return;
-    if (qItem.status !== 'approved') return;
-    try {
-      if (new Date(qItem.time || '').toDateString() !== today.toDateString()) return;
-    } catch(e) { return; }
-    const pro = parseFloat(qItem.pro || 0);
-    if (!isNaN(pro)) consumed += pro;
-  });
-  return { target, consumed };
+  const resp = await fetch(`${PATIENT_API}?userId=${encodeURIComponent(lineUid)}`);
+  if (!resp.ok) throw new Error('API error ' + resp.status);
+  const data = await resp.json();
+  const recs = data.records || [];
+  const target = data.patient?.recommendedProtein || null;
+  const weight = data.patient?.weight || null;
+
+  // 與 patient.html renderProteinProgress 完全一致的加總邏輯
+  const todayRecs = recs.filter(r => _isToday(r.date));
+  const consumed  = todayRecs.reduce((s, r) => s + (r.protein || 0), 0);
+
+  return { target, consumed, weight };
 }
 async function fetchGSheet(sheetName) {
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
