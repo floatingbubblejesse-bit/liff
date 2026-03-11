@@ -298,25 +298,54 @@
 
 <script>
 const LIFF_ID     = '2009326025-d6EV7T42';
-const API_URL     = 'https://huangcs.app.n8n.cloud/webhook/patient-history';
+const API_URL     = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
 const IMAGE_PROXY = 'https://huangcs.app.n8n.cloud/webhook/meal-photo';
 
-// ★ 優化4：API 請求加上 15 秒 timeout
-async function fetchRecords(userId) {
+// ★ 頁面一載入就預熱 n8n（跟 LIFF init 同時跑，省掉冷啟動時間）
+try { fetch(API_URL + '?preheat=1', { method: 'HEAD', mode: 'no-cors' }).catch(() => {}); } catch(e) {}
+
+// ★ 優化4：API 請求 30 秒 timeout + 自動重試 1 次 + 預熱機制
+async function fetchWithTimeout(url, timeoutMs) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 15000);
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const resp = await fetch(`${API_URL}?userId=${encodeURIComponent(userId)}`, { signal: ctrl.signal });
+    const resp = await fetch(url, { signal: ctrl.signal });
     clearTimeout(timer);
-    const text = await resp.text();
-    if (!resp.ok) throw new Error('API error ' + resp.status);
-    if (!text || text.trim() === '') throw new Error('API 回傳空回應（n8n workflow 可能未啟動）');
-    return JSON.parse(text);
+    return resp;
   } catch(e) {
     clearTimeout(timer);
-    if (e.name === 'AbortError') throw new Error('API 回應逾時（超過 15 秒），請稍後重試');
     throw e;
   }
+}
+async function fetchRecords(userId) {
+  const url = `${API_URL}?userId=${encodeURIComponent(userId)}`;
+  const maxRetries = 2; // 最多試 2 次（含首次）
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // 第一次 30 秒，重試 25 秒
+      const timeout = attempt === 1 ? 30000 : 25000;
+      if (attempt > 1) {
+        document.getElementById('records-list').innerHTML =
+          '<div class="loading-hint"><span class="mini-spinner"></span>重新連線中（第 ' + attempt + ' 次）…</div>';
+      }
+      const resp = await fetchWithTimeout(url, timeout);
+      const text = await resp.text();
+      if (!resp.ok) throw new Error('API error ' + resp.status);
+      if (!text || text.trim() === '') throw new Error('API 回傳空回應（n8n workflow 可能未啟動）');
+      return JSON.parse(text);
+    } catch(e) {
+      if (e.name === 'AbortError' && attempt < maxRetries) {
+        console.warn('API timeout, retrying...');
+        continue; // 自動重試
+      }
+      if (e.name === 'AbortError') throw new Error('API 回應逾時，請稍後重試或檢查 n8n workflow 是否啟動');
+      throw e;
+    }
+  }
+}
+// ★ 預熱 n8n webhook（LIFF init 期間就先戳一下，減少冷啟動等待）
+function preheatApi() {
+  try { fetch(API_URL + '?preheat=1', { method: 'HEAD', mode: 'no-cors' }).catch(() => {}); } catch(e) {}
 }
 
 function showError(msg) {
