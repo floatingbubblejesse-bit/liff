@@ -210,15 +210,15 @@
             <div class="card" id="dietPlanCard" style="display:none">
                 <div class="card-title">🔄 碳水循環計劃</div>
                 <div class="cycle-schedule" id="cycleSchedule"></div>
+                <div class="diet-btn-row" style="margin-bottom:12px">
+                    <button class="diet-btn-save" id="saveAllDietBtn" onclick="saveAllDietPlans()" style="width:100%">儲存碳水循環計劃</button>
+                </div>
                 <div class="diet-day-section">
                     <div class="diet-day-header" onclick="toggleDietBody('mid')">🟡 中碳日 <span class="diet-mode" id="midDietModeBadge"></span><span class="diet-toggle" id="midDietToggle">▶</span></div>
                     <div id="midDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="midDietSummaryText"></div>
                         <div id="midDietMeals"></div>
-                        <div class="diet-btn-row">
-                            <button class="diet-btn-regen" onclick="generateDietPlan('mid')">↻ 重新計算</button>
-                            <button class="diet-btn-save" id="midSaveDietBtn" onclick="saveDietPlan('mid')">儲存</button>
-                        </div>
+                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('mid')">↩ 預設</button></div>
                     </div>
                 </div>
                 <div class="diet-day-section">
@@ -226,10 +226,7 @@
                     <div id="highDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="highDietSummaryText"></div>
                         <div id="highDietMeals"></div>
-                        <div class="diet-btn-row">
-                            <button class="diet-btn-regen" onclick="generateDietPlan('high')">↻ 重新計算</button>
-                            <button class="diet-btn-save" id="highSaveDietBtn" onclick="saveDietPlan('high')">儲存</button>
-                        </div>
+                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('high')">↩ 預設</button></div>
                     </div>
                 </div>
                 <div class="diet-day-section">
@@ -237,10 +234,7 @@
                     <div id="lowDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="lowDietSummaryText"></div>
                         <div id="lowDietMeals"></div>
-                        <div class="diet-btn-row">
-                            <button class="diet-btn-regen" onclick="generateDietPlan('low')">↻ 重新計算</button>
-                            <button class="diet-btn-save" id="lowSaveDietBtn" onclick="saveDietPlan('low')">儲存</button>
-                        </div>
+                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('low')">↩ 預設</button></div>
                     </div>
                 </div>
                 <div class="diet-day-section">
@@ -248,10 +242,7 @@
                     <div id="fastDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="fastDietSummaryText"></div>
                         <div id="fastDietMeals"></div>
-                        <div class="diet-btn-row">
-                            <button class="diet-btn-regen" onclick="generateDietPlan('fast')">↻ 重新計算</button>
-                            <button class="diet-btn-save" id="fastSaveDietBtn" onclick="saveDietPlan('fast')">儲存</button>
-                        </div>
+                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('fast')">↩ 預設</button></div>
                     </div>
                 </div>
             </div>
@@ -1096,7 +1087,9 @@
             }
             var perMeal = mealsWithFood > 0 ? Math.round(totalFood / mealsWithFood) : 0;
             var sumEl = document.getElementById(p + 'DietSummaryText');
-            if (sumEl) sumEl.innerHTML = '醫師建議 <b>' + total + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + totalPacks + '包×20g）+ 食物蛋白 ' + totalFood + 'g' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + 'g）' : '');
+            var sumHtml = '醫師建議 <b>' + total + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + totalPacks + '包×20g）+ 食物蛋白 ' + totalFood + 'g' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + 'g）' : '');
+            if (p === 'fast') sumHtml += '<br><span style="color:#666">隨時都可以再補充茶、咖啡、清湯與雞蛋白</span>';
+            if (sumEl) sumEl.innerHTML = sumHtml;
         }
     }
 
@@ -1119,7 +1112,9 @@
                 if (plan[mi] && plan[mi][3] && plan[mi][3] !== '-' && parseInt(plan[mi][3]) > 0) mealsWithFood++;
             }
             var perMeal = mealsWithFood > 0 ? Math.round(foodG / mealsWithFood) : 0;
-            sumEl.innerHTML = '醫師建議 <b>' + rec + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + packs + '包×20g）+ 食物蛋白 ' + foodG + 'g' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + 'g）' : '');
+            var sumHtml2 = '醫師建議 <b>' + rec + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + packs + '包×20g）+ 食物蛋白 ' + foodG + 'g' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + 'g）' : '');
+            if (p === 'fast') sumHtml2 += '<br><span style="color:#666">隨時都可以再補充茶、咖啡、清湯與雞蛋白</span>';
+            sumEl.innerHTML = sumHtml2;
         }
         var html = '';
         for (var m = 0; m < MEAL_COUNT; m++) {
@@ -1152,39 +1147,43 @@
         return plan;
     }
 
-    function saveDietPlan(p) {
-        var plan = getDietPlanData(p);
-        var proteinVal = document.getElementById('proteinInput').value;
-        var btn = document.getElementById(p + 'SaveDietBtn');
+    function saveAllDietPlans() {
+        var btn = document.getElementById('saveAllDietBtn');
         btn.disabled = true; btn.textContent = '儲存中…';
+        var proteinVal = document.getElementById('proteinInput').value;
 
-        var savePlan = fetch(N8N + '/save-diet-plan', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ patientSn: patientSn, plan: plan, proteinRec: proteinVal, planType: p })
-        }).then(function(r) { return r.json(); });
-
-        // 只有中碳日儲存時才更新 I 欄（醫師建議攝取量）
-        var promises = [savePlan];
-        if (p === 'mid') {
-            var saveProteinI = fetch(N8N + '/save-protein', {
+        var promises = PLAN_TYPES.map(function(p) {
+            var plan = getDietPlanData(p);
+            return fetch(N8N + '/save-diet-plan', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ patientSn: patientSn, proteinRecommendation: parseInt(proteinVal) || 0 })
+                body: JSON.stringify({ patientSn: patientSn, plan: plan, proteinRec: proteinVal, planType: p })
             }).then(function(r) { return r.json(); });
-            promises.push(saveProteinI);
-        }
+        });
+
+        // 儲存排程
+        promises.push(fetch(N8N + '/save-diet-plan', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ patientSn: patientSn, plan: cycleSchedule, planType: 'schedule' })
+        }).then(function(r) { return r.json(); }));
+
+        // 中碳日連動更新 I 欄
+        promises.push(fetch(N8N + '/save-protein', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ patientSn: patientSn, proteinRecommendation: parseInt(proteinVal) || 0 })
+        }).then(function(r) { return r.json(); }));
 
         Promise.all(promises)
         .then(function(results) {
             btn.disabled = false;
-            var planRes = results[0];
-            if (planRes.ok || planRes.success) {
+            var allOk = results.every(function(r) { return r.ok || r.success; });
+            if (allOk) {
                 btn.textContent = '儲存完成'; btn.style.background = '#2e7d32';
-                if (p === 'mid') { var pBtn = document.getElementById('saveProteinBtn');
-                if (pBtn) { pBtn.textContent = '已同步'; pBtn.style.background = '#2e7d32'; setTimeout(function(){ pBtn.textContent = '更新'; pBtn.style.background = '#00897B'; }, 2500); } }
-                setTimeout(function() { btn.textContent = '儲存飲食計劃'; btn.style.background = ''; }, 2500);
-            } else { btn.textContent = '儲存飲食計劃'; alert('儲存失敗：' + (planRes.error || JSON.stringify(planRes))); }
+                var pBtn = document.getElementById('saveProteinBtn');
+                if (pBtn) { pBtn.textContent = '已同步'; pBtn.style.background = '#2e7d32'; setTimeout(function(){ pBtn.textContent = '更新'; pBtn.style.background = '#00897B'; }, 2500); }
+                setTimeout(function() { btn.textContent = '儲存碳水循環計劃'; btn.style.background = ''; }, 2500);
+            } else { btn.textContent = '儲存碳水循環計劃'; alert('部分儲存失敗，請重試'); }
         })
-        .catch(function(err) { btn.disabled = false; btn.textContent = '儲存飲食計劃'; alert('儲存失敗：' + err.message); });
+        .catch(function(err) { btn.disabled = false; btn.textContent = '儲存碳水循環計劃'; alert('儲存失敗：' + err.message); });
     }
 
     function loadDietPlan(p) {
@@ -1222,7 +1221,7 @@
         {key:'mid',  label:'中', cls:'t-mid'},
         {key:'fast', label:'斷', cls:'t-fast'},
     ];
-    var cycleSchedule = ['high','high','low','mid','high','low','mid']; // 預設：六日一二三四五
+    var cycleSchedule = ['high','high','mid','mid','high','mid','mid']; // 預設：六日一二三四五
 
     function renderCycleSchedule() {
         var el = document.getElementById('cycleSchedule');
@@ -1251,7 +1250,14 @@
         var val = parseInt(document.getElementById('proteinInput').value) || 0;
         if (val <= 0) return;
         dietPlanInitialized = true;
-        renderCycleSchedule();
+        // 載入排程
+        fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn) + '&planType=schedule')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.plan && data.plan.length === 7) cycleSchedule = data.plan;
+                renderCycleSchedule();
+            })
+            .catch(function() { renderCycleSchedule(); });
         PLAN_TYPES.forEach(function(pt) { loadDietPlan(pt); });
     }
 
