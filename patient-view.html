@@ -133,9 +133,7 @@
         </div>
         <div id="errorDiv" style="display:none;flex:1"></div>
         <div id="tab-body" class="tab-pane" style="display:none"></div>
-        <div id="tab-meals" class="tab-pane" style="display:none">
-            <div id="mealsContent"><div class="no-data">載入中...</div></div>
-        </div>
+        <div id="tab-meals" class="tab-pane" style="display:none"></div>
         <div id="tab-note" class="tab-pane" style="display:none">
             <div class="card">
                 <div class="card-title">💬 快速預設建議</div>
@@ -387,13 +385,13 @@
             .catch(function(err){
                 mealsLoading = false;
                 if (activeTab === 'meals') {
-                    document.getElementById('mealsContent').innerHTML = '<div class="no-data">餐食資料載入失敗：' + esc(err.message) + '</div>';
+                    document.getElementById('tab-meals').innerHTML = '<div class="no-data">餐食資料載入失敗：' + esc(err.message) + '</div>';
                 }
             });
     }
 
     function loadMeals(){
-        var el = document.getElementById('mealsContent');
+        var el = document.getElementById('tab-meals');
         // 資料已載入 → 直接渲染
         if (mealsLoaded && mealsData) {
             renderMealsTab();
@@ -417,7 +415,7 @@
         var patient = mealsData.patient || {};
         var recProtein = patient.recommendedProtein || 0;
         var weight = patient.weight || 0;
-        var el = document.getElementById('mealsContent');
+        var el = document.getElementById('tab-meals');
 
         if (recs.length === 0) {
             el.innerHTML = '<div class="no-data">📋 尚無飲食紀錄</div>';
