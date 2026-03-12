@@ -241,7 +241,16 @@
                 document.getElementById('headerName').textContent=patientName;
                 document.getElementById('headerSub').textContent=patientSn+' 體組成資料';
                 renderBodyTab(data);
-                fillProteinField(data.customer);
+                // 身體組成 API 的 customer 只有 name/sn/settingName
+                // 從最新測量紀錄補上體重，讓蛋白質欄位能用 weight×1.5 計算
+                var cust = data.customer || {};
+                var mArr = data.measurements || [];
+                if (mArr.length > 0) {
+                    var latest = mArr[mArr.length - 1];
+                    if (!cust['體重'] && latest['體重']) cust['體重'] = latest['體重'];
+                    if (!cust.weight && latest['體重']) cust.weight = latest['體重'];
+                }
+                fillProteinField(cust);
                 document.getElementById('loadingDiv').style.display='none';
                 // 恢復到重新整理前的 tab
                 switchTab(initTab);
@@ -653,21 +662,25 @@
     // ====== 共用工具 ======
     // ====== 蛋白質攝取量 ======
     var proteinFilled = false;
+    var currentProteinFilled = false;
 
     function fillProteinField(cust) {
         if (!cust) return;
-        // 嘗試各種可能的欄位名稱取得 H 欄（蛋白質攝取量）
+        // H 欄（蛋白質攝取量）= 系統計算值，顯示在左側
         var current = findField(cust, ['蛋白質攝取量','proteinIntake','protein','蛋白質']);
-        // 嘗試取得 I 欄（醫師建議蛋白質攝取量）
-        var doctorRec = findField(cust, ['醫師建議蛋白質攝取量','doctorProtein','recommendedProtein']);
-        // 如果都找不到，用體重 × 1.5 計算，上限 140g
+        // I 欄（醫師建議蛋白質攝取量）= 醫師手動設定值，顯示在輸入框
+        var doctorRec = findField(cust, ['醫師建議蛋白質攝取量','doctorProtein','doctorRecommendedProtein']);
+        // 如果 H 欄找不到，用體重 × 1.5 計算，上限 140g
         if (isNaN(current)) {
             var wt = findField(cust, ['體重','weight']);
             if (!isNaN(wt) && wt > 0) current = Math.min(wt * 1.5, 140);
         }
-        if (!isNaN(current)) {
+        // 左側「目前攝取量（系統計算）」= H 欄或 weight×1.5
+        if (!isNaN(current) && !currentProteinFilled) {
             document.getElementById('currentProtein').textContent = current.toFixed(1) + ' g';
+            currentProteinFilled = true;
         }
+        // 右側輸入框「醫師建議攝取量」= 優先 I 欄，無 I 欄才用 H 欄
         if (!proteinFilled) {
             var prefill = !isNaN(doctorRec) ? doctorRec : (!isNaN(current) ? current : NaN);
             if (!isNaN(prefill)) {
@@ -681,14 +694,28 @@
     function fillProteinFromMeals() {
         if (!mealsData || !mealsData.patient) return;
         var p = mealsData.patient;
-        var rec = parseFloat(p.recommendedProtein);
         var wt = parseFloat(p.weight);
-        var current = !isNaN(rec) ? rec : (!isNaN(wt) ? Math.min(wt * 1.5, 140) : NaN);
-        if (!isNaN(current)) {
-            document.getElementById('currentProtein').textContent = current.toFixed(1) + ' g';
+        // H 欄（系統計算）= recommendedProtein 或 weight × 1.5
+        var hCol = parseFloat(p.recommendedProtein);
+        if (isNaN(hCol) && !isNaN(wt) && wt > 0) hCol = Math.min(wt * 1.5, 140);
+        // I 欄（醫師建議）= doctorRecommendedProtein / doctorProtein / 醫師建議蛋白質攝取量
+        var iCol = parseFloat(p.doctorRecommendedProtein);
+        if (isNaN(iCol)) iCol = parseFloat(p.doctorProtein);
+        if (isNaN(iCol)) iCol = parseFloat(p['醫師建議蛋白質攝取量']);
+
+        // 左側顯示：系統計算值（H 欄）
+        if (!isNaN(hCol) && !currentProteinFilled) {
+            document.getElementById('currentProtein').textContent = hCol.toFixed(1) + ' g';
+            currentProteinFilled = true;
         }
-        if (!proteinFilled && !isNaN(current)) {
-            document.getElementById('proteinInput').value = current.toFixed(1);
+        // 右側輸入框：I 欄有值就強制覆蓋（因為餐食 API 比身體組成 API 晚到）
+        console.log('[蛋白質] fillProteinFromMeals: hCol=' + hCol + ', iCol=' + iCol + ', proteinFilled=' + proteinFilled);
+        if (!isNaN(iCol) && iCol > 0) {
+            document.getElementById('proteinInput').value = iCol.toFixed(1);
+            proteinFilled = true;
+            console.log('[蛋白質] 已用 I 欄覆蓋: ' + iCol);
+        } else if (!proteinFilled && !isNaN(hCol)) {
+            document.getElementById('proteinInput').value = hCol.toFixed(1);
             proteinFilled = true;
         }
     }
