@@ -49,15 +49,6 @@
         td{padding:7px 5px;text-align:center;border-bottom:1px solid #f0f0f0}
         tr:last-child td{border-bottom:none}
         .date-col{font-size:10px;color:#888}
-        .meal-card{background:white;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:8px}
-        .meal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-        .meal-date{font-size:12px;font-weight:700;color:var(--blue)}
-        .meal-status{font-size:10px;padding:2px 8px;border-radius:10px}
-        .status-approved{background:#e8f5e9;color:#2e7d32}
-        .status-pending{background:#fff8e1;color:#f57c00}
-        .meal-type{font-size:12px;color:#555;margin-bottom:6px}
-        .meal-photo{width:100%;max-height:160px;object-fit:cover;border-radius:8px;cursor:pointer}
-        .meal-analysis{font-size:11px;color:#666;margin-top:6px;line-height:1.5}
         .no-data{text-align:center;color:#aaa;padding:24px;font-size:13px}
         .presets-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
         .preset-btn{padding:9px 10px;background:#f0f4ff;border:1px solid #c5cae9;border-radius:8px;font-size:11px;color:#3949ab;cursor:pointer;text-align:left;line-height:1.4}
@@ -69,6 +60,57 @@
         .send-btn:hover{background:#0d47a1}
         .send-btn:disabled{background:#90a4ae;cursor:not-allowed}
         .send-success{display:none;background:#e8f5e9;color:#2e7d32;padding:12px;border-radius:10px;text-align:center;font-size:13px;font-weight:600;margin-top:8px}
+
+        /* ====== 餐食記錄 inline styles (from patient.html) ====== */
+        .meal-protein-card{background:linear-gradient(135deg,#2E8B6E,#3DAE8F);border-radius:12px;padding:14px;color:white}
+        .meal-protein-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+        .meal-protein-label{font-size:13px;opacity:0.9}
+        .meal-protein-value{font-size:13px;font-weight:600}
+        .mprog-bg{background:rgba(255,255,255,0.3);border-radius:99px;height:8px;overflow:hidden}
+        .mprog-fill{height:100%;border-radius:99px;background:white;transition:width 0.8s ease}
+        .meal-protein-status{margin-top:8px;font-size:12px;text-align:center;opacity:0.95}
+        .meal-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+        .meal-stat-card{background:white;border-radius:10px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+        .meal-stat-value{font-size:20px;font-weight:700;color:#2E8B6E}
+        .meal-stat-label{font-size:11px;color:var(--muted);margin-top:2px}
+        .meal-chart-card{background:white;border-radius:12px;padding:14px 12px 10px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+        .meal-chart-card canvas{display:block;width:100%!important}
+        .day-accordion{background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+        .day-header{display:flex;align-items:center;padding:13px 14px;cursor:pointer;user-select:none;gap:10px;-webkit-tap-highlight-color:transparent}
+        .day-header:active{background:#f0f4ff}
+        .day-icon{font-size:18px;flex-shrink:0}
+        .day-info{flex:1}
+        .day-date-label{font-size:14px;font-weight:700;color:var(--text)}
+        .day-summary{font-size:11px;color:var(--muted);margin-top:2px}
+        .day-protein-badge{font-size:13px;font-weight:700;color:#2E8B6E;background:#e0f2f1;border-radius:99px;padding:3px 10px;flex-shrink:0}
+        .day-arrow{font-size:11px;color:var(--muted);transition:transform 0.25s ease;flex-shrink:0}
+        .day-accordion.open .day-arrow{transform:rotate(180deg)}
+        .day-body{display:none;border-top:1px solid var(--border);padding:8px 10px 10px;background:#fafffe}
+        .day-accordion.open .day-body{display:block}
+        .mc{background:white;border-radius:10px;margin-bottom:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid var(--border)}
+        .mc:last-child{margin-bottom:0}
+        .mc-header{display:flex;align-items:center;padding:10px 12px;cursor:pointer;user-select:none;gap:8px;-webkit-tap-highlight-color:transparent}
+        .mc-header:active{background:#f8fffe}
+        .mc-time{flex:1;font-size:13px;color:var(--text);font-weight:500}
+        .mc-protein{font-size:12px;color:#2E8B6E;font-weight:600}
+        .mc-arrow{font-size:10px;color:var(--muted);transition:transform 0.2s ease;flex-shrink:0}
+        .mc.open .mc-arrow{transform:rotate(180deg)}
+        .mc-body{display:none;border-top:1px solid var(--border)}
+        .mc.open .mc-body{display:block}
+        .mc-img-wrap{width:100%;height:180px;overflow:hidden;background:#f0f4f8;position:relative}
+        .mc-img-wrap img{width:100%;height:100%;object-fit:cover}
+        .mc-img-wrap .mc-img-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:40px;background:#e8f0fe}
+        .mc-detail{padding:12px 14px}
+        .mc-foods{font-size:13px;color:var(--text);line-height:1.5;margin-bottom:10px}
+        .mc-macros{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px}
+        .mc-macro{text-align:center;padding:5px 3px;background:#f8fafb;border-radius:8px}
+        .mc-macro-val{font-size:14px;font-weight:700;color:#2E8B6E}
+        .mc-macro-lbl{font-size:9px;color:var(--muted);margin-top:1px}
+        .mc-ai-note{background:#F0FFF4;border-left:3px solid #3DAE8F;border-radius:0 8px 8px 0;padding:8px 10px;font-size:12px;color:#2D6A4F;line-height:1.5;margin-bottom:8px}
+        .mc-ai-label{font-size:10px;font-weight:700;color:#3DAE8F;margin-bottom:3px}
+        .mc-advice{background:#FFF8E1;border-left:3px solid #F5A623;border-radius:0 8px 8px 0;padding:8px 10px;font-size:12px;color:#7B5800;line-height:1.5}
+        .mc-advice-label{font-size:10px;font-weight:700;color:#F5A623;margin-bottom:3px}
+        .mc-stars{color:#F5A623;font-size:13px}
     </style>
 </head>
 <body>
@@ -113,6 +155,8 @@
 
     <script>
     var GAS_URL = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
+    var MEALS_GAS = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
+    var IMAGE_PROXY = 'https://huangcs.app.n8n.cloud/webhook/meal-photo';
     var N8N = 'https://huangcs.app.n8n.cloud/webhook';
     var MEALS_WH = N8N + '/patient-meals';
     var NOTE_WH = N8N + '/doctor-note';
@@ -136,8 +180,8 @@
         ['身體質量參數 (BMI)','BMI','',true],['基礎代謝 (BMR)','BMR','kcal',false],
         ['腰圍','腰圍','cm',true],['臀圍','臀圍','cm',true],
     ];
-    var chartInstance=null, allData=null, patientSn='', patientName='', patientLineUid='', activeTab='body';
-    var mealsIframeReady=false, mealsIframeEl=null;
+    var chartInstance=null, mealChartInstance=null, allData=null, patientSn='', patientName='', patientLineUid='', activeTab='body';
+    var mealsData=null, mealsLoaded=false, mealsLoading=false;
     var params = new URLSearchParams(window.location.search);
     patientSn = params.get('id') || '';
     // 從 URL 讀取快取的 LINE UID（重新整理時免再呼叫 n8n）
@@ -146,8 +190,18 @@
     // 從 hash 讀取上次的 tab（重新整理時維持在同一頁）
     var initTab = (location.hash || '').replace('#','') || 'body';
     if (['body','meals','note'].indexOf(initTab) === -1) initTab = 'body';
+
     if (!patientSn) { showError('缺少病患 ID，請從醫生總覽頁面進入。'); }
-    else { buildPresets(); loadBodyData(); if (!patientLineUid) prefetchLineUid(); else preloadMealsIframe(patientLineUid); }
+    else {
+        buildPresets();
+        loadBodyData();
+        // 並行預取 LINE UID + 餐食資料
+        if (patientLineUid) {
+            prefetchMealData(patientLineUid);
+        } else {
+            prefetchLineUid();
+        }
+    }
 
     function buildPresets() {
         var html = '';
@@ -284,10 +338,8 @@
 
     function findLineUid(cust) {
         if (!cust) return '';
-        // 嘗試各種可能的欄位名稱
         var uid = cust.lineUid || cust['LINE UID'] || cust['lineUID'] || cust['line_uid'] || cust['LineUid'] || '';
         if (uid) return uid;
-        // 搜尋所有欄位，找長度 > 20 且以 U 開頭的值（LINE UID 格式）
         for (var key in cust) {
             var val = String(cust[key] || '');
             if (/^U[a-f0-9]{20,}$/.test(val)) return val;
@@ -295,7 +347,7 @@
         return '';
     }
 
-    // 頁面載入時立即並行呼叫 n8n 取得 LINE UID，不用等到點選餐食 tab
+    // ====== LINE UID 預取（僅在沒有快取 UID 時呼叫）======
     function prefetchLineUid() {
         fetch(MEALS_WH+'?pid='+encodeURIComponent(patientSn))
             .then(function(r){return r.json();})
@@ -303,12 +355,12 @@
                 var uid = data.lineUid || '';
                 if (uid && !patientLineUid) {
                     patientLineUid = uid;
-                    // 把 LINE UID 寫入 URL，重新整理時直接用，不再呼叫 n8n
                     cacheUidInUrl(uid);
-                    preloadMealsIframe(uid);
+                    // 取得 UID 後立即預取餐食資料
+                    prefetchMealData(uid);
                 }
             })
-            .catch(function(){/* 靜默失敗，點選 tab 時會再顯示錯誤 */});
+            .catch(function(){});
     }
 
     function cacheUidInUrl(uid) {
@@ -319,53 +371,265 @@
         }
     }
 
-    function preloadMealsIframe(uid) {
-        if (mealsIframeReady) return;
-        mealsIframeEl = document.createElement('iframe');
-        mealsIframeEl.src = 'https://floatingbubblejesse-bit.github.io/liff/patient.html?userId=' + encodeURIComponent(uid);
-        mealsIframeEl.style.cssText = 'width:100%;height:100%;border:none;';
-        mealsIframeReady = true;
-    }
-
-    function loadMeals(){
-        var el = document.getElementById('tab-meals');
-        // 如果 iframe 已預載好，直接顯示
-        if (mealsIframeReady && mealsIframeEl) {
-            el.style.padding = '0';
-            el.style.overflow = 'hidden';
-            el.innerHTML = '';
-            el.appendChild(mealsIframeEl);
-            return;
-        }
-        // 如果 GAS 回傳中已找到 LINE UID（但 prefetch 還沒完成）
-        if (patientLineUid) {
-            el.style.padding = '0';
-            el.style.overflow = 'hidden';
-            el.innerHTML = '<iframe src="https://floatingbubblejesse-bit.github.io/liff/patient.html?userId=' + encodeURIComponent(patientLineUid) + '" style="width:100%;height:100%;border:none;"></iframe>';
-            return;
-        }
-        // 還在等 prefetch 回來
-        el.innerHTML = '<div id="mealsContent"><div class="no-data">載入餐食記錄中...</div></div>';
-        // 再試一次
-        fetch(MEALS_WH+'?pid='+encodeURIComponent(patientSn))
-            .then(function(r){return r.json();})
+    // ====== 餐食資料：直接呼叫 GAS API（跟 patient.html 一樣）======
+    function prefetchMealData(uid) {
+        if (mealsLoaded || mealsLoading) return;
+        mealsLoading = true;
+        fetch(MEALS_GAS + '?userId=' + encodeURIComponent(uid))
+            .then(function(r){ return r.json(); })
             .then(function(data){
-                var uid = data.lineUid || '';
-                if (!uid) {
-                    el.innerHTML = '<div id="mealsContent"><div class="no-data">此病患尚未綁定 LINE，無法顯示飲食紀錄</div></div>';
-                    return;
-                }
-                patientLineUid = uid;
-                cacheUidInUrl(uid);
-                el.style.padding = '0';
-                el.style.overflow = 'hidden';
-                el.innerHTML = '<iframe src="https://floatingbubblejesse-bit.github.io/liff/patient.html?userId=' + encodeURIComponent(uid) + '" style="width:100%;height:100%;border:none;"></iframe>';
+                mealsData = data;
+                mealsLoaded = true;
+                mealsLoading = false;
+                // 如果目前正在餐食 tab，立刻渲染
+                if (activeTab === 'meals') renderMealsTab();
             })
             .catch(function(err){
-                el.innerHTML = '<div id="mealsContent"><div class="no-data">載入失敗：'+esc(err.message)+'</div></div>';
+                mealsLoading = false;
+                if (activeTab === 'meals') {
+                    document.getElementById('mealsContent').innerHTML = '<div class="no-data">餐食資料載入失敗：' + esc(err.message) + '</div>';
+                }
             });
     }
 
+    function loadMeals(){
+        var el = document.getElementById('mealsContent');
+        // 資料已載入 → 直接渲染
+        if (mealsLoaded && mealsData) {
+            renderMealsTab();
+            return;
+        }
+        // 有 LINE UID 但資料還沒載好 → 顯示載入中，觸發載入
+        if (patientLineUid) {
+            el.innerHTML = '<div class="no-data"><div class="spinner" style="width:28px;height:28px;border-width:3px;margin:0 auto 10px"></div>載入餐食記錄中...</div>';
+            if (!mealsLoading) prefetchMealData(patientLineUid);
+            return;
+        }
+        // 沒有 LINE UID → 顯示提示
+        el.innerHTML = '<div class="no-data"><div class="spinner" style="width:28px;height:28px;border-width:3px;margin:0 auto 10px"></div>查詢 LINE 綁定中...</div>';
+        // 等 prefetchLineUid 完成後會自動觸發 prefetchMealData
+    }
+
+    // ====== 餐食 tab 完整渲染（取代 iframe）======
+    function renderMealsTab(){
+        if (!mealsData) return;
+        var recs = mealsData.records || [];
+        var patient = mealsData.patient || {};
+        var recProtein = patient.recommendedProtein || 0;
+        var weight = patient.weight || 0;
+        var el = document.getElementById('mealsContent');
+
+        if (recs.length === 0) {
+            el.innerHTML = '<div class="no-data">📋 尚無飲食紀錄</div>';
+            return;
+        }
+
+        var html = '';
+
+        // 1. 蛋白質進度卡
+        var todayRecs = recs.filter(function(r){ return isMealToday(r.date); });
+        var todayProtein = todayRecs.reduce(function(s,r){ return s + (r.protein||0); },0);
+        var todayCal = todayRecs.reduce(function(s,r){ return s + (r.calories||0); },0);
+        var excess = weight * 2;
+
+        html += '<div class="meal-protein-card">';
+        html += '<div class="meal-protein-header"><span class="meal-protein-label">今日蛋白質進度</span>';
+        html += '<span class="meal-protein-value">' + Math.round(todayProtein) + 'g' + (recProtein ? ' / ' + Math.round(recProtein) + 'g' : '') + '</span></div>';
+        var pct = (recProtein > 0 && excess > 0) ? Math.min((todayProtein / excess) * 100, 100) : 0;
+        html += '<div class="mprog-bg"><div class="mprog-fill" style="width:' + pct + '%"></div></div>';
+        var statusMsg = '';
+        if (recProtein > 0) {
+            if (todayProtein >= excess && excess > 0) statusMsg = '🚨 蛋白質過量喔！今日已攝取 ' + Math.round(todayProtein) + 'g，超過上限 ' + Math.round(excess) + 'g';
+            else if (todayProtein >= recProtein) statusMsg = '🎉 恭喜達標！今日蛋白質共 ' + Math.round(todayProtein) + 'g';
+            else statusMsg = '💪 距離目標還有 ' + Math.round(recProtein - todayProtein) + 'g，加油！';
+        } else {
+            statusMsg = '今日攝取：' + Math.round(todayProtein) + 'g';
+        }
+        html += '<div class="meal-protein-status">' + statusMsg + '</div></div>';
+
+        // 2. 今日統計
+        html += '<div class="meal-stats-row">';
+        html += '<div class="meal-stat-card"><div class="meal-stat-value">' + Math.round(todayCal) + '</div><div class="meal-stat-label">今日熱量 kcal</div></div>';
+        html += '<div class="meal-stat-card"><div class="meal-stat-value">' + Math.round(todayProtein) + '</div><div class="meal-stat-label">今日蛋白質 g</div></div>';
+        html += '<div class="meal-stat-card"><div class="meal-stat-value">' + todayRecs.length + '</div><div class="meal-stat-label">今日餐數</div></div>';
+        html += '</div>';
+
+        // 3. 蛋白質趨勢圖
+        html += '<div class="meal-chart-card"><div style="font-size:12px;font-weight:700;color:#718096;margin-bottom:8px">蛋白質趨勢</div><canvas id="mealProteinChart" height="160"></canvas></div>';
+
+        // 4. 每日紀錄
+        html += '<div style="font-size:12px;font-weight:700;color:#718096;margin-bottom:4px;letter-spacing:.5px">每日紀錄</div>';
+        html += buildDayAccordions(recs);
+
+        el.innerHTML = html;
+
+        // 渲染趨勢圖
+        setTimeout(function(){ renderMealChart(recs, recProtein); }, 50);
+    }
+
+    function isMealToday(dateStr) {
+        var now = new Date(Date.now() + 8 * 3600000);
+        var today = now.toISOString().split('T')[0];
+        var d = String(dateStr || '');
+        var parts = today.split('-');
+        var y = parts[0], m = String(parseInt(parts[1])), dy = String(parseInt(parts[2]));
+        return d.indexOf(today) !== -1 || d.indexOf(y + '/' + m + '/' + dy) === 0;
+    }
+
+    function toMealDateKey(dateStr) {
+        var m = String(dateStr).match(/(\d{4})\/(\d+)\/(\d+)/);
+        if (!m) return '';
+        return m[1] + '-' + pad2(m[2]) + '-' + pad2(m[3]);
+    }
+    function pad2(n){ var s=String(parseInt(n)); return s.length<2?'0'+s:s; }
+
+    function formatMealDateKey(key) {
+        var p = key.split('-');
+        return parseInt(p[1]) + '/' + parseInt(p[2]);
+    }
+
+    function formatMealDayLabel(key) {
+        var p = key.split('-');
+        var d = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+        var days = ['日','一','二','三','四','五','六'];
+        return parseInt(p[1]) + '月' + parseInt(p[2]) + '日（週' + days[d.getDay()] + '）';
+    }
+
+    function formatMealTime(dateStr) {
+        var m = String(dateStr).match(/\d{4}\/\d+\/\d+\s*(.*)/);
+        return m ? m[1].trim() : dateStr;
+    }
+
+    function scoreToStars(score) {
+        var n = parseFloat(score);
+        if (isNaN(n)) return '';
+        var full = Math.min(Math.round(n), 5);
+        var s = '';
+        for (var i = 0; i < full; i++) s += '★';
+        for (var j = full; j < 5; j++) s += '☆';
+        return s;
+    }
+
+    function renderMealChart(recs, recommended) {
+        var byDate = {};
+        recs.forEach(function(r){
+            var key = toMealDateKey(r.date);
+            if (!key) return;
+            byDate[key] = (byDate[key] || 0) + (r.protein || 0);
+        });
+        var keys = Object.keys(byDate).sort();
+        if (keys.length === 0) return;
+        var canvas = document.getElementById('mealProteinChart');
+        if (!canvas) return;
+        var labels = keys.map(formatMealDateKey);
+        var values = keys.map(function(k){ return Math.round(byDate[k]); });
+        var datasets = [{
+            label: '每日蛋白質 (g)', data: values,
+            borderColor: '#3DAE8F', backgroundColor: 'rgba(61,174,143,0.12)',
+            borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#3DAE8F',
+            fill: true, tension: 0.3
+        }];
+        if (recommended > 0) {
+            datasets.push({
+                label: '建議攝取量', data: keys.map(function(){ return recommended; }),
+                borderColor: '#F5A623', borderWidth: 1.5, borderDash: [6, 4],
+                pointRadius: 0, fill: false, tension: 0
+            });
+        }
+        if (mealChartInstance) mealChartInstance.destroy();
+        mealChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'line', data: { labels: labels, datasets: datasets },
+            options: {
+                responsive: true, maintainAspectRatio: true,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: recommended > 0, position: 'bottom', labels: { font: { size: 11 }, padding: 10, boxWidth: 14 } },
+                    tooltip: { callbacks: { label: function(ctx){ return ctx.dataset.label + ': ' + ctx.parsed.y + 'g'; } } }
+                },
+                scales: {
+                    x: { ticks: { font: { size: 11 }, color: '#718096' }, grid: { display: false } },
+                    y: { ticks: { font: { size: 11 }, color: '#718096', callback: function(v){ return v + 'g'; } }, grid: { color: 'rgba(0,0,0,0.05)' }, beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    function buildDayAccordions(recs) {
+        var grouped = {};
+        recs.forEach(function(r){
+            var key = toMealDateKey(r.date);
+            if (!key) return;
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(r);
+        });
+        var sortedKeys = Object.keys(grouped).sort(function(a,b){ return b.localeCompare(a); });
+        var html = '';
+        sortedKeys.forEach(function(dateKey, di){
+            var dayRecs = grouped[dateKey];
+            var totalProtein = dayRecs.reduce(function(s,r){ return s + (r.protein||0); }, 0);
+            var totalCal = dayRecs.reduce(function(s,r){ return s + (r.calories||0); }, 0);
+            var dayLabel = formatMealDayLabel(dateKey);
+            var summary = dayRecs.length + ' 餐 · 熱量 ' + Math.round(totalCal) + ' kcal';
+            var mealsHtml = '';
+            dayRecs.forEach(function(r, mi){
+                var cardId = 'mc-' + di + '-' + mi;
+                var timeStr = formatMealTime(r.date) || '（無時間）';
+                var proteinMini = r.protein ? Math.round(r.protein) + 'g' : '';
+                var imgUrl = r.imageId ? IMAGE_PROXY + '?id=' + r.imageId : '';
+                var imgHtml = imgUrl
+                    ? '<img src="' + esc(imgUrl) + '" onerror="this.parentNode.innerHTML=\'<div class=mc-img-ph>🍱</div>\'" loading="lazy">'
+                    : '<div class="mc-img-ph">🍱</div>';
+                var aiNote = r.aiNote ? '<div class="mc-ai-note"><div class="mc-ai-label">🤖 AI 飲食建議</div>' + esc(r.aiNote) + '</div>' : '';
+                var stars = r.nutritionScore ? '<div style="margin-bottom:3px"><span class="mc-stars">' + scoreToStars(r.nutritionScore) + '</span> <span style="font-size:11px;color:#92400E">(' + r.nutritionScore + '分)</span></div>' : '';
+                var advice = r.nutritionistAdvice ? '<div>' + esc(r.nutritionistAdvice) + '</div>' : '<div>（無備註）</div>';
+
+                mealsHtml += '<div class="mc" id="' + cardId + '">'
+                    + '<div class="mc-header" onclick="toggleMC(\'' + cardId + '\')">'
+                    + '<div class="mc-time">🍽 ' + esc(timeStr) + '</div>'
+                    + (proteinMini ? '<div class="mc-protein">蛋白質 ' + proteinMini + '</div>' : '')
+                    + '<span class="mc-arrow">▼</span>'
+                    + '</div>'
+                    + '<div class="mc-body">'
+                    + '<div class="mc-img-wrap">' + imgHtml + '</div>'
+                    + '<div class="mc-detail">'
+                    + '<div class="mc-foods">' + esc(r.foods || '（無資料）') + '</div>'
+                    + '<div class="mc-macros">'
+                    + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.calories||0) + '</div><div class="mc-macro-lbl">熱量 kcal</div></div>'
+                    + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.protein||0) + '</div><div class="mc-macro-lbl">蛋白質 g</div></div>'
+                    + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.carbs||0) + '</div><div class="mc-macro-lbl">碳水 g</div></div>'
+                    + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.fat||0) + '</div><div class="mc-macro-lbl">脂肪 g</div></div>'
+                    + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.fiber||0) + '</div><div class="mc-macro-lbl">纖維 g</div></div>'
+                    + '</div>'
+                    + aiNote
+                    + '<div class="mc-advice"><div class="mc-advice-label">👩‍⚕️ 營養師建議</div>' + stars + advice + '</div>'
+                    + '</div>'
+                    + '</div>'
+                    + '</div>';
+            });
+
+            html += '<div class="day-accordion" id="day-' + di + '">'
+                + '<div class="day-header" onclick="toggleDay(' + di + ')">'
+                + '<div class="day-icon">📅</div>'
+                + '<div class="day-info"><div class="day-date-label">' + dayLabel + '</div><div class="day-summary">' + summary + '</div></div>'
+                + '<div class="day-protein-badge">' + Math.round(totalProtein) + 'g</div>'
+                + '<span class="day-arrow">▼</span>'
+                + '</div>'
+                + '<div class="day-body">' + mealsHtml + '</div>'
+                + '</div>';
+        });
+        return html;
+    }
+
+    function toggleDay(di) {
+        var el = document.getElementById('day-' + di);
+        if (el) el.classList.toggle('open');
+    }
+    function toggleMC(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.toggle('open');
+    }
+
+    // ====== 共用工具 ======
     function applyPreset(text){document.getElementById('noteText').value=text;updateChar();}
     function updateChar(){document.getElementById('charCount').textContent=document.getElementById('noteText').value.length;}
 
