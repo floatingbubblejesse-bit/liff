@@ -197,10 +197,10 @@
             </div>
             <div class="card" id="dietPlanCard" style="display:none">
                 <div class="card-title">🔄 碳水循環計劃</div>
-                <div class="diet-summary-text" id="dietSummaryText"></div>
                 <div class="diet-day-section">
                     <div class="diet-day-header" onclick="toggleDietBody('mid')">🟡 中碳日 <span class="diet-mode" id="midDietModeBadge"></span><span class="diet-toggle" id="midDietToggle">▶</span></div>
                     <div id="midDietBody" class="diet-body collapsed">
+                        <div class="diet-summary-text" id="midDietSummaryText"></div>
                         <div id="midDietMeals"></div>
                         <div class="diet-btn-row">
                             <button class="diet-btn-regen" onclick="generateDietPlan('mid')">↻ 重新計算</button>
@@ -211,6 +211,7 @@
                 <div class="diet-day-section">
                     <div class="diet-day-header" onclick="toggleDietBody('high')">🔴 高碳日 <span class="diet-mode" id="highDietModeBadge"></span><span class="diet-toggle" id="highDietToggle">▶</span></div>
                     <div id="highDietBody" class="diet-body collapsed">
+                        <div class="diet-summary-text" id="highDietSummaryText"></div>
                         <div id="highDietMeals"></div>
                         <div class="diet-btn-row">
                             <button class="diet-btn-regen" onclick="generateDietPlan('high')">↻ 重新計算</button>
@@ -221,6 +222,7 @@
                 <div class="diet-day-section">
                     <div class="diet-day-header" onclick="toggleDietBody('low')">🟢 低碳日 <span class="diet-mode" id="lowDietModeBadge"></span><span class="diet-toggle" id="lowDietToggle">▶</span></div>
                     <div id="lowDietBody" class="diet-body collapsed">
+                        <div class="diet-summary-text" id="lowDietSummaryText"></div>
                         <div id="lowDietMeals"></div>
                         <div class="diet-btn-row">
                             <button class="diet-btn-regen" onclick="generateDietPlan('low')">↻ 重新計算</button>
@@ -231,6 +233,7 @@
                 <div class="diet-day-section">
                     <div class="diet-day-header" onclick="toggleDietBody('fast')">⚪ 斷食日 <span class="diet-mode" id="fastDietModeBadge"></span><span class="diet-toggle" id="fastDietToggle">▶</span></div>
                     <div id="fastDietBody" class="diet-body collapsed">
+                        <div class="diet-summary-text" id="fastDietSummaryText"></div>
                         <div id="fastDietMeals"></div>
                         <div class="diet-btn-row">
                             <button class="diet-btn-regen" onclick="generateDietPlan('fast')">↻ 重新計算</button>
@@ -1026,8 +1029,14 @@
             badge.textContent = totalPacks + '包代餐';
             badge.className = 'diet-mode ' + (totalPacks <= 2 ? 'm2' : 'm3');
             var mrG = totalPacks * 20;
-            document.getElementById('dietSummaryText').innerHTML =
-                '醫師建議 <b>' + total + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + totalPacks + '包×20g）+ 食物蛋白 ' + totalFood + 'g';
+            var mealsWithFood = 0;
+            for (var m2 = 0; m2 < MEAL_COUNT; m2++) {
+                var fp2 = document.getElementById(p + '-d-' + m2 + '-3');
+                if (fp2) { var fv2 = fp2.value === '-' ? 0 : (parseInt(fp2.value) || 0); if (fv2 > 0) mealsWithFood++; }
+            }
+            var perMeal = mealsWithFood > 0 ? Math.round(totalFood / mealsWithFood) : 0;
+            var sumEl = document.getElementById(p + 'DietSummaryText');
+            if (sumEl) sumEl.innerHTML = '醫師建議 <b>' + total + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + totalPacks + '包×20g）+ 食物蛋白 ' + totalFood + 'g' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + 'g）' : '');
         }
     }
 
@@ -1040,10 +1049,15 @@
             badge.textContent = '';
             badge.className = 'diet-mode';
         }
-        // 共用摘要（只寫一次）
-        var sumEl = document.getElementById('dietSummaryText');
-        if (sumEl && !sumEl.innerHTML) {
-            sumEl.innerHTML = '醫師建議 <b>' + rec + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + packs + '包×20g）+ 食物蛋白 ' + foodG + 'g（每餐約 ' + Math.round(foodG / 3) + 'g）';
+        // 每個碳日各自的摘要
+        var sumEl = document.getElementById(p + 'DietSummaryText');
+        if (sumEl) {
+            var mealsWithFood = 0;
+            for (var mi = 0; mi < MEAL_COUNT; mi++) {
+                if (plan[mi] && plan[mi][3] && plan[mi][3] !== '-' && parseInt(plan[mi][3]) > 0) mealsWithFood++;
+            }
+            var perMeal = mealsWithFood > 0 ? Math.round(foodG / mealsWithFood) : 0;
+            sumEl.innerHTML = '醫師建議 <b>' + rec + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + packs + '包×20g）+ 食物蛋白 ' + foodG + 'g' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + 'g）' : '');
         }
         var html = '';
         for (var m = 0; m < MEAL_COUNT; m++) {
