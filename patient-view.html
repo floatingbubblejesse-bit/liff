@@ -934,14 +934,37 @@
                 // 高碳日：午餐(idx 1) 排糖包±排油包=1, 高碳水±高油脂=適量
                 plan[1][2] = '1';
                 plan[1][7] = '適量';
-            } else if (p === 'low') {
-                // 低碳日：所有餐 中碳水='-', 高碳水±高油脂='-'
-                for (var i = 0; i < plan.length; i++) {
-                    plan[i][6] = '-';
-                    plan[i][7] = '-';
-                }
             }
         }
+
+        if (p === 'low') {
+            // 低碳日：代餐比中碳日多1包(上限3)，食物蛋白=(rec+20)-代餐蛋白 平分早午晚
+            var lowPacks = Math.min(packs + 1, 3);
+            var lowMrG = lowPacks * 20;
+            var lowFoodG = Math.max((rec + 20) - lowMrG, 0);
+            var lowPerMeal = Math.round(lowFoodG / 3);
+            var lfp = lowPerMeal > 0 ? String(lowPerMeal) : '-';
+            if (lowPacks === 2) {
+                plan = [
+                    ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 早餐
+                    ['-',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 午餐
+                    ['-',  '-', '-', '-',  '-',    '1', '-', '-'],  // 傍晚: Q寶=1
+                    ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 晚餐
+                    ['-',  '1', '-', '-',  '-',    '-', '-', '-'],  // 睡前: 配方=1
+                ];
+            } else {
+                plan = [
+                    ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 早餐
+                    ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 午餐
+                    ['-',  '-', '-', '-',  '-',    '1', '-', '-'],  // 傍晚: Q寶=1
+                    ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 晚餐
+                    ['-',  '1', '-', '-',  '-',    '-', '-', '-'],  // 睡前: 配方=1
+                ];
+            }
+            renderDietPlan(p, plan, rec + 20, lowPacks, lowMrG, lowFoodG);
+            return;
+        }
+
         renderDietPlan(p, plan, rec, packs, mrG, foodG);
     }
 
@@ -1024,7 +1047,10 @@
         }
         var total = totalPacks * 20 + totalFood;
         if (total > 0) {
-            document.getElementById('proteinInput').value = total;
+            // 只有中碳日才連動更改醫師建議攝取量
+            if (p === 'mid') {
+                document.getElementById('proteinInput').value = total;
+            }
             var badge = document.getElementById(p + 'DietModeBadge');
             badge.textContent = totalPacks + '包代餐';
             badge.className = 'diet-mode ' + (totalPacks <= 2 ? 'm2' : 'm3');
@@ -1101,19 +1127,24 @@
             body: JSON.stringify({ patientSn: patientSn, plan: plan, proteinRec: proteinVal, planType: p })
         }).then(function(r) { return r.json(); });
 
-        var saveProteinI = fetch(N8N + '/save-protein', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ patientSn: patientSn, proteinRecommendation: parseInt(proteinVal) || 0 })
-        }).then(function(r) { return r.json(); });
+        // 只有中碳日儲存時才更新 I 欄（醫師建議攝取量）
+        var promises = [savePlan];
+        if (p === 'mid') {
+            var saveProteinI = fetch(N8N + '/save-protein', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ patientSn: patientSn, proteinRecommendation: parseInt(proteinVal) || 0 })
+            }).then(function(r) { return r.json(); });
+            promises.push(saveProteinI);
+        }
 
-        Promise.all([savePlan, saveProteinI])
+        Promise.all(promises)
         .then(function(results) {
             btn.disabled = false;
             var planRes = results[0];
             if (planRes.ok || planRes.success) {
                 btn.textContent = '儲存完成'; btn.style.background = '#2e7d32';
-                var pBtn = document.getElementById('saveProteinBtn');
-                if (pBtn) { pBtn.textContent = '已同步'; pBtn.style.background = '#2e7d32'; setTimeout(function(){ pBtn.textContent = '更新'; pBtn.style.background = '#00897B'; }, 2500); }
+                if (p === 'mid') { var pBtn = document.getElementById('saveProteinBtn');
+                if (pBtn) { pBtn.textContent = '已同步'; pBtn.style.background = '#2e7d32'; setTimeout(function(){ pBtn.textContent = '更新'; pBtn.style.background = '#00897B'; }, 2500); } }
                 setTimeout(function() { btn.textContent = '儲存飲食計劃'; btn.style.background = ''; }, 2500);
             } else { btn.textContent = '儲存飲食計劃'; alert('儲存失敗：' + (planRes.error || JSON.stringify(planRes))); }
         })
