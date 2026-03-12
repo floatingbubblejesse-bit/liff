@@ -80,9 +80,9 @@
         </div>
     </div>
     <div class="tab-bar">
-        <button class="tab-btn active" onclick="switchTab('body')">🏋️ 身體組成</button>
-        <button class="tab-btn" onclick="switchTab('meals')">🍱 餐食記錄</button>
-        <button class="tab-btn" onclick="switchTab('note')">📋 醫生建議</button>
+        <button class="tab-btn" id="tabBtn-body" onclick="switchTab('body')">🏋️ 身體組成</button>
+        <button class="tab-btn" id="tabBtn-meals" onclick="switchTab('meals')">🍱 餐食記錄</button>
+        <button class="tab-btn" id="tabBtn-note" onclick="switchTab('note')">📋 醫生建議</button>
     </div>
     <div class="main">
         <div id="loadingDiv" class="loading" style="flex:1">
@@ -140,8 +140,14 @@
     var mealsIframeReady=false, mealsIframeEl=null;
     var params = new URLSearchParams(window.location.search);
     patientSn = params.get('id') || '';
+    // 從 URL 讀取快取的 LINE UID（重新整理時免再呼叫 n8n）
+    var cachedUid = params.get('uid') || '';
+    if (cachedUid) patientLineUid = cachedUid;
+    // 從 hash 讀取上次的 tab（重新整理時維持在同一頁）
+    var initTab = (location.hash || '').replace('#','') || 'body';
+    if (['body','meals','note'].indexOf(initTab) === -1) initTab = 'body';
     if (!patientSn) { showError('缺少病患 ID，請從醫生總覽頁面進入。'); }
-    else { buildPresets(); loadBodyData(); prefetchLineUid(); }
+    else { buildPresets(); loadBodyData(); if (!patientLineUid) prefetchLineUid(); else preloadMealsIframe(patientLineUid); }
 
     function buildPresets() {
         var html = '';
@@ -158,18 +164,21 @@
                 if (data.error){showError(data.error);return;}
                 allData=data;
                 patientName=getDisplayName(data.customer)||patientSn;
-                patientLineUid=findLineUid(data.customer);
+                var gasUid=findLineUid(data.customer);
+                if(gasUid) patientLineUid=gasUid;
                 document.getElementById('headerName').textContent=patientName;
                 document.getElementById('headerSub').textContent=patientSn+' 體組成資料';
                 renderBodyTab(data);
                 document.getElementById('loadingDiv').style.display='none';
-                showTab('body');
+                // 恢復到重新整理前的 tab
+                switchTab(initTab);
             })
             .catch(function(err){showError('資料載入失敗：'+err.message);});
     }
 
     function switchTab(name){
         activeTab=name;
+        location.hash = name;
         document.querySelectorAll('.tab-btn').forEach(function(b,i){
             b.classList.toggle('active',['body','meals','note'][i]===name);
         });
@@ -294,11 +303,20 @@
                 var uid = data.lineUid || '';
                 if (uid && !patientLineUid) {
                     patientLineUid = uid;
-                    // 預先建立隱藏的 iframe，讓 patient.html 在背景載入
+                    // 把 LINE UID 寫入 URL，重新整理時直接用，不再呼叫 n8n
+                    cacheUidInUrl(uid);
                     preloadMealsIframe(uid);
                 }
             })
             .catch(function(){/* 靜默失敗，點選 tab 時會再顯示錯誤 */});
+    }
+
+    function cacheUidInUrl(uid) {
+        var url = new URL(window.location);
+        if (!url.searchParams.get('uid')) {
+            url.searchParams.set('uid', uid);
+            history.replaceState(null, '', url.toString());
+        }
     }
 
     function preloadMealsIframe(uid) {
@@ -338,6 +356,7 @@
                     return;
                 }
                 patientLineUid = uid;
+                cacheUidInUrl(uid);
                 el.style.padding = '0';
                 el.style.overflow = 'hidden';
                 el.innerHTML = '<iframe src="https://floatingbubblejesse-bit.github.io/liff/patient.html?userId=' + encodeURIComponent(uid) + '" style="width:100%;height:100%;border:none;"></iframe>';
