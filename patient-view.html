@@ -404,6 +404,8 @@
                 mealsLoading = false;
                 // 如果目前正在餐食 tab，立刻渲染
                 if (activeTab === 'meals') renderMealsTab();
+                // 用餐食資料補填蛋白質欄位
+                fillProteinFromMeals();
             })
             .catch(function(err){
                 mealsLoading = false;
@@ -652,18 +654,62 @@
 
     // ====== 共用工具 ======
     // ====== 蛋白質攝取量 ======
+    var proteinFilled = false;
+
     function fillProteinField(cust) {
         if (!cust) return;
-        var current = parseFloat(cust['蛋白質攝取量']);
-        var doctorRec = parseFloat(cust['醫師建議蛋白質攝取量']);
+        // 嘗試各種可能的欄位名稱取得 H 欄（蛋白質攝取量）
+        var current = findField(cust, ['蛋白質攝取量','proteinIntake','protein','蛋白質']);
+        // 嘗試取得 I 欄（醫師建議蛋白質攝取量）
+        var doctorRec = findField(cust, ['醫師建議蛋白質攝取量','doctorProtein','recommendedProtein']);
+        // 如果都找不到，用體重 × 1.5 計算，上限 140g
+        if (isNaN(current)) {
+            var wt = findField(cust, ['體重','weight']);
+            if (!isNaN(wt) && wt > 0) current = Math.min(wt * 1.5, 140);
+        }
         if (!isNaN(current)) {
             document.getElementById('currentProtein').textContent = current.toFixed(1) + ' g';
         }
-        // 優先帶入 I 欄（醫師之前填的），否則帶入 H 欄
-        var prefill = !isNaN(doctorRec) ? doctorRec : (!isNaN(current) ? current : '');
-        if (prefill !== '') {
-            document.getElementById('proteinInput').value = typeof prefill === 'number' ? prefill.toFixed(1) : prefill;
+        if (!proteinFilled) {
+            var prefill = !isNaN(doctorRec) ? doctorRec : (!isNaN(current) ? current : NaN);
+            if (!isNaN(prefill)) {
+                document.getElementById('proteinInput').value = prefill.toFixed(1);
+                proteinFilled = true;
+            }
         }
+    }
+
+    // 餐食資料載入後，用 mealsData.patient 再次嘗試填入
+    function fillProteinFromMeals() {
+        if (!mealsData || !mealsData.patient) return;
+        var p = mealsData.patient;
+        var rec = parseFloat(p.recommendedProtein);
+        var wt = parseFloat(p.weight);
+        var current = !isNaN(rec) ? rec : (!isNaN(wt) ? Math.min(wt * 1.5, 140) : NaN);
+        if (!isNaN(current)) {
+            document.getElementById('currentProtein').textContent = current.toFixed(1) + ' g';
+        }
+        if (!proteinFilled && !isNaN(current)) {
+            document.getElementById('proteinInput').value = current.toFixed(1);
+            proteinFilled = true;
+        }
+    }
+
+    function findField(obj, names) {
+        for (var i = 0; i < names.length; i++) {
+            var v = parseFloat(obj[names[i]]);
+            if (!isNaN(v)) return v;
+        }
+        // 搜尋所有 key，模糊比對
+        for (var key in obj) {
+            for (var j = 0; j < names.length; j++) {
+                if (key.indexOf(names[j]) !== -1) {
+                    var val = parseFloat(obj[key]);
+                    if (!isNaN(val)) return val;
+                }
+            }
+        }
+        return NaN;
     }
 
     function saveProtein() {
