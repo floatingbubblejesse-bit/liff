@@ -156,7 +156,7 @@
             .then(function(data){
                 if (data.error){showError(data.error);return;}
                 allData=data;
-                patientName=(data.customer&&data.customer.name)||patientSn;
+                patientName=getDisplayName(data.customer)||patientSn;
                 patientLineUid=findLineUid(data.customer);
                 document.getElementById('headerName').textContent=patientName;
                 document.getElementById('headerSub').textContent=patientSn+' 體組成資料';
@@ -192,7 +192,6 @@
         html+='<div><div class="profile-name">'+esc(patientName);
         if(patientLineUid) html+='<span class="line-badge">LINE ✓</span>';
         html+='</div><div class="profile-sub">院區病歷號：'+esc(patientSn)+'</div>';
-        if(cust.settingName) html+='<div class="profile-sub">'+esc(cust.settingName)+'</div>';
         html+='</div></div></div>';
         if(latest){
             var d=(latest['測量日期/時間']||'').substring(0,10);
@@ -263,6 +262,14 @@
         document.querySelectorAll('.ctab').forEach(function(b){b.classList.remove('active');});
         btn.classList.add('active');
         renderChart(key);
+    }
+
+    function getDisplayName(cust) {
+        if (cust && cust.settingName) {
+            var cn = String(cust.settingName).replace(/[A-Za-z]\d+$/, '').trim();
+            if (cn) return cn;
+        }
+        return (cust && cust.name) || '';
     }
 
     function findLineUid(cust) {
