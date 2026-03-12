@@ -136,6 +136,27 @@
         <div id="tab-body" class="tab-pane" style="display:none"></div>
         <div id="tab-meals" class="tab-pane" style="display:none"></div>
         <div id="tab-note" class="tab-pane" style="display:none">
+            <div class="card" id="proteinRecCard">
+                <div class="card-title">🥩 蛋白質攝取建議</div>
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                    <div style="flex:1">
+                        <div style="font-size:11px;color:#718096;margin-bottom:4px">目前攝取量（系統計算）</div>
+                        <div style="font-size:20px;font-weight:700;color:#1565C0" id="currentProtein">—</div>
+                    </div>
+                    <div style="font-size:20px;color:#ccc">→</div>
+                    <div style="flex:1">
+                        <div style="font-size:11px;color:#718096;margin-bottom:4px">醫師建議攝取量</div>
+                        <div style="display:flex;align-items:center;gap:4px">
+                            <input type="number" id="proteinInput" style="width:80px;font-size:20px;font-weight:700;color:#00897B;border:2px solid #e2e8f0;border-radius:8px;padding:4px 8px;text-align:center;outline:none" onfocus="this.style.borderColor='#00897B'" onblur="this.style.borderColor='#e2e8f0'">
+                            <span style="font-size:14px;color:#718096">g</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="send-btn" style="background:#00897B;margin-top:0" id="saveProteinBtn" onclick="saveProtein()">
+                    <span>💾 儲存建議攝取量</span>
+                </button>
+                <div class="send-success" id="proteinSuccess" style="display:none">✅ 已儲存至客戶清單 I 欄！</div>
+            </div>
             <div class="card">
                 <div class="card-title">💬 快速預設建議</div>
                 <div class="presets-grid" id="presetsGrid"></div>
@@ -222,6 +243,7 @@
                 document.getElementById('headerName').textContent=patientName;
                 document.getElementById('headerSub').textContent=patientSn+' 體組成資料';
                 renderBodyTab(data);
+                fillProteinField(data.customer);
                 document.getElementById('loadingDiv').style.display='none';
                 // 恢復到重新整理前的 tab
                 switchTab(initTab);
@@ -629,6 +651,53 @@
     }
 
     // ====== 共用工具 ======
+    // ====== 蛋白質攝取量 ======
+    function fillProteinField(cust) {
+        if (!cust) return;
+        var current = parseFloat(cust['蛋白質攝取量']);
+        var doctorRec = parseFloat(cust['醫師建議蛋白質攝取量']);
+        if (!isNaN(current)) {
+            document.getElementById('currentProtein').textContent = current.toFixed(1) + ' g';
+        }
+        // 優先帶入 I 欄（醫師之前填的），否則帶入 H 欄
+        var prefill = !isNaN(doctorRec) ? doctorRec : (!isNaN(current) ? current : '');
+        if (prefill !== '') {
+            document.getElementById('proteinInput').value = typeof prefill === 'number' ? prefill.toFixed(1) : prefill;
+        }
+    }
+
+    function saveProtein() {
+        var val = parseFloat(document.getElementById('proteinInput').value);
+        if (isNaN(val) || val <= 0) { alert('請輸入有效的蛋白質攝取量'); return; }
+        var btn = document.getElementById('saveProteinBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:3px"></div><span>儲存中...</span>';
+        fetch(N8N + '/save-protein', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                patientSn: patientSn,
+                proteinRecommendation: val
+            })
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            btn.disabled = false;
+            btn.innerHTML = '<span>💾 儲存建議攝取量</span>';
+            if (res.ok || res.success) {
+                document.getElementById('proteinSuccess').style.display = 'block';
+                setTimeout(function(){ document.getElementById('proteinSuccess').style.display = 'none'; }, 4000);
+            } else {
+                alert('儲存失敗：' + (res.error || JSON.stringify(res)));
+            }
+        })
+        .catch(function(err){
+            btn.disabled = false;
+            btn.innerHTML = '<span>💾 儲存建議攝取量</span>';
+            alert('儲存失敗：' + err.message);
+        });
+    }
+
     function applyPreset(text){document.getElementById('noteText').value=text;updateChar();}
     function updateChar(){document.getElementById('charCount').textContent=document.getElementById('noteText').value.length;}
 
