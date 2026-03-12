@@ -1151,26 +1151,58 @@
     function buildDietLineMessage() {
         var dayLabels = {high:'高碳日', low:'低碳日', mid:'中碳日', fast:'斷食日'};
         var dayEmojis = {high:'🔴', low:'🟢', mid:'🟡', fast:'⚪'};
+        var dayColors = {high:'#c62828', low:'#2e7d32', mid:'#e65100', fast:'#424242'};
+        var dayBgColors = {high:'#F8D7DA', low:'#D4EDDA', mid:'#FFF3CD', fast:'#E2E3E5'};
 
-        // 排程行
-        var schLine = '📅 碳水循環排程\n';
-        schLine += CYCLE_DAYS.map(function(d, i) {
+        // ── 排程 bubble ──
+        var schDayBoxes = CYCLE_DAYS.map(function(d, i) {
             var opt = CYCLE_OPTS.find(function(o){ return o.key === cycleSchedule[i]; });
-            return d + ':' + opt.label;
-        }).join(' ▸ ');
-
-        // 找出排程中用到的碳日類型（去重）
-        var usedTypes = [];
-        cycleSchedule.forEach(function(t) {
-            if (usedTypes.indexOf(t) === -1) usedTypes.push(t);
+            return {type:'box',layout:'vertical',alignItems:'center',contents:[
+                {type:'text',text:d,size:'xs',color:'#888888',align:'center'},
+                {type:'box',layout:'vertical',cornerRadius:'20px',width:'32px',height:'32px',
+                 backgroundColor:dayBgColors[cycleSchedule[i]],justifyContent:'center',alignItems:'center',
+                 contents:[{type:'text',text:opt.label,size:'sm',weight:'bold',color:dayColors[cycleSchedule[i]],align:'center'}]}
+            ],flex:1};
         });
 
-        // 每種碳日的餐食文字
-        var sections = [];
+        var scheduleBubble = {
+            type:'bubble', size:'mega',
+            header:{type:'box',layout:'vertical',backgroundColor:'#1565C0',paddingAll:'16px',contents:[
+                {type:'text',text:'🔄 碳水循環計劃',color:'#ffffff',weight:'bold',size:'lg'}
+            ]},
+            body:{type:'box',layout:'vertical',spacing:'md',paddingAll:'16px',contents:[
+                {type:'text',text:'📅 碳水循環排程',weight:'bold',size:'md',color:'#333333'},
+                {type:'box',layout:'horizontal',spacing:'xs',margin:'md',contents:schDayBoxes},
+                {type:'separator',margin:'lg'},
+                {type:'text',text:'⚠️ 飲食提醒',weight:'bold',size:'sm',color:'#333333',margin:'lg'},
+                {type:'text',text:'1. 蛋白餐吃完使用配方，再吃蛋白質與纖維，選擇低熱量蛋白質與低碳高纖蔬菜。',size:'xs',color:'#666666',wrap:true,margin:'sm'},
+                {type:'text',text:'2. 避免飯、麵、根莖類、水果、奶製品、堅果及豆漿等碳水來源。(若不小心吃到，記得用排糖包)',size:'xs',color:'#666666',wrap:true,margin:'sm'}
+            ]}
+        };
+
+        // ── 找出排程中用到的碳日類型（去重）──
+        var usedTypes = [];
+        cycleSchedule.forEach(function(t) { if (usedTypes.indexOf(t) === -1) usedTypes.push(t); });
+
+        // ── 每種碳日一個 bubble ──
+        var dayBubbles = [];
         usedTypes.forEach(function(p) {
             var plan = getDietPlanData(p);
-            var header = '\n' + dayEmojis[p] + ' ' + dayLabels[p];
-            var meals = [];
+            // 摘要計算
+            var totalPacks = 0, totalFood = 0, qbPacks = 0;
+            for (var m2 = 0; m2 < MEAL_COUNT; m2++) {
+                if (plan[m2][0] === '1') totalPacks++;
+                var fv = plan[m2][3] === '-' ? 0 : (parseInt(plan[m2][3]) || 0);
+                totalFood += fv;
+                if (plan[m2][5] === '1') qbPacks++;
+            }
+            var total = totalPacks * 20 + totalFood;
+            var summaryText = '代餐' + totalPacks + '包(' + (totalPacks*20) + 'g)';
+            if (qbPacks > 0) summaryText += ' + Q寶' + qbPacks + '包';
+            if (totalFood > 0) summaryText += ' + 食物蛋白' + totalFood + 'g';
+
+            // 餐食行
+            var mealContents = [];
             for (var m = 0; m < MEAL_COUNT; m++) {
                 var row = plan[m];
                 var allDash = row.every(function(v){ return v === '-' || v === '0' || v === 0; });
@@ -1181,35 +1213,41 @@
                     if (val === '-' || val === '0' || val === 0) continue;
                     var col = DIET_COLS[f];
                     var unit = col.unit.replace(/[()]/g, '');
-                    if (col.type === 'number') {
-                        parts.push(col.label + val + unit);
-                    } else if (val === '1') {
-                        parts.push(col.label + (unit ? '1' + unit : ''));
-                    } else {
-                        parts.push(col.label + val);
-                    }
+                    if (col.type === 'number') { parts.push(col.label + val + unit); }
+                    else if (val === '1') { parts.push(col.label + (unit ? '1'+unit : '')); }
+                    else { parts.push(col.label + val); }
                 }
-                meals.push(MEAL_ICONS[m] + MEAL_NAMES[m] + '：' + parts.join('、'));
+                if (mealContents.length > 0) mealContents.push({type:'separator',margin:'sm'});
+                mealContents.push({type:'box',layout:'horizontal',spacing:'sm',margin:'sm',contents:[
+                    {type:'text',text:MEAL_ICONS[m]+MEAL_NAMES[m],size:'sm',weight:'bold',color:'#333333',flex:0,gravity:'top'},
+                    {type:'text',text:parts.join('、'),size:'xs',color:'#555555',wrap:true,flex:4}
+                ]});
             }
-            // 摘要
-            var totalPacks = 0, totalFood = 0, qbPacks = 0;
-            for (var m2 = 0; m2 < MEAL_COUNT; m2++) {
-                if (plan[m2][0] === '1') totalPacks++;
-                var fv = plan[m2][3] === '-' ? 0 : (parseInt(plan[m2][3]) || 0);
-                totalFood += fv;
-                if (plan[m2][5] === '1') qbPacks++;
-            }
-            var total = totalPacks * 20 + totalFood;
-            var summary = '蛋白質 ' + total + 'g → 代餐' + totalPacks + '包×20g';
-            if (qbPacks > 0) summary += ' + Q寶' + qbPacks + '包';
-            if (totalFood > 0) summary += ' + 食物蛋白' + totalFood + 'g';
-            if (p === 'fast') summary += '\n☕ 隨時可補充茶、咖啡、清湯與雞蛋白';
 
-            sections.push(header + '\n' + summary + '\n' + meals.join('\n'));
+            var bodyContents = [
+                {type:'box',layout:'horizontal',contents:[
+                    {type:'text',text:'蛋白質',size:'sm',color:'#888888',flex:0},
+                    {type:'text',text:total + 'g',size:'xl',weight:'bold',color:dayColors[p],align:'end'}
+                ]},
+                {type:'text',text:summaryText,size:'xs',color:'#888888',margin:'xs'}
+            ];
+            if (p === 'fast') bodyContents.push({type:'text',text:'☕ 隨時可補充茶、咖啡、清湯與雞蛋白',size:'xs',color:'#8B6914',wrap:true,margin:'sm'});
+            bodyContents.push({type:'separator',margin:'md'});
+            mealContents.forEach(function(c){ bodyContents.push(c); });
+
+            dayBubbles.push({
+                type:'bubble', size:'mega',
+                header:{type:'box',layout:'horizontal',backgroundColor:dayBgColors[p],paddingAll:'14px',contents:[
+                    {type:'text',text:dayEmojis[p]+' '+dayLabels[p],weight:'bold',size:'lg',color:dayColors[p],flex:1},
+                ]},
+                body:{type:'box',layout:'vertical',spacing:'sm',paddingAll:'16px',contents:bodyContents}
+            });
         });
 
-        return '🔄 碳水循環計劃\n\n' + schLine + '\n' + sections.join('\n') +
-               '\n\n1. 蛋白餐吃完使用配方，再吃蛋白質與纖維，選擇低熱量蛋白質與低碳高纖蔬菜。\n2. 避免飯、麵、根莖類、水果、奶製品、堅果及豆漿等碳水來源。(若不小心吃到，記得用排糖包)';
+        return {
+            type:'flex', altText:'碳水循環計劃',
+            contents:{ type:'carousel', contents:[scheduleBubble].concat(dayBubbles) }
+        };
     }
 
     function saveAllDietPlans() {
@@ -1229,7 +1267,7 @@
             fast: getDietPlanData('fast'),
             schedule: cycleSchedule,
             lineUid: patientLineUid,
-            lineMessage: lineMsg
+            lineFlexMessage: lineMsg
         };
 
         fetch(N8N + '/save-diet-plan', {
