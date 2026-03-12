@@ -124,7 +124,10 @@
         .diet-meal-card.inactive:hover,.diet-meal-card.inactive.expanded{opacity:1;max-height:500px}
         .diet-meal-title{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
         .diet-flow{display:flex;flex-wrap:wrap;gap:4px 2px;align-items:flex-start}
-        .diet-step{display:flex;flex-direction:column;align-items:center;min-width:50px}
+        .diet-step{display:flex;flex-direction:column;align-items:center;min-width:50px;transition:opacity 0.2s}
+        .diet-step.dash{opacity:0.15}
+        .diet-step.dash:hover{opacity:1}
+        .diet-arrow.dash{opacity:0.15}
         .diet-step-ctrl{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:white;height:32px}
         .diet-step-ctrl input{width:42px;padding:4px 2px;border:none;font-size:12px;text-align:center;outline:none;background:transparent}
         .diet-step-ctrl input[type=text][inputmode=numeric]{width:38px}
@@ -875,7 +878,8 @@
     function dietStepHtml(m, f, val) {
         var col = DIET_COLS[f];
         var id = 'diet-' + m + '-' + f;
-        var html = '<div class="diet-step">';
+        var isDash = (val === '-' || val === '0' || val === 0);
+        var html = '<div class="diet-step' + (isDash ? ' dash' : '') + '" id="step-' + m + '-' + f + '">';
         html += '<div class="diet-step-ctrl">';
         if (col.type === 'number') {
             var displayVal = (val === '0' || val === 0) ? '-' : esc(val);
@@ -902,6 +906,7 @@
         if (v < 0) v = 0;
         if (v > 200) v = 200;
         el.value = (v === 0) ? '-' : v;
+        updateStepDash(id, el.value === '-');
         recalcDietProtein();
     }
 
@@ -915,7 +920,14 @@
         if (cur < 0) cur = opts.length - 1;
         if (cur >= opts.length) cur = 0;
         el.value = opts[cur];
-        if (fIdx === 0) recalcDietProtein(); // 代餐欄變動 → 重算
+        updateStepDash(id, el.value === '-');
+        if (fIdx === 0) recalcDietProtein();
+    }
+
+    function updateStepDash(inputId, isDash) {
+        // inputId = 'diet-M-F', stepId = 'step-M-F'
+        var stepEl = document.getElementById(inputId.replace('diet-', 'step-'));
+        if (stepEl) stepEl.classList.toggle('dash', isDash);
     }
 
     function toggleDietMeal(m) {
@@ -962,8 +974,11 @@
             html += '<div class="diet-meal-title">' + MEAL_ICONS[m] + ' ' + MEAL_NAMES[m] + '</div><div class="diet-flow">';
             for (var f = 0; f < DIET_COLS.length; f++) {
                 var sep = (f === 4) ? '+' : '→';
-                if (f > 0) html += '<span class="diet-arrow">' + sep + '</span>';
-                html += dietStepHtml(m, f, plan[m] ? plan[m][f] || '-' : '-');
+                var curVal = plan[m] ? plan[m][f] || '-' : '-';
+                var prevVal = (f > 0 && plan[m]) ? plan[m][f-1] || '-' : '-';
+                var bothDash = (f > 0) && (prevVal === '-' || prevVal === '0') && (curVal === '-' || curVal === '0');
+                if (f > 0) html += '<span class="diet-arrow' + (bothDash ? ' dash' : '') + '">' + sep + '</span>';
+                html += dietStepHtml(m, f, curVal);
             }
             html += '</div></div>';
         }
