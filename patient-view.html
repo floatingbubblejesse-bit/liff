@@ -241,16 +241,17 @@
                 document.getElementById('headerName').textContent=patientName;
                 document.getElementById('headerSub').textContent=patientSn+' 體組成資料';
                 renderBodyTab(data);
-                // 身體組成 API 的 customer 只有 name/sn/settingName
-                // 從最新測量紀錄補上體重，讓蛋白質欄位能用 weight×1.5 計算
                 var cust = data.customer || {};
+                // 從最新測量紀錄補上體重（舊版 API 相容）
                 var mArr = data.measurements || [];
                 if (mArr.length > 0) {
                     var latest = mArr[mArr.length - 1];
                     if (!cust['體重'] && latest['體重']) cust['體重'] = latest['體重'];
                     if (!cust.weight && latest['體重']) cust.weight = latest['體重'];
                 }
+                // 身體組成 API 現在也回傳 I 欄，直接用
                 fillProteinField(cust);
+                console.log('[蛋白質] loadBodyData customer:', JSON.stringify({w:cust.weight, h:cust.recommendedProtein, i:cust.doctorRecommendedProtein}));
                 document.getElementById('loadingDiv').style.display='none';
                 // 恢復到重新整理前的 tab
                 switchTab(initTab);
@@ -375,20 +376,30 @@
         return '';
     }
 
-    // ====== LINE UID 預取（僅在沒有快取 UID 時呼叫）======
+    // ====== LINE UID 預取（改用 GAS patientId 直接查，不走 n8n）======
     function prefetchLineUid() {
-        fetch(MEALS_WH+'?pid='+encodeURIComponent(patientSn))
+        fetch(MEALS_GAS + '?patientId=' + encodeURIComponent(patientSn))
             .then(function(r){return r.json();})
             .then(function(data){
+                // GAS 回傳 lineUid，快取起來
                 var uid = data.lineUid || '';
                 if (uid && !patientLineUid) {
                     patientLineUid = uid;
                     cacheUidInUrl(uid);
-                    // 取得 UID 後立即預取餐食資料
-                    prefetchMealData(uid);
                 }
+                // 餐食資料已經在這次回傳中了，直接用
+                mealsData = data;
+                mealsLoaded = true;
+                mealsLoading = false;
+                if (activeTab === 'meals') renderMealsTab();
+                fillProteinFromMeals();
             })
-            .catch(function(){});
+            .catch(function(err){
+                mealsLoading = false;
+                if (activeTab === 'meals') {
+                    document.getElementById('tab-meals').innerHTML = '<div class="no-data">餐食資料載入失敗：' + esc(err.message) + '</div>';
+                }
+            });
     }
 
     function cacheUidInUrl(uid) {
@@ -435,9 +446,8 @@
             if (!mealsLoading) prefetchMealData(patientLineUid);
             return;
         }
-        // 沒有 LINE UID → 顯示提示
-        el.innerHTML = '<div class="no-data"><div class="spinner" style="width:28px;height:28px;border-width:3px;margin:0 auto 10px"></div>查詢 LINE 綁定中...</div>';
-        // 等 prefetchLineUid 完成後會自動觸發 prefetchMealData
+        // 沒有 LINE UID → 顯示載入中（GAS patientId 查詢已在背景執行）
+        el.innerHTML = '<div class="no-data"><div class="spinner" style="width:28px;height:28px;border-width:3px;margin:0 auto 10px"></div>載入餐食記錄中...</div>';
     }
 
     // ====== 餐食 tab 完整渲染（取代 iframe）======
@@ -783,11 +793,18 @@
         var note=document.getElementById('noteText').value.trim();
         if(!note){alert('請先輸入建議內容');return;}
         if(!patientLineUid){alert('此病患尚未綁定 LINE，無法傳送。');return;}
+        var proteinVal = document.getElementById('proteinInput').value || '';
         var btn=document.getElementById('sendBtn');
         btn.disabled=true;
         btn.innerHTML='<div class="spinner" style="width:18px;height:18px;border-width:3px"></div><span>傳送中...</span>';
         fetch(NOTE_WH,{method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({lineUid:patientLineUid,note:note,patientSn:patientSn})})
+            body:JSON.stringify({
+                lineUid:patientLineUid,
+                note:note,
+                patientSn:patientSn,
+                proteinRecommendation: proteinVal,
+                saveRecord: true
+            })})
             .then(function(r){return r.json();})
             .then(function(res){
                 btn.disabled=false;
