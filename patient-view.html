@@ -286,14 +286,32 @@
     }
 
     function loadMeals(){
-        if(!patientLineUid){
-            document.getElementById('mealsContent').innerHTML='<div class="no-data">此病患尚未綁定 LINE，無法顯示飲食紀錄</div>';
+        var el = document.getElementById('tab-meals');
+        el.innerHTML = '<div id="mealsContent"><div class="no-data">載入餐食記錄中...</div></div>';
+        // 如果已有 LINE UID，直接用 iframe
+        if (patientLineUid) {
+            el.style.padding = '0';
+            el.style.overflow = 'hidden';
+            el.innerHTML = '<iframe src="https://floatingbubblejesse-bit.github.io/liff/patient.html?userId=' + encodeURIComponent(patientLineUid) + '" style="width:100%;height:100%;border:none;"></iframe>';
             return;
         }
-        var el = document.getElementById('tab-meals');
-        el.style.padding = '0';
-        el.style.overflow = 'hidden';
-        el.innerHTML = '<iframe src="https://floatingbubblejesse-bit.github.io/liff/patient.html?userId=' + encodeURIComponent(patientLineUid) + '" style="width:100%;height:100%;border:none;"></iframe>';
+        // 否則從 n8n webhook 取得 LINE UID
+        fetch(MEALS_WH+'?pid='+encodeURIComponent(patientSn))
+            .then(function(r){return r.json();})
+            .then(function(data){
+                var uid = data.lineUid || '';
+                if (!uid) {
+                    el.innerHTML = '<div id="mealsContent"><div class="no-data">此病患尚未綁定 LINE，無法顯示飲食紀錄</div></div>';
+                    return;
+                }
+                patientLineUid = uid;
+                el.style.padding = '0';
+                el.style.overflow = 'hidden';
+                el.innerHTML = '<iframe src="https://floatingbubblejesse-bit.github.io/liff/patient.html?userId=' + encodeURIComponent(uid) + '" style="width:100%;height:100%;border:none;"></iframe>';
+            })
+            .catch(function(err){
+                el.innerHTML = '<div id="mealsContent"><div class="no-data">載入失敗：'+esc(err.message)+'</div></div>';
+            });
     }
 
     function applyPreset(text){document.getElementById('noteText').value=text;updateChar();}
