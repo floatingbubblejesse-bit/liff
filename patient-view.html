@@ -211,7 +211,7 @@
                 <div class="card-title">🔄 碳水循環計劃</div>
                 <div class="cycle-schedule" id="cycleSchedule"></div>
                 <div class="diet-btn-row" style="margin-bottom:12px">
-                    <button class="diet-btn-save" id="saveAllDietBtn" onclick="saveAllDietPlans()" style="width:100%">儲存碳水循環計劃</button>
+                    <button class="diet-btn-save" id="saveAllDietBtn" onclick="saveAllDietPlans()" style="width:100%">儲存並發送給客戶</button>
                 </div>
                 <div class="diet-day-section">
                     <div class="diet-day-header" onclick="toggleDietBody('mid')">🟡 中碳日 <span class="diet-mode" id="midDietModeBadge"></span><span class="diet-toggle" id="midDietToggle">▶</span></div>
@@ -1147,12 +1147,79 @@
         return plan;
     }
 
-    function saveAllDietPlans() {
-        var btn = document.getElementById('saveAllDietBtn');
-        btn.disabled = true; btn.textContent = '儲存中…';
-        var proteinVal = document.getElementById('proteinInput').value;
+    // 組合 LINE 推播訊息
+    function buildDietLineMessage() {
+        var dayLabels = {high:'高碳日', low:'低碳日', mid:'中碳日', fast:'斷食日'};
+        var dayEmojis = {high:'🔴', low:'🟢', mid:'🟡', fast:'⚪'};
 
-        // 一次送出全部：4碳日 + 排程 + 蛋白質
+        // 排程行
+        var schLine = '📅 碳水循環排程\n';
+        schLine += CYCLE_DAYS.map(function(d, i) {
+            var opt = CYCLE_OPTS.find(function(o){ return o.key === cycleSchedule[i]; });
+            return d + ':' + opt.label;
+        }).join(' ▸ ');
+
+        // 找出排程中用到的碳日類型（去重）
+        var usedTypes = [];
+        cycleSchedule.forEach(function(t) {
+            if (usedTypes.indexOf(t) === -1) usedTypes.push(t);
+        });
+
+        // 每種碳日的餐食文字
+        var sections = [];
+        usedTypes.forEach(function(p) {
+            var plan = getDietPlanData(p);
+            var header = '\n' + dayEmojis[p] + ' ' + dayLabels[p];
+            var meals = [];
+            for (var m = 0; m < MEAL_COUNT; m++) {
+                var row = plan[m];
+                var allDash = row.every(function(v){ return v === '-' || v === '0' || v === 0; });
+                if (allDash) continue;
+                var parts = [];
+                for (var f = 0; f < DIET_COLS.length; f++) {
+                    var val = row[f];
+                    if (val === '-' || val === '0' || val === 0) continue;
+                    var col = DIET_COLS[f];
+                    var unit = col.unit.replace(/[()]/g, '');
+                    if (col.type === 'number') {
+                        parts.push(col.label + val + unit);
+                    } else if (val === '1') {
+                        parts.push(col.label + (unit ? '1' + unit : ''));
+                    } else {
+                        parts.push(col.label + val);
+                    }
+                }
+                meals.push(MEAL_ICONS[m] + MEAL_NAMES[m] + '：' + parts.join('、'));
+            }
+            // 摘要
+            var totalPacks = 0, totalFood = 0, qbPacks = 0;
+            for (var m2 = 0; m2 < MEAL_COUNT; m2++) {
+                if (plan[m2][0] === '1') totalPacks++;
+                var fv = plan[m2][3] === '-' ? 0 : (parseInt(plan[m2][3]) || 0);
+                totalFood += fv;
+                if (plan[m2][5] === '1') qbPacks++;
+            }
+            var total = totalPacks * 20 + totalFood;
+            var summary = '蛋白質 ' + total + 'g → 代餐' + totalPacks + '包×20g';
+            if (qbPacks > 0) summary += ' + Q寶' + qbPacks + '包';
+            if (totalFood > 0) summary += ' + 食物蛋白' + totalFood + 'g';
+            if (p === 'fast') summary += '\n☕ 隨時可補充茶、咖啡、清湯與雞蛋白';
+
+            sections.push(header + '\n' + summary + '\n' + meals.join('\n'));
+        });
+
+        return '🔄 碳水循環計劃\n\n' + schLine + '\n' + sections.join('\n') +
+               '\n\n1. 蛋白餐吃完使用配方，再吃蛋白質與纖維，選擇低熱量蛋白質與低碳高纖蔬菜。\n2. 避免飯、麵、根莖類、水果、奶製品、堅果及豆漿等碳水來源。(若不小心吃到，記得用排糖包)';
+    }
+
+    function saveAllDietPlans() {
+        if (!patientLineUid) { alert('此病患尚未綁定 LINE，無法傳送。'); return; }
+        var btn = document.getElementById('saveAllDietBtn');
+        btn.disabled = true; btn.textContent = '儲存並發送中…';
+        var proteinVal = document.getElementById('proteinInput').value;
+        var lineMsg = buildDietLineMessage();
+
+        // 一次送出全部：4碳日 + 排程 + 蛋白質 + LINE推播
         var payload = {
             patientSn: patientSn,
             proteinRec: parseInt(proteinVal) || 0,
@@ -1160,24 +1227,32 @@
             high: getDietPlanData('high'),
             low:  getDietPlanData('low'),
             fast: getDietPlanData('fast'),
-            schedule: cycleSchedule
+            schedule: cycleSchedule,
+            lineUid: patientLineUid,
+            lineMessage: lineMsg
         };
 
         fetch(N8N + '/save-diet-plan', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
-        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            var ct = r.headers.get('content-type') || '';
+            if (ct.indexOf('json') !== -1) return r.json();
+            return r.text().then(function(t) {
+                try { return JSON.parse(t); } catch(e) { return { ok: r.ok, raw: t }; }
+            });
+        })
         .then(function(res) {
             btn.disabled = false;
             if (res.ok || res.success) {
-                btn.textContent = '儲存完成'; btn.style.background = '#2e7d32';
+                btn.textContent = '已發送'; btn.style.background = '#2e7d32';
                 var pBtn = document.getElementById('saveProteinBtn');
                 if (pBtn) { pBtn.textContent = '已同步'; pBtn.style.background = '#2e7d32'; setTimeout(function(){ pBtn.textContent = '更新'; pBtn.style.background = '#00897B'; }, 2500); }
-                setTimeout(function() { btn.textContent = '儲存碳水循環計劃'; btn.style.background = ''; }, 2500);
-            } else { btn.textContent = '儲存碳水循環計劃'; alert('儲存失敗：' + (res.error || JSON.stringify(res))); }
+                setTimeout(function() { btn.textContent = '儲存並發送給客戶'; btn.style.background = ''; }, 2500);
+            } else { btn.textContent = '儲存並發送給客戶'; alert('儲存失敗：' + (res.error || JSON.stringify(res))); }
         })
-        .catch(function(err) { btn.disabled = false; btn.textContent = '儲存碳水循環計劃'; alert('儲存失敗：' + err.message); });
+        .catch(function(err) { btn.disabled = false; btn.textContent = '儲存並發送給客戶'; alert('儲存失敗：' + err.message); });
     }
 
     function fixPlanData(plan) {
