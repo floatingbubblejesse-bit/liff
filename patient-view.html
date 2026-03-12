@@ -157,7 +157,7 @@
                 if (data.error){showError(data.error);return;}
                 allData=data;
                 patientName=(data.customer&&data.customer.name)||patientSn;
-                patientLineUid=(data.customer&&data.customer.lineUid)||'';
+                patientLineUid=findLineUid(data.customer);
                 document.getElementById('headerName').textContent=patientName;
                 document.getElementById('headerSub').textContent=patientSn+' 體組成資料';
                 renderBodyTab(data);
@@ -190,7 +190,7 @@
         html+='<div class="card"><div class="profile-row">';
         html+='<div class="avatar">'+esc((patientName||'?')[0])+'</div>';
         html+='<div><div class="profile-name">'+esc(patientName);
-        if(cust.lineUid) html+='<span class="line-badge">LINE ✓</span>';
+        if(patientLineUid) html+='<span class="line-badge">LINE ✓</span>';
         html+='</div><div class="profile-sub">院區病歷號：'+esc(patientSn)+'</div>';
         if(cust.settingName) html+='<div class="profile-sub">'+esc(cust.settingName)+'</div>';
         html+='</div></div></div>';
@@ -263,6 +263,19 @@
         document.querySelectorAll('.ctab').forEach(function(b){b.classList.remove('active');});
         btn.classList.add('active');
         renderChart(key);
+    }
+
+    function findLineUid(cust) {
+        if (!cust) return '';
+        // 嘗試各種可能的欄位名稱
+        var uid = cust.lineUid || cust['LINE UID'] || cust['lineUID'] || cust['line_uid'] || cust['LineUid'] || '';
+        if (uid) return uid;
+        // 搜尋所有欄位，找長度 > 20 且以 U 開頭的值（LINE UID 格式）
+        for (var key in cust) {
+            var val = String(cust[key] || '');
+            if (/^U[a-f0-9]{20,}$/.test(val)) return val;
+        }
+        return '';
     }
 
     function loadMeals(){
