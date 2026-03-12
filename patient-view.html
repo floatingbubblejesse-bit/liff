@@ -125,9 +125,10 @@
         .diet-step{display:flex;flex-direction:column;align-items:center;min-width:50px}
         .diet-step-ctrl{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:white;height:32px}
         .diet-step-ctrl input{width:42px;padding:4px 2px;border:none;font-size:12px;text-align:center;outline:none;background:transparent}
-        .diet-step-ctrl input[type=number]{width:38px;-moz-appearance:textfield}
-        .diet-step-ctrl input::-webkit-outer-spin-button,.diet-step-ctrl input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-        .diet-step-btn{width:22px;height:100%;border:none;background:#f5f5f5;cursor:pointer;font-size:14px;color:#555;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0}
+        .diet-step-ctrl input[type=number]{width:38px;-moz-appearance:textfield;appearance:textfield}
+        .diet-step-ctrl input[type=number]::-webkit-outer-spin-button,.diet-step-ctrl input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none!important;appearance:none!important;margin:0;display:none!important}
+        .diet-step-btn{width:22px;height:100%;border:none;background:#f5f5f5;cursor:pointer;font-size:14px;color:#555;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;opacity:0;transition:opacity 0.2s}
+        .diet-step-ctrl:hover .diet-step-btn{opacity:1}
         .diet-step-btn:active{background:#e0e0e0}
         .diet-step-unit{font-size:9px;color:var(--muted);margin-left:1px;white-space:nowrap}
         .diet-step-label{font-size:9px;color:var(--muted);margin-top:2px;text-align:center;white-space:nowrap}
@@ -835,8 +836,8 @@
         {label:'中碳水',  type:'select', unit:'',  opts:['-','1拳頭']},
         {label:'高碳水±高油脂', type:'select', unit:'', opts:['-','適量']},
     ];
-    var MEAL_NAMES = ['早餐','午餐','晚餐','傍晚','睡前'];
-    var MEAL_ICONS = ['🌅','☀️','🌙','🌆','😴'];
+    var MEAL_NAMES = ['早餐','午餐','傍晚','晚餐','睡前'];
+    var MEAL_ICONS = ['🌅','☀️','🌆','🌙','😴'];
     var MEAL_COUNT = 5;
     var dietPlanInitialized = false;
 
@@ -850,19 +851,19 @@
         var plan;
         if (packs === 2) {
             plan = [
-                ['1',   '1', String(perMeal), '適量', '-', '1拳頭', '-'],
-                ['-',   '1', String(perMeal), '適量', '-', '1拳頭', '-'],
-                ['1',   '1', String(perMeal), '適量', '-', '-',     '-'],
-                ['-',   '-', '0',             '-',    '-', '-',     '-'],
-                ['-',   '-', '0',             '-',    '-', '-',     '-'],
+                ['1',   '1', String(perMeal), '適量', '-', '1拳頭', '-'],  // 早餐
+                ['-',   '1', String(perMeal), '適量', '-', '1拳頭', '-'],  // 午餐
+                ['-',   '-', '0',             '-',    '-', '-',     '-'],  // 傍晚
+                ['1',   '1', String(perMeal), '適量', '-', '-',     '-'],  // 晚餐
+                ['-',   '-', '0',             '-',    '-', '-',     '-'],  // 睡前
             ];
         } else {
             plan = [
-                ['1',   '1', String(perMeal), '適量', '-', '1拳頭', '-'],
-                ['1',   '1', String(perMeal), '適量', '-', '1拳頭', '-'],
-                ['1',   '1', String(perMeal), '適量', '-', '-',     '-'],
-                ['-',   '-', '0',             '-',    '-', '-',     '-'],
-                ['-',   '-', '0',             '-',    '-', '-',     '-'],
+                ['1',   '1', String(perMeal), '適量', '-', '1拳頭', '-'],  // 早餐
+                ['1',   '1', String(perMeal), '適量', '-', '1拳頭', '-'],  // 午餐
+                ['-',   '-', '0',             '-',    '-', '-',     '-'],  // 傍晚
+                ['1',   '1', String(perMeal), '適量', '-', '-',     '-'],  // 晚餐
+                ['-',   '-', '0',             '-',    '-', '-',     '-'],  // 睡前
             ];
         }
         renderDietPlan(plan, rec, packs, mrG, foodG);
