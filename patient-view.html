@@ -125,8 +125,7 @@
         .diet-step{display:flex;flex-direction:column;align-items:center;min-width:50px}
         .diet-step-ctrl{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:white;height:32px}
         .diet-step-ctrl input{width:42px;padding:4px 2px;border:none;font-size:12px;text-align:center;outline:none;background:transparent}
-        .diet-step-ctrl input[type=number]{width:38px;-moz-appearance:textfield;appearance:textfield}
-        .diet-step-ctrl input[type=number]::-webkit-outer-spin-button,.diet-step-ctrl input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none!important;appearance:none!important;margin:0;display:none!important}
+        .diet-step-ctrl input[type=text][inputmode=numeric]{width:38px}
         .diet-step-btn{width:22px;height:100%;border:none;background:#f5f5f5;cursor:pointer;font-size:14px;color:#555;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;opacity:0;transition:opacity 0.2s}
         .diet-step-ctrl:hover .diet-step-btn{opacity:1}
         .diet-step-btn:active{background:#e0e0e0}
@@ -828,12 +827,13 @@
     // 欄位定義: [label, type, unit, options]
     // type: 'select'(箭頭切換選項), 'number'(數字+-), 'plus-select'(+號切換)
     var DIET_COLS = [
-        {label:'代餐',   type:'select', unit:'包', opts:['-','1']},
-        {label:'配方',   type:'select', unit:'包', opts:['-','1']},
-        {label:'食物蛋白',type:'number', unit:'克', min:0, max:200, step:1},
-        {label:'蔬菜',   type:'select', unit:'',  opts:['-','適量'], sep:'+'},
-        {label:'Q寶',    type:'select', unit:'包', opts:['-','1']},
-        {label:'中碳水',  type:'select', unit:'',  opts:['-','1拳頭']},
+        {label:'代餐',       type:'select', unit:'包', opts:['-','1']},
+        {label:'配方',       type:'select', unit:'包', opts:['-','1']},
+        {label:'排糖包±排油包', type:'select', unit:'', opts:['-','1']},
+        {label:'食物蛋白',    type:'number', unit:'克', min:0, max:200, step:1},
+        {label:'蔬菜',       type:'select', unit:'',  opts:['-','適量'], sep:'+'},
+        {label:'Q寶',        type:'select', unit:'包', opts:['-','1']},
+        {label:'中碳水',      type:'select', unit:'',  opts:['-','1拳頭']},
         {label:'高碳水±高油脂', type:'select', unit:'', opts:['-','適量']},
     ];
     var MEAL_NAMES = ['早餐','午餐','傍晚','晚餐','睡前'];
@@ -849,21 +849,22 @@
         var foodG = rec - mrG;
         var perMeal = Math.round(foodG / 3);
         var plan;
+        var fp = perMeal > 0 ? String(perMeal) : '-';
         if (packs === 2) {
             plan = [
-                ['1',   '1', String(perMeal), '適量', '-', '1拳頭', '-'],  // 早餐
-                ['-',   '1', String(perMeal), '適量', '-', '1拳頭', '-'],  // 午餐
-                ['-',   '-', '0',             '-',    '-', '-',     '-'],  // 傍晚
-                ['1',   '1', String(perMeal), '適量', '-', '-',     '-'],  // 晚餐
-                ['-',   '-', '0',             '-',    '-', '-',     '-'],  // 睡前
+                ['1',  '1', '-', fp,  '適量', '-', '1拳頭', '-'],  // 早餐
+                ['-',  '1', '-', fp,  '適量', '-', '1拳頭', '-'],  // 午餐
+                ['-',  '-', '-', '-', '-',    '-', '-',     '-'],  // 傍晚
+                ['1',  '1', '-', fp,  '適量', '-', '-',     '-'],  // 晚餐
+                ['-',  '-', '-', '-', '-',    '-', '-',     '-'],  // 睡前
             ];
         } else {
             plan = [
-                ['1',   '1', String(perMeal), '適量', '-', '1拳頭', '-'],  // 早餐
-                ['1',   '1', String(perMeal), '適量', '-', '1拳頭', '-'],  // 午餐
-                ['-',   '-', '0',             '-',    '-', '-',     '-'],  // 傍晚
-                ['1',   '1', String(perMeal), '適量', '-', '-',     '-'],  // 晚餐
-                ['-',   '-', '0',             '-',    '-', '-',     '-'],  // 睡前
+                ['1',  '1', '-', fp,  '適量', '-', '1拳頭', '-'],  // 早餐
+                ['1',  '1', '-', fp,  '適量', '-', '1拳頭', '-'],  // 午餐
+                ['-',  '-', '-', '-', '-',    '-', '-',     '-'],  // 傍晚
+                ['1',  '1', '-', fp,  '適量', '-', '-',     '-'],  // 晚餐
+                ['-',  '-', '-', '-', '-',    '-', '-',     '-'],  // 睡前
             ];
         }
         renderDietPlan(plan, rec, packs, mrG, foodG);
@@ -875,8 +876,9 @@
         var html = '<div class="diet-step">';
         html += '<div class="diet-step-ctrl">';
         if (col.type === 'number') {
+            var displayVal = (val === '0' || val === 0) ? '-' : esc(val);
             html += '<button class="diet-step-btn" onclick="dietAdj(\'' + id + '\',-1)">−</button>';
-            html += '<input type="number" id="' + id + '" value="' + esc(val) + '" min="' + (col.min||0) + '" max="' + (col.max||999) + '" step="' + (col.step||1) + '">';
+            html += '<input type="text" id="' + id + '" value="' + displayVal + '" inputmode="numeric" readonly>';
             html += '<button class="diet-step-btn" onclick="dietAdj(\'' + id + '\',1)">+</button>';
         } else {
             html += '<button class="diet-step-btn" onclick="dietCycle(\'' + id + '\',' + f + ',-1)">◀</button>';
@@ -893,11 +895,11 @@
     function dietAdj(id, delta) {
         var el = document.getElementById(id);
         if (!el) return;
-        var v = parseInt(el.value) || 0;
+        var v = (el.value === '-') ? 0 : (parseInt(el.value) || 0);
         v += delta;
         if (v < 0) v = 0;
         if (v > 200) v = 200;
-        el.value = v;
+        el.value = (v === 0) ? '-' : v;
         recalcDietProtein();
     }
 
@@ -921,9 +923,9 @@
             // 代餐 (index 0): '1' → 1包×20g
             var mrEl = document.getElementById('diet-' + m + '-0');
             if (mrEl && mrEl.value === '1') totalPacks++;
-            // 食物蛋白 (index 2): 直接讀克數
-            var fpEl = document.getElementById('diet-' + m + '-2');
-            if (fpEl) totalFood += (parseInt(fpEl.value) || 0);
+            // 食物蛋白 (index 3): 讀克數，'-' 視為 0
+            var fpEl = document.getElementById('diet-' + m + '-3');
+            if (fpEl) { var fv = fpEl.value === '-' ? 0 : (parseInt(fpEl.value) || 0); totalFood += fv; }
         }
         var total = totalPacks * 20 + totalFood;
         if (total > 0) {
@@ -949,7 +951,7 @@
         for (var m = 0; m < MEAL_COUNT; m++) {
             html += '<div class="diet-meal-card"><div class="diet-meal-title">' + MEAL_ICONS[m] + ' ' + MEAL_NAMES[m] + '</div><div class="diet-flow">';
             for (var f = 0; f < DIET_COLS.length; f++) {
-                var sep = (f === 3) ? '+' : '→';
+                var sep = (f === 4) ? '+' : '→';
                 if (f > 0) html += '<span class="diet-arrow">' + sep + '</span>';
                 html += dietStepHtml(m, f, plan[m] ? plan[m][f] || '-' : '-');
             }
@@ -1011,12 +1013,12 @@
                 if (data.plan && data.plan.length >= 3) {
                     // 相容舊版 3 餐，不足 5 餐補空
                     while (data.plan.length < MEAL_COUNT) {
-                        data.plan.push(['-','-','0','-','-','-','-']);
+                        data.plan.push(['-','-','-','-','-','-','-','-']);
                     }
-                    // 相容舊版8欄資料：丟棄第8欄
+                    // 相容舊版7欄資料：在 index 2 插入 '-'（排糖包±排油包）
                     for (var i = 0; i < data.plan.length; i++) {
-                        if (data.plan[i].length === 8) {
-                            data.plan[i] = data.plan[i].slice(0, 7);
+                        if (data.plan[i].length === 7) {
+                            data.plan[i].splice(2, 0, '-');
                         }
                     }
                     var rec = parseInt(document.getElementById('proteinInput').value) || 0;
