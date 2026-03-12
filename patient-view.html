@@ -124,10 +124,14 @@
         .diet-meal-card.inactive:hover,.diet-meal-card.inactive.expanded{opacity:1;max-height:500px}
         .diet-meal-title{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
         .diet-flow{display:flex;flex-wrap:wrap;gap:4px 2px;align-items:flex-start}
-        .diet-step{display:flex;flex-direction:column;align-items:center;min-width:50px;transition:opacity 0.2s}
-        .diet-step.dash{opacity:0.15}
-        .diet-step.dash:hover{opacity:1}
-        .diet-arrow.dash{opacity:0.15}
+        .diet-step{display:flex;flex-direction:column;align-items:center;min-width:50px;transition:all 0.3s}
+        .diet-step.dash{opacity:0.12;min-width:0;max-width:16px;overflow:hidden;cursor:pointer}
+        .diet-step.dash:hover{opacity:1;max-width:120px;min-width:50px}
+        .diet-step.dash .diet-step-ctrl{border-color:transparent}
+        .diet-step.dash .diet-step-label{opacity:0;max-height:0}
+        .diet-step.dash:hover .diet-step-ctrl{border-color:var(--border)}
+        .diet-step.dash:hover .diet-step-label{opacity:1;max-height:20px}
+        .diet-arrow.dash{opacity:0.12;font-size:8px;margin:0 -2px}
         .diet-step-ctrl{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:white;height:32px}
         .diet-step-ctrl input{width:42px;padding:4px 2px;border:none;font-size:12px;text-align:center;outline:none;background:transparent}
         .diet-step-ctrl input[type=text][inputmode=numeric]{width:38px}
