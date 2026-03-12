@@ -145,6 +145,8 @@
         .diet-btn-regen:active{background:#f0f4ff}
         .diet-btn-save{flex:1;padding:10px;border:none;border-radius:8px;background:var(--green);color:white;font-size:12px;cursor:pointer;font-weight:600}
         .diet-btn-save:disabled{background:#90a4ae;cursor:not-allowed}
+        .diet-toggle{font-size:10px;color:var(--muted);margin-left:auto;transition:transform 0.3s}
+        .diet-body.collapsed{display:none}
     </style>
 </head>
 <body>
@@ -188,15 +190,27 @@
                 </div>
                 <!-- 更新狀態已整合到按鈕本身 -->
             </div>
-            <div class="card" id="dietPlanCard" style="display:none">
-                <div class="card-title">🍽️ 中碳日飲食計劃 <span class="diet-mode" id="dietModeBadge"></span></div>
-                <div class="diet-summary-text" id="dietSummaryText"></div>
-                <div id="dietMeals"></div>
-                <div class="diet-btn-row">
-                    <button class="diet-btn-regen" onclick="generateDietPlan()">↻ 重新計算</button>
-                    <button class="diet-btn-save" id="saveDietBtn" onclick="saveDietPlan()">儲存飲食計劃</button>
+            <div class="card" id="midDietPlanCard" style="display:none">
+                <div class="card-title" style="cursor:pointer;user-select:none" onclick="toggleDietBody('mid')">🍽️ 中碳日飲食計劃 <span class="diet-mode" id="midDietModeBadge"></span> <span class="diet-toggle" id="midDietToggle">▼</span></div>
+                <div id="midDietBody">
+                    <div class="diet-summary-text" id="midDietSummaryText"></div>
+                    <div id="midDietMeals"></div>
+                    <div class="diet-btn-row">
+                        <button class="diet-btn-regen" onclick="generateDietPlan('mid')">↻ 重新計算</button>
+                        <button class="diet-btn-save" id="midSaveDietBtn" onclick="saveDietPlan('mid')">儲存飲食計劃</button>
+                    </div>
                 </div>
-                <div id="dietSaveStatus" style="display:none;margin-top:8px;text-align:center;font-size:12px;color:#2e7d32;font-weight:600"></div>
+            </div>
+            <div class="card" id="highDietPlanCard" style="display:none">
+                <div class="card-title" style="cursor:pointer;user-select:none" onclick="toggleDietBody('high')">🍽️ 高碳日飲食計劃 <span class="diet-mode" id="highDietModeBadge"></span> <span class="diet-toggle" id="highDietToggle">▼</span></div>
+                <div id="highDietBody">
+                    <div class="diet-summary-text" id="highDietSummaryText"></div>
+                    <div id="highDietMeals"></div>
+                    <div class="diet-btn-row">
+                        <button class="diet-btn-regen" onclick="generateDietPlan('high')">↻ 重新計算</button>
+                        <button class="diet-btn-save" id="highSaveDietBtn" onclick="saveDietPlan('high')">儲存飲食計劃</button>
+                    </div>
+                </div>
             </div>
             <div class="card">
                 <div class="card-title">💬 快速預設建議</div>
@@ -831,9 +845,7 @@
         });
     }
 
-    // ====== 中碳日飲食計劃 ======
-    // 欄位定義: [label, type, unit, options]
-    // type: 'select'(箭頭切換選項), 'number'(數字+-), 'plus-select'(+號切換)
+    // ====== 飲食計劃（中碳日 mid / 高碳日 high）======
     var DIET_COLS = [
         {label:'代餐',       type:'select', unit:'包', opts:['-','1']},
         {label:'配方',       type:'select', unit:'包', opts:['-','1']},
@@ -849,40 +861,46 @@
     var MEAL_COUNT = 5;
     var dietPlanInitialized = false;
 
-    function generateDietPlan() {
+    // p = 'mid' | 'high'
+    function generateDietPlan(p) {
         var rec = parseInt(document.getElementById('proteinInput').value) || 0;
-        if (rec <= 0) { document.getElementById('dietPlanCard').style.display = 'none'; return; }
+        if (rec <= 0) { document.getElementById(p + 'DietPlanCard').style.display = 'none'; return; }
         var packs = rec <= 110 ? 2 : 3;
         var mrG = packs * 20;
         var foodG = rec - mrG;
         var perMeal = Math.round(foodG / 3);
-        var plan;
         var fp = perMeal > 0 ? String(perMeal) : '-';
+        var plan;
         if (packs === 2) {
             plan = [
-                ['1',  '1', '-', fp,  '適量', '-', '1拳頭', '-'],  // 早餐
-                ['-',  '1', '-', fp,  '適量', '-', '1拳頭', '-'],  // 午餐
-                ['-',  '-', '-', '-', '-',    '-', '-',     '-'],  // 傍晚
-                ['1',  '1', '-', fp,  '適量', '-', '-',     '-'],  // 晚餐
-                ['-',  '-', '-', '-', '-',    '-', '-',     '-'],  // 睡前
+                ['1',  '1', '-', fp,  '適量', '-', '1拳頭', '-'],
+                ['-',  '1', '-', fp,  '適量', '-', '1拳頭', '-'],
+                ['-',  '-', '-', '-', '-',    '-', '-',     '-'],
+                ['1',  '1', '-', fp,  '適量', '-', '-',     '-'],
+                ['-',  '-', '-', '-', '-',    '-', '-',     '-'],
             ];
         } else {
             plan = [
-                ['1',  '1', '-', fp,  '適量', '-', '1拳頭', '-'],  // 早餐
-                ['1',  '1', '-', fp,  '適量', '-', '1拳頭', '-'],  // 午餐
-                ['-',  '-', '-', '-', '-',    '-', '-',     '-'],  // 傍晚
-                ['1',  '1', '-', fp,  '適量', '-', '-',     '-'],  // 晚餐
-                ['-',  '-', '-', '-', '-',    '-', '-',     '-'],  // 睡前
+                ['1',  '1', '-', fp,  '適量', '-', '1拳頭', '-'],
+                ['1',  '1', '-', fp,  '適量', '-', '1拳頭', '-'],
+                ['-',  '-', '-', '-', '-',    '-', '-',     '-'],
+                ['1',  '1', '-', fp,  '適量', '-', '-',     '-'],
+                ['-',  '-', '-', '-', '-',    '-', '-',     '-'],
             ];
         }
-        renderDietPlan(plan, rec, packs, mrG, foodG);
+        // 高碳日差異：午餐(idx 1) 排糖包±排油包=1, 高碳水±高油脂=適量
+        if (p === 'high') {
+            plan[1][2] = '1';
+            plan[1][7] = '適量';
+        }
+        renderDietPlan(p, plan, rec, packs, mrG, foodG);
     }
 
-    function dietStepHtml(m, f, val) {
+    function dietStepHtml(p, m, f, val) {
         var col = DIET_COLS[f];
-        var id = 'diet-' + m + '-' + f;
+        var id = p + '-d-' + m + '-' + f;
         var isDash = (val === '-' || val === '0' || val === 0);
-        var html = '<div class="diet-step' + (isDash ? ' dash' : '') + '" id="step-' + m + '-' + f + '">';
+        var html = '<div class="diet-step' + (isDash ? ' dash' : '') + '" id="' + p + '-s-' + m + '-' + f + '">';
         html += '<div class="diet-step-ctrl">';
         if (col.type === 'number') {
             var displayVal = (val === '0' || val === 0) ? '-' : esc(val);
@@ -901,6 +919,8 @@
         return html;
     }
 
+    function dietPrefix(id) { return id.split('-d-')[0]; }
+
     function dietAdj(id, delta) {
         var el = document.getElementById(id);
         if (!el) return;
@@ -910,7 +930,7 @@
         if (v > 200) v = 200;
         el.value = (v === 0) ? '-' : v;
         updateStepDash(id, el.value === '-');
-        recalcDietProtein();
+        recalcDietProtein(dietPrefix(id));
     }
 
     function dietCycle(id, fIdx, dir) {
@@ -924,74 +944,76 @@
         if (cur >= opts.length) cur = 0;
         el.value = opts[cur];
         updateStepDash(id, el.value === '-');
-        if (fIdx === 0) recalcDietProtein();
+        if (fIdx === 0) recalcDietProtein(dietPrefix(id));
     }
 
-    function updateStepDash(inputId, isDash) {
-        var stepEl = document.getElementById(inputId.replace('diet-', 'step-'));
+    function updateStepDash(id, isDash) {
+        var stepEl = document.getElementById(id.replace('-d-', '-s-'));
         if (stepEl) stepEl.classList.toggle('dash', isDash);
     }
 
-    function toggleDietMeal(m) {
-        var el = document.getElementById('dietMeal-' + m);
+    function toggleDietMeal(p, m) {
+        var el = document.getElementById(p + '-meal-' + m);
         if (el && el.classList.contains('inactive')) el.classList.toggle('expanded');
     }
 
-    // 從飲食計劃即時算出總蛋白質，連動更新醫師建議攝取量
-    function recalcDietProtein() {
+    function toggleDietBody(p) {
+        var body = document.getElementById(p + 'DietBody');
+        var tog = document.getElementById(p + 'DietToggle');
+        if (body) body.classList.toggle('collapsed');
+        if (tog) tog.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
+    }
+
+    function recalcDietProtein(p) {
         var totalPacks = 0, totalFood = 0;
         for (var m = 0; m < MEAL_COUNT; m++) {
-            // 代餐 (index 0): '1' → 1包×20g
-            var mrEl = document.getElementById('diet-' + m + '-0');
+            var mrEl = document.getElementById(p + '-d-' + m + '-0');
             if (mrEl && mrEl.value === '1') totalPacks++;
-            // 食物蛋白 (index 3): 讀克數，'-' 視為 0
-            var fpEl = document.getElementById('diet-' + m + '-3');
+            var fpEl = document.getElementById(p + '-d-' + m + '-3');
             if (fpEl) { var fv = fpEl.value === '-' ? 0 : (parseInt(fpEl.value) || 0); totalFood += fv; }
         }
         var total = totalPacks * 20 + totalFood;
         if (total > 0) {
             document.getElementById('proteinInput').value = total;
-            // 更新摘要文字
-            var badge = document.getElementById('dietModeBadge');
-            var packs = total <= 110 ? 2 : 3;
+            var badge = document.getElementById(p + 'DietModeBadge');
             badge.textContent = totalPacks + '包代餐模式';
             badge.className = 'diet-mode ' + (totalPacks <= 2 ? 'm2' : 'm3');
             var mrG = totalPacks * 20;
-            document.getElementById('dietSummaryText').innerHTML =
+            document.getElementById(p + 'DietSummaryText').innerHTML =
                 '醫師建議 <b>' + total + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + totalPacks + '包×20g）+ 食物蛋白 ' + totalFood + 'g';
         }
     }
 
-    function renderDietPlan(plan, rec, packs, mrG, foodG) {
-        var badge = document.getElementById('dietModeBadge');
+    function renderDietPlan(p, plan, rec, packs, mrG, foodG) {
+        var badge = document.getElementById(p + 'DietModeBadge');
         badge.textContent = packs + '包代餐模式';
         badge.className = 'diet-mode ' + (packs === 2 ? 'm2' : 'm3');
-        document.getElementById('dietSummaryText').innerHTML =
+        document.getElementById(p + 'DietSummaryText').innerHTML =
             '醫師建議 <b>' + rec + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + packs + '包×20g）+ 食物蛋白 ' + foodG + 'g（每餐約 ' + Math.round(foodG / 3) + 'g）';
         var html = '';
         for (var m = 0; m < MEAL_COUNT; m++) {
             var allDash = plan[m] && plan[m].every(function(v){ return v === '-' || v === '0' || v === 0; });
             var cls = 'diet-meal-card' + (allDash ? ' inactive' : '');
-            html += '<div class="' + cls + '" id="dietMeal-' + m + '" onclick="toggleDietMeal(' + m + ')">';
+            html += '<div class="' + cls + '" id="' + p + '-meal-' + m + '" onclick="toggleDietMeal(\'' + p + '\',' + m + ')">';
             html += '<div class="diet-meal-title">' + MEAL_ICONS[m] + ' ' + MEAL_NAMES[m] + '</div><div class="diet-flow">';
             for (var f = 0; f < DIET_COLS.length; f++) {
                 var sep = (f === 4) ? '+' : '→';
                 var curVal = plan[m] ? plan[m][f] || '-' : '-';
                 if (f > 0) html += '<span class="diet-arrow">' + sep + '</span>';
-                html += dietStepHtml(m, f, curVal);
+                html += dietStepHtml(p, m, f, curVal);
             }
             html += '</div></div>';
         }
-        document.getElementById('dietMeals').innerHTML = html;
-        document.getElementById('dietPlanCard').style.display = '';
+        document.getElementById(p + 'DietMeals').innerHTML = html;
+        document.getElementById(p + 'DietPlanCard').style.display = '';
     }
 
-    function getDietPlanData() {
+    function getDietPlanData(p) {
         var plan = [];
         for (var m = 0; m < MEAL_COUNT; m++) {
             var row = [];
             for (var f = 0; f < DIET_COLS.length; f++) {
-                var el = document.getElementById('diet-' + m + '-' + f);
+                var el = document.getElementById(p + '-d-' + m + '-' + f);
                 row.push(el ? el.value : '');
             }
             plan.push(row);
@@ -999,16 +1021,15 @@
         return plan;
     }
 
-    function saveDietPlan() {
-        var plan = getDietPlanData();
+    function saveDietPlan(p) {
+        var plan = getDietPlanData(p);
         var proteinVal = document.getElementById('proteinInput').value;
-        var btn = document.getElementById('saveDietBtn');
+        var btn = document.getElementById(p + 'SaveDietBtn');
         btn.disabled = true; btn.textContent = '儲存中…';
 
-        // 同時儲存飲食計劃 + 更新 I 欄（醫師建議蛋白質攝取量）
         var savePlan = fetch(N8N + '/save-diet-plan', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ patientSn: patientSn, plan: plan, proteinRec: proteinVal })
+            body: JSON.stringify({ patientSn: patientSn, plan: plan, proteinRec: proteinVal, planType: p })
         }).then(function(r) { return r.json(); });
 
         var saveProteinI = fetch(N8N + '/save-protein', {
@@ -1022,7 +1043,6 @@
             var planRes = results[0];
             if (planRes.ok || planRes.success) {
                 btn.textContent = '儲存完成'; btn.style.background = '#2e7d32';
-                // 同步更新按鈕狀態
                 var pBtn = document.getElementById('saveProteinBtn');
                 if (pBtn) { pBtn.textContent = '已同步'; pBtn.style.background = '#2e7d32'; setTimeout(function(){ pBtn.textContent = '更新'; pBtn.style.background = '#00897B'; }, 2500); }
                 setTimeout(function() { btn.textContent = '儲存飲食計劃'; btn.style.background = ''; }, 2500);
@@ -1031,16 +1051,14 @@
         .catch(function(err) { btn.disabled = false; btn.textContent = '儲存飲食計劃'; alert('儲存失敗：' + err.message); });
     }
 
-    function loadDietPlan() {
-        fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn))
+    function loadDietPlan(p) {
+        fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn) + '&planType=' + p)
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.plan && data.plan.length >= 3) {
-                    // 相容舊版 3 餐，不足 5 餐補空
                     while (data.plan.length < MEAL_COUNT) {
                         data.plan.push(['-','-','-','-','-','-','-','-']);
                     }
-                    // 相容舊版7欄資料：在 index 2 插入 '-'（排糖包±排油包）
                     for (var i = 0; i < data.plan.length; i++) {
                         if (data.plan[i].length === 7) {
                             data.plan[i].splice(2, 0, '-');
@@ -1050,12 +1068,12 @@
                     var packs = rec <= 110 ? 2 : 3;
                     var mrG = packs * 20;
                     var foodG = rec - mrG;
-                    renderDietPlan(data.plan, rec, packs, mrG, foodG);
+                    renderDietPlan(p, data.plan, rec, packs, mrG, foodG);
                 } else {
-                    generateDietPlan();
+                    generateDietPlan(p);
                 }
             })
-            .catch(function() { generateDietPlan(); });
+            .catch(function() { generateDietPlan(p); });
     }
 
     function initDietPlan() {
@@ -1063,7 +1081,8 @@
         var val = parseInt(document.getElementById('proteinInput').value) || 0;
         if (val <= 0) return;
         dietPlanInitialized = true;
-        loadDietPlan();
+        loadDietPlan('mid');
+        loadDietPlan('high');
     }
 
     function applyPreset(text){document.getElementById('noteText').value=text;updateChar();}
