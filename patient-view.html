@@ -147,13 +147,13 @@
                     <div style="flex:1">
                         <div style="font-size:11px;color:#718096;margin-bottom:4px">醫師建議攝取量</div>
                         <div style="display:flex;align-items:center;gap:6px">
-                            <input type="number" id="proteinInput" step="0.1" style="flex:1;max-width:160px;font-size:28px;font-weight:700;color:#00897B;border:2px solid #e2e8f0;border-radius:10px;padding:10px 14px;text-align:center;outline:none;background:#f0faf7" onfocus="this.style.borderColor='#00897B';this.style.boxShadow='0 0 0 3px rgba(0,137,123,0.15)'" onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                            <input type="number" id="proteinInput" step="1" min="1" max="200" style="flex:1;max-width:160px;font-size:28px;font-weight:700;color:#00897B;border:2px solid #e2e8f0;border-radius:10px;padding:10px 14px;text-align:center;outline:none;background:#f0faf7" onfocus="this.style.borderColor='#00897B';this.style.boxShadow='0 0 0 3px rgba(0,137,123,0.15)'" onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
                             <span style="font-size:16px;color:#718096;font-weight:600">g</span>
-                            <button id="saveProteinBtn" onclick="saveProtein()" style="width:44px;height:44px;border-radius:50%;border:none;background:#00897B;color:white;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(0,137,123,0.3)" title="儲存至 I 欄">💾</button>
+                            <button id="saveProteinBtn" onclick="saveProtein()" style="padding:8px 16px;border-radius:8px;border:none;background:#00897B;color:white;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(0,137,123,0.3);white-space:nowrap">更新</button>
                         </div>
                     </div>
                 </div>
-                <div class="send-success" id="proteinSuccess" style="display:none;margin-top:10px">✅ 已儲存至客戶清單 I 欄！</div>
+                <!-- 更新狀態已整合到按鈕本身 -->
             </div>
             <div class="card">
                 <div class="card-title">💬 快速預設建議</div>
@@ -664,27 +664,28 @@
     var proteinFilled = false;
     var currentProteinFilled = false;
 
+    function ceilProtein(v) { return Math.ceil(Math.min(v, 140)); }
+
     function fillProteinField(cust) {
         if (!cust) return;
-        // H 欄（蛋白質攝取量）= 系統計算值，顯示在左側
         var current = findField(cust, ['蛋白質攝取量','proteinIntake','protein','蛋白質']);
-        // I 欄（醫師建議蛋白質攝取量）= 醫師手動設定值，顯示在輸入框
         var doctorRec = findField(cust, ['醫師建議蛋白質攝取量','doctorProtein','doctorRecommendedProtein']);
-        // 如果 H 欄找不到，用體重 × 1.5 計算，上限 140g
         if (isNaN(current)) {
             var wt = findField(cust, ['體重','weight']);
-            if (!isNaN(wt) && wt > 0) current = Math.min(wt * 1.5, 140);
+            if (!isNaN(wt) && wt > 0) current = ceilProtein(wt * 1.5);
+        } else {
+            current = ceilProtein(current);
         }
-        // 左側「目前攝取量（系統計算）」= H 欄或 weight×1.5
+        if (!isNaN(doctorRec)) doctorRec = Math.ceil(doctorRec);
         if (!isNaN(current) && !currentProteinFilled) {
-            document.getElementById('currentProtein').textContent = current.toFixed(1) + ' g';
+            document.getElementById('currentProtein').textContent = current + ' g';
             currentProteinFilled = true;
         }
-        // 右側輸入框「醫師建議攝取量」= 優先 I 欄，無 I 欄才用 H 欄
+        // 輸入框：優先 I 欄，I 欄空 → 用 H 欄（= 體重×1.5 進位）
         if (!proteinFilled) {
-            var prefill = !isNaN(doctorRec) ? doctorRec : (!isNaN(current) ? current : NaN);
+            var prefill = (!isNaN(doctorRec) && doctorRec > 0) ? doctorRec : (!isNaN(current) ? current : NaN);
             if (!isNaN(prefill)) {
-                document.getElementById('proteinInput').value = prefill.toFixed(1);
+                document.getElementById('proteinInput').value = prefill;
                 proteinFilled = true;
             }
         }
@@ -695,27 +696,26 @@
         if (!mealsData || !mealsData.patient) return;
         var p = mealsData.patient;
         var wt = parseFloat(p.weight);
-        // H 欄（系統計算）= recommendedProtein 或 weight × 1.5
         var hCol = parseFloat(p.recommendedProtein);
-        if (isNaN(hCol) && !isNaN(wt) && wt > 0) hCol = Math.min(wt * 1.5, 140);
-        // I 欄（醫師建議）= doctorRecommendedProtein / doctorProtein / 醫師建議蛋白質攝取量
+        if (isNaN(hCol) && !isNaN(wt) && wt > 0) hCol = ceilProtein(wt * 1.5);
+        else if (!isNaN(hCol)) hCol = ceilProtein(hCol);
         var iCol = parseFloat(p.doctorRecommendedProtein);
         if (isNaN(iCol)) iCol = parseFloat(p.doctorProtein);
         if (isNaN(iCol)) iCol = parseFloat(p['醫師建議蛋白質攝取量']);
+        if (!isNaN(iCol)) iCol = Math.ceil(iCol);
 
-        // 左側顯示：系統計算值（H 欄）
         if (!isNaN(hCol) && !currentProteinFilled) {
-            document.getElementById('currentProtein').textContent = hCol.toFixed(1) + ' g';
+            document.getElementById('currentProtein').textContent = hCol + ' g';
             currentProteinFilled = true;
         }
-        // 右側輸入框：I 欄有值就強制覆蓋（因為餐食 API 比身體組成 API 晚到）
         console.log('[蛋白質] fillProteinFromMeals: hCol=' + hCol + ', iCol=' + iCol + ', proteinFilled=' + proteinFilled);
+        // I 欄有值 → 強制覆蓋；I 欄空 → 用 H 欄
         if (!isNaN(iCol) && iCol > 0) {
-            document.getElementById('proteinInput').value = iCol.toFixed(1);
+            document.getElementById('proteinInput').value = iCol;
             proteinFilled = true;
             console.log('[蛋白質] 已用 I 欄覆蓋: ' + iCol);
-        } else if (!proteinFilled && !isNaN(hCol)) {
-            document.getElementById('proteinInput').value = hCol.toFixed(1);
+        } else if (!isNaN(hCol)) {
+            document.getElementById('proteinInput').value = hCol;
             proteinFilled = true;
         }
     }
@@ -738,12 +738,12 @@
     }
 
     function saveProtein() {
-        var val = parseFloat(document.getElementById('proteinInput').value);
+        var val = parseInt(document.getElementById('proteinInput').value, 10);
         if (isNaN(val) || val <= 0) { alert('請輸入有效的蛋白質攝取量'); return; }
         var btn = document.getElementById('saveProteinBtn');
         btn.disabled = true;
-        btn.style.opacity = '0.5';
-        btn.textContent = '⏳';
+        btn.style.opacity = '0.6';
+        btn.textContent = '更新中…';
         fetch(N8N + '/save-protein', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -757,22 +757,22 @@
             btn.disabled = false;
             btn.style.opacity = '1';
             if (res.ok || res.success) {
-                btn.textContent = '✅';
-                document.getElementById('proteinSuccess').style.display = 'block';
+                btn.textContent = '更新完成';
+                btn.style.background = '#2e7d32';
                 setTimeout(function(){
-                    btn.textContent = '💾';
-                    document.getElementById('proteinSuccess').style.display = 'none';
-                }, 3000);
+                    btn.textContent = '更新';
+                    btn.style.background = '#00897B';
+                }, 2500);
             } else {
-                btn.textContent = '💾';
-                alert('儲存失敗：' + (res.error || JSON.stringify(res)));
+                btn.textContent = '更新';
+                alert('更新失敗：' + (res.error || JSON.stringify(res)));
             }
         })
         .catch(function(err){
             btn.disabled = false;
             btn.style.opacity = '1';
-            btn.textContent = '💾';
-            alert('儲存失敗：' + err.message);
+            btn.textContent = '更新';
+            alert('更新失敗：' + err.message);
         });
     }
 
