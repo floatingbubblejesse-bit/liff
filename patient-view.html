@@ -131,7 +131,7 @@
         .diet-step.dash .diet-step-label{opacity:0;max-height:0}
         .diet-step.dash:hover .diet-step-ctrl{border-color:var(--border)}
         .diet-step.dash:hover .diet-step-label{opacity:1;max-height:20px}
-        .diet-arrow.dash{opacity:0;width:0;overflow:hidden;margin:0;padding:0;font-size:0;transition:all 0.3s}
+        .diet-arrow{color:#ccc;font-size:12px;margin-top:4px;flex-shrink:0}
         .diet-step-ctrl{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:white;height:32px}
         .diet-step-ctrl input{width:42px;padding:4px 2px;border:none;font-size:12px;text-align:center;outline:none;background:transparent}
         .diet-step-ctrl input[type=text][inputmode=numeric]{width:38px}
@@ -140,7 +140,6 @@
         .diet-step-btn:active{background:#e0e0e0}
         .diet-step-unit{font-size:9px;color:var(--muted);margin-left:1px;white-space:nowrap}
         .diet-step-label{font-size:9px;color:var(--muted);margin-top:2px;text-align:center;white-space:nowrap}
-        .diet-arrow{color:#ccc;font-size:12px;margin-top:4px;flex-shrink:0}
         .diet-btn-row{display:flex;gap:8px;margin-top:12px}
         .diet-btn-regen{flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:white;font-size:12px;cursor:pointer;color:var(--blue);font-weight:600}
         .diet-btn-regen:active{background:#f0f4ff}
@@ -929,11 +928,8 @@
     }
 
     function updateStepDash(inputId, isDash) {
-        // inputId = 'diet-M-F', stepId = 'step-M-F', arrowId = 'arrow-M-F'
         var stepEl = document.getElementById(inputId.replace('diet-', 'step-'));
         if (stepEl) stepEl.classList.toggle('dash', isDash);
-        var arrowEl = document.getElementById(inputId.replace('diet-', 'arrow-'));
-        if (arrowEl) arrowEl.classList.toggle('dash', isDash);
     }
 
     function toggleDietMeal(m) {
@@ -981,8 +977,7 @@
             for (var f = 0; f < DIET_COLS.length; f++) {
                 var sep = (f === 4) ? '+' : '→';
                 var curVal = plan[m] ? plan[m][f] || '-' : '-';
-                var curDash = (curVal === '-' || curVal === '0' || curVal === 0);
-                if (f > 0) html += '<span class="diet-arrow' + (curDash ? ' dash' : '') + '" id="arrow-' + m + '-' + f + '">' + sep + '</span>';
+                if (f > 0) html += '<span class="diet-arrow">' + sep + '</span>';
                 html += dietStepHtml(m, f, curVal);
             }
             html += '</div></div>';
