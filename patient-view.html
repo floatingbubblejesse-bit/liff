@@ -1038,21 +1038,24 @@
     }
 
     function recalcDietProtein(p) {
-        var totalPacks = 0, totalFood = 0;
+        var totalPacks = 0, totalFood = 0, qbPacks = 0;
         for (var m = 0; m < MEAL_COUNT; m++) {
             var mrEl = document.getElementById(p + '-d-' + m + '-0');
             if (mrEl && mrEl.value === '1') totalPacks++;
             var fpEl = document.getElementById(p + '-d-' + m + '-3');
             if (fpEl) { var fv = fpEl.value === '-' ? 0 : (parseInt(fpEl.value) || 0); totalFood += fv; }
+            var qbEl = document.getElementById(p + '-d-' + m + '-5');
+            if (qbEl && qbEl.value === '1') qbPacks++;
         }
         var total = totalPacks * 20 + totalFood;
         if (total > 0) {
-            // 只有中碳日才連動更改醫師建議攝取量
             if (p === 'mid') {
                 document.getElementById('proteinInput').value = total;
             }
             var badge = document.getElementById(p + 'DietModeBadge');
-            badge.textContent = totalPacks + '包代餐';
+            var badgeText = totalPacks + '(包)代餐';
+            if (qbPacks > 0) badgeText += ' ' + qbPacks + '(包)Q寶';
+            badge.textContent = badgeText;
             badge.className = 'diet-mode ' + (totalPacks <= 2 ? 'm2' : 'm3');
             var mrG = totalPacks * 20;
             var mealsWithFood = 0;
@@ -1062,15 +1065,22 @@
             }
             var perMeal = mealsWithFood > 0 ? Math.round(totalFood / mealsWithFood) : 0;
             var sumEl = document.getElementById(p + 'DietSummaryText');
-            if (sumEl) sumEl.innerHTML = '醫師建議 <b>' + total + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + totalPacks + '包×20g）+ 食物蛋白 ' + totalFood + 'g' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + 'g）' : '');
+            if (sumEl) sumEl.innerHTML = '醫師建議 <b>' + total + '(克)</b> 蛋白質 → 代餐 ' + mrG + '(克)（' + totalPacks + '(包)×20(克)）+ 食物蛋白 ' + totalFood + '(克)' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + '(克)）' : '');
         }
     }
 
     function renderDietPlan(p, plan, rec, packs, mrG, foodG) {
         var badge = document.getElementById(p + 'DietModeBadge');
+        // 計算Q寶包數
+        var qbPacks = 0;
+        for (var qi = 0; qi < MEAL_COUNT; qi++) {
+            if (plan[qi] && plan[qi][5] === '1') qbPacks++;
+        }
         if (p !== 'fast') {
-            badge.textContent = packs + '包代餐';
-            badge.className = 'diet-mode ' + (packs === 2 ? 'm2' : 'm3');
+            var badgeText = packs + '(包)代餐';
+            if (qbPacks > 0) badgeText += ' ' + qbPacks + '(包)Q寶';
+            badge.textContent = badgeText;
+            badge.className = 'diet-mode ' + (packs <= 2 ? 'm2' : 'm3');
         } else {
             badge.textContent = '';
             badge.className = 'diet-mode';
@@ -1083,7 +1093,7 @@
                 if (plan[mi] && plan[mi][3] && plan[mi][3] !== '-' && parseInt(plan[mi][3]) > 0) mealsWithFood++;
             }
             var perMeal = mealsWithFood > 0 ? Math.round(foodG / mealsWithFood) : 0;
-            sumEl.innerHTML = '醫師建議 <b>' + rec + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + packs + '包×20g）+ 食物蛋白 ' + foodG + 'g' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + 'g）' : '');
+            sumEl.innerHTML = '醫師建議 <b>' + rec + '(克)</b> 蛋白質 → 代餐 ' + mrG + '(克)（' + packs + '(包)×20(克)）+ 食物蛋白 ' + foodG + '(克)' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + '(克)）' : '');
         }
         var html = '';
         for (var m = 0; m < MEAL_COUNT; m++) {
