@@ -312,7 +312,7 @@
             }];
             if (rec > 0) {
                 datasets.push({
-                    label: '建議攝取量', data: keys.map(() => rec),
+                    label: '醫師建議攝取量 ' + Math.round(rec) + 'g', data: keys.map(() => rec),
                     borderColor: '#F5A623', borderWidth: 1.5, borderDash: [6, 4],
                     pointRadius: 0, fill: false, tension: 0,
                 });
@@ -499,7 +499,7 @@
             }
 
             const recs = data.records || [];
-            const rec = data.patient?.recommendedProtein || 0;
+            const rec = data.patient?.doctorRecommendedProtein || data.patient?.recommendedProtein || 0;
             const wt = data.patient?.weight || 0;
 
             renderProteinProgress(recs, rec, wt);
