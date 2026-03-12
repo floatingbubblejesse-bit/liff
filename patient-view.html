@@ -1165,18 +1165,35 @@
             ],flex:1};
         });
 
+        var now = new Date();
+        var dateStr = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日';
+
+        // ── 計算一週所需包數 ──
+        var weeklyMr = 0, weeklyQb = 0;
+        cycleSchedule.forEach(function(t) {
+            var plan = getDietPlanData(t);
+            for (var m = 0; m < MEAL_COUNT; m++) {
+                if (plan[m][0] === '1') weeklyMr++;
+                if (plan[m][5] === '1') weeklyQb++;
+            }
+        });
+        var weeklyParts = [];
+        if (weeklyMr > 0) weeklyParts.push(weeklyMr + '包代餐');
+        if (weeklyQb > 0) weeklyParts.push(weeklyQb + '包Q寶');
+        var weeklyText = '📦 此計劃一週共需 ' + weeklyParts.join('、');
+
         var scheduleBubble = {
             type:'bubble', size:'mega',
             header:{type:'box',layout:'vertical',backgroundColor:'#1565C0',paddingAll:'16px',contents:[
-                {type:'text',text:'🔄 碳水循環計劃',color:'#ffffff',weight:'bold',size:'lg'}
+                {type:'text',text:'📋 ' + dateStr + ' 看診',color:'#ffffff',weight:'bold',size:'lg'}
             ]},
             body:{type:'box',layout:'vertical',spacing:'md',paddingAll:'16px',contents:[
                 {type:'text',text:'📅 碳水循環排程',weight:'bold',size:'md',color:'#333333'},
                 {type:'box',layout:'horizontal',spacing:'xs',margin:'md',contents:schDayBoxes},
                 {type:'separator',margin:'lg'},
-                {type:'text',text:'⚠️ 飲食提醒',weight:'bold',size:'sm',color:'#333333',margin:'lg'},
-                {type:'text',text:'1. 蛋白餐吃完使用配方，再吃蛋白質與纖維，選擇低熱量蛋白質與低碳高纖蔬菜。',size:'xs',color:'#666666',wrap:true,margin:'sm'},
-                {type:'text',text:'2. 避免飯、麵、根莖類、水果、奶製品、堅果及豆漿等碳水來源。(若不小心吃到，記得用排糖包)',size:'xs',color:'#666666',wrap:true,margin:'sm'}
+                {type:'text',text:weeklyText,weight:'bold',size:'sm',color:'#1565C0',wrap:true,margin:'lg'},
+                {type:'separator',margin:'lg'},
+                {type:'text',text:'⚠️ 排糖包與排油包務必在高碳日用掉，才會瘦更快！',weight:'bold',size:'sm',color:'#333333',wrap:true,margin:'lg'}
             ]}
         };
 
@@ -1197,7 +1214,7 @@
                 if (plan[m2][5] === '1') qbPacks++;
             }
             var total = totalPacks * 20 + totalFood;
-            var summaryText = '代餐' + totalPacks + '包(' + (totalPacks*20) + 'g)';
+            var summaryText = '代餐' + totalPacks + '包×20g';
             if (qbPacks > 0) summaryText += ' + Q寶' + qbPacks + '包';
             if (totalFood > 0) summaryText += ' + 食物蛋白' + totalFood + 'g';
 
@@ -1220,7 +1237,7 @@
                 if (mealContents.length > 0) mealContents.push({type:'separator',margin:'sm'});
                 mealContents.push({type:'box',layout:'horizontal',spacing:'sm',margin:'sm',contents:[
                     {type:'text',text:MEAL_ICONS[m]+MEAL_NAMES[m],size:'sm',weight:'bold',color:'#333333',flex:0,gravity:'top'},
-                    {type:'text',text:parts.join('、'),size:'xs',color:'#555555',wrap:true,flex:4}
+                    {type:'text',text:parts.join(' → '),size:'xs',color:'#555555',wrap:true,flex:4}
                 ]});
             }
 
@@ -1245,7 +1262,7 @@
         });
 
         return {
-            type:'flex', altText:'碳水循環計劃',
+            type:'flex', altText:dateStr + ' 碳水循環計劃',
             contents:{ type:'carousel', contents:[scheduleBubble].concat(dayBubbles) }
         };
     }
