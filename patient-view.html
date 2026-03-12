@@ -137,10 +137,11 @@
         ['腰圍','腰圍','cm',true],['臀圍','臀圍','cm',true],
     ];
     var chartInstance=null, allData=null, patientSn='', patientName='', patientLineUid='', activeTab='body';
+    var mealsIframeReady=false, mealsIframeEl=null;
     var params = new URLSearchParams(window.location.search);
     patientSn = params.get('id') || '';
     if (!patientSn) { showError('缺少病患 ID，請從醫生總覽頁面進入。'); }
-    else { buildPresets(); loadBodyData(); }
+    else { buildPresets(); loadBodyData(); prefetchLineUid(); }
 
     function buildPresets() {
         var html = '';
@@ -285,17 +286,49 @@
         return '';
     }
 
+    // 頁面載入時立即並行呼叫 n8n 取得 LINE UID，不用等到點選餐食 tab
+    function prefetchLineUid() {
+        fetch(MEALS_WH+'?pid='+encodeURIComponent(patientSn))
+            .then(function(r){return r.json();})
+            .then(function(data){
+                var uid = data.lineUid || '';
+                if (uid && !patientLineUid) {
+                    patientLineUid = uid;
+                    // 預先建立隱藏的 iframe，讓 patient.html 在背景載入
+                    preloadMealsIframe(uid);
+                }
+            })
+            .catch(function(){/* 靜默失敗，點選 tab 時會再顯示錯誤 */});
+    }
+
+    function preloadMealsIframe(uid) {
+        if (mealsIframeReady) return;
+        mealsIframeEl = document.createElement('iframe');
+        mealsIframeEl.src = 'https://floatingbubblejesse-bit.github.io/liff/patient.html?userId=' + encodeURIComponent(uid);
+        mealsIframeEl.style.cssText = 'width:100%;height:100%;border:none;';
+        mealsIframeReady = true;
+    }
+
     function loadMeals(){
         var el = document.getElementById('tab-meals');
-        el.innerHTML = '<div id="mealsContent"><div class="no-data">載入餐食記錄中...</div></div>';
-        // 如果已有 LINE UID，直接用 iframe
+        // 如果 iframe 已預載好，直接顯示
+        if (mealsIframeReady && mealsIframeEl) {
+            el.style.padding = '0';
+            el.style.overflow = 'hidden';
+            el.innerHTML = '';
+            el.appendChild(mealsIframeEl);
+            return;
+        }
+        // 如果 GAS 回傳中已找到 LINE UID（但 prefetch 還沒完成）
         if (patientLineUid) {
             el.style.padding = '0';
             el.style.overflow = 'hidden';
             el.innerHTML = '<iframe src="https://floatingbubblejesse-bit.github.io/liff/patient.html?userId=' + encodeURIComponent(patientLineUid) + '" style="width:100%;height:100%;border:none;"></iframe>';
             return;
         }
-        // 否則從 n8n webhook 取得 LINE UID
+        // 還在等 prefetch 回來
+        el.innerHTML = '<div id="mealsContent"><div class="no-data">載入餐食記錄中...</div></div>';
+        // 再試一次
         fetch(MEALS_WH+'?pid='+encodeURIComponent(patientSn))
             .then(function(r){return r.json();})
             .then(function(data){
