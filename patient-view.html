@@ -112,6 +112,26 @@
         .mc-advice{background:#FFF8E1;border-left:3px solid #F5A623;border-radius:0 8px 8px 0;padding:8px 10px;font-size:12px;color:#7B5800;line-height:1.5}
         .mc-advice-label{font-size:10px;font-weight:700;color:#F5A623;margin-bottom:3px}
         .mc-stars{color:#F5A623;font-size:13px}
+
+        /* ====== 中碳日飲食計劃 ====== */
+        .diet-mode{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:8px}
+        .diet-mode.m2{background:#e8f5e9;color:#2e7d32}
+        .diet-mode.m3{background:#fff3e0;color:#e65100}
+        .diet-summary-text{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6}
+        .diet-meal-card{background:#f8fafb;border-radius:10px;padding:12px;margin-bottom:10px}
+        .diet-meal-card:last-child{margin-bottom:0}
+        .diet-meal-title{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+        .diet-flow{display:flex;flex-wrap:wrap;gap:4px 2px;align-items:flex-start}
+        .diet-step{display:flex;flex-direction:column;align-items:center;min-width:60px}
+        .diet-step input{width:72px;padding:6px 4px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:center;background:white;outline:none}
+        .diet-step input:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(21,101,192,0.1)}
+        .diet-step-label{font-size:9px;color:var(--muted);margin-top:3px;text-align:center;white-space:nowrap}
+        .diet-arrow{color:#ccc;font-size:14px;margin-top:6px;flex-shrink:0}
+        .diet-btn-row{display:flex;gap:8px;margin-top:12px}
+        .diet-btn-regen{flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:white;font-size:12px;cursor:pointer;color:var(--blue);font-weight:600}
+        .diet-btn-regen:active{background:#f0f4ff}
+        .diet-btn-save{flex:1;padding:10px;border:none;border-radius:8px;background:var(--green);color:white;font-size:12px;cursor:pointer;font-weight:600}
+        .diet-btn-save:disabled{background:#90a4ae;cursor:not-allowed}
     </style>
 </head>
 <body>
@@ -154,6 +174,16 @@
                     </div>
                 </div>
                 <!-- 更新狀態已整合到按鈕本身 -->
+            </div>
+            <div class="card" id="dietPlanCard" style="display:none">
+                <div class="card-title">🍽️ 中碳日飲食計劃 <span class="diet-mode" id="dietModeBadge"></span></div>
+                <div class="diet-summary-text" id="dietSummaryText"></div>
+                <div id="dietMeals"></div>
+                <div class="diet-btn-row">
+                    <button class="diet-btn-regen" onclick="generateDietPlan()">↻ 重新計算</button>
+                    <button class="diet-btn-save" id="saveDietBtn" onclick="saveDietPlan()">儲存飲食計劃</button>
+                </div>
+                <div id="dietSaveStatus" style="display:none;margin-top:8px;text-align:center;font-size:12px;color:#2e7d32;font-weight:600"></div>
             </div>
             <div class="card">
                 <div class="card-title">💬 快速預設建議</div>
@@ -697,6 +727,7 @@
             if (!isNaN(prefill)) {
                 document.getElementById('proteinInput').value = prefill;
                 proteinFilled = true;
+                initDietPlan();
             }
         }
     }
@@ -728,6 +759,7 @@
             document.getElementById('proteinInput').value = hCol;
             proteinFilled = true;
         }
+        initDietPlan();
     }
 
     function findField(obj, names) {
@@ -784,6 +816,113 @@
             btn.textContent = '更新';
             alert('更新失敗：' + err.message);
         });
+    }
+
+    // ====== 中碳日飲食計劃 ======
+    var DIET_FIELDS = ['代餐','配方','食物蛋白(g)','蔬菜','中碳水','高碳水','高油脂'];
+    var MEAL_NAMES = ['早餐','午餐','晚餐'];
+    var MEAL_ICONS = ['🌅','☀️','🌙'];
+    var dietPlanInitialized = false;
+
+    function generateDietPlan() {
+        var rec = parseInt(document.getElementById('proteinInput').value) || 0;
+        if (rec <= 0) { document.getElementById('dietPlanCard').style.display = 'none'; return; }
+        var packs = rec <= 110 ? 2 : 3;
+        var mrG = packs * 20;
+        var foodG = rec - mrG;
+        var perMeal = Math.round(foodG / 3);
+        var plan;
+        if (packs === 2) {
+            plan = [
+                ['1包(20g)','排糖+排油', String(perMeal),'適量','1拳頭','',''],
+                ['—','排糖+排油', String(perMeal),'適量','1拳頭','',''],
+                ['1包(20g)','排糖+排油', String(perMeal),'適量','—','',''],
+            ];
+        } else {
+            plan = [
+                ['1包(20g)','排糖+排油', String(perMeal),'適量','1拳頭','',''],
+                ['1包(20g)','排糖+排油', String(perMeal),'適量','1拳頭','',''],
+                ['1包(20g)','排糖+排油', String(perMeal),'適量','—','',''],
+            ];
+        }
+        renderDietPlan(plan, rec, packs, mrG, foodG);
+    }
+
+    function renderDietPlan(plan, rec, packs, mrG, foodG) {
+        var badge = document.getElementById('dietModeBadge');
+        badge.textContent = packs + '包代餐模式';
+        badge.className = 'diet-mode ' + (packs === 2 ? 'm2' : 'm3');
+        document.getElementById('dietSummaryText').innerHTML =
+            '醫師建議 <b>' + rec + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + packs + '包×20g）+ 食物蛋白 ' + foodG + 'g（每餐約 ' + Math.round(foodG / 3) + 'g）';
+        var html = '';
+        for (var m = 0; m < 3; m++) {
+            html += '<div class="diet-meal-card"><div class="diet-meal-title">' + MEAL_ICONS[m] + ' ' + MEAL_NAMES[m] + '</div><div class="diet-flow">';
+            for (var f = 0; f < 7; f++) {
+                if (f > 0) html += '<span class="diet-arrow">→</span>';
+                html += '<div class="diet-step"><input id="diet-' + m + '-' + f + '" value="' + esc(plan[m][f]) + '" placeholder="—">';
+                html += '<div class="diet-step-label">' + DIET_FIELDS[f] + '</div></div>';
+            }
+            html += '</div></div>';
+        }
+        document.getElementById('dietMeals').innerHTML = html;
+        document.getElementById('dietPlanCard').style.display = '';
+    }
+
+    function getDietPlanData() {
+        var plan = [];
+        for (var m = 0; m < 3; m++) {
+            var row = [];
+            for (var f = 0; f < 7; f++) {
+                var el = document.getElementById('diet-' + m + '-' + f);
+                row.push(el ? el.value : '');
+            }
+            plan.push(row);
+        }
+        return plan;
+    }
+
+    function saveDietPlan() {
+        var plan = getDietPlanData();
+        var btn = document.getElementById('saveDietBtn');
+        btn.disabled = true; btn.textContent = '儲存中…';
+        fetch(N8N + '/save-diet-plan', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ patientSn: patientSn, plan: plan, proteinRec: document.getElementById('proteinInput').value })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            btn.disabled = false;
+            if (res.ok || res.success) {
+                btn.textContent = '儲存完成'; btn.style.background = '#2e7d32';
+                setTimeout(function() { btn.textContent = '儲存飲食計劃'; btn.style.background = ''; }, 2500);
+            } else { btn.textContent = '儲存飲食計劃'; alert('儲存失敗：' + (res.error || JSON.stringify(res))); }
+        })
+        .catch(function(err) { btn.disabled = false; btn.textContent = '儲存飲食計劃'; alert('儲存失敗：' + err.message); });
+    }
+
+    function loadDietPlan() {
+        fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.plan && data.plan.length === 3) {
+                    var rec = parseInt(document.getElementById('proteinInput').value) || 0;
+                    var packs = rec <= 110 ? 2 : 3;
+                    var mrG = packs * 20;
+                    var foodG = rec - mrG;
+                    renderDietPlan(data.plan, rec, packs, mrG, foodG);
+                } else {
+                    generateDietPlan();
+                }
+            })
+            .catch(function() { generateDietPlan(); });
+    }
+
+    function initDietPlan() {
+        if (dietPlanInitialized) return;
+        var val = parseInt(document.getElementById('proteinInput').value) || 0;
+        if (val <= 0) return;
+        dietPlanInitialized = true;
+        loadDietPlan();
     }
 
     function applyPreset(text){document.getElementById('noteText').value=text;updateChar();}
