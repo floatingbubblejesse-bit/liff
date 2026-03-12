@@ -1152,63 +1152,72 @@
         btn.disabled = true; btn.textContent = '儲存中…';
         var proteinVal = document.getElementById('proteinInput').value;
 
-        var promises = PLAN_TYPES.map(function(p) {
-            var plan = getDietPlanData(p);
-            return fetch(N8N + '/save-diet-plan', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ patientSn: patientSn, plan: plan, proteinRec: proteinVal, planType: p })
-            }).then(function(r) { return r.json(); });
-        });
+        // 一次送出全部：4碳日 + 排程 + 蛋白質
+        var payload = {
+            patientSn: patientSn,
+            proteinRec: parseInt(proteinVal) || 0,
+            mid:  getDietPlanData('mid'),
+            high: getDietPlanData('high'),
+            low:  getDietPlanData('low'),
+            fast: getDietPlanData('fast'),
+            schedule: cycleSchedule
+        };
 
-        // 儲存排程
-        promises.push(fetch(N8N + '/save-diet-plan', {
+        fetch(N8N + '/save-diet-plan', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ patientSn: patientSn, plan: cycleSchedule, planType: 'schedule' })
-        }).then(function(r) { return r.json(); }));
-
-        // 中碳日連動更新 I 欄
-        promises.push(fetch(N8N + '/save-protein', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ patientSn: patientSn, proteinRecommendation: parseInt(proteinVal) || 0 })
-        }).then(function(r) { return r.json(); }));
-
-        Promise.all(promises)
-        .then(function(results) {
+            body: JSON.stringify(payload)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
             btn.disabled = false;
-            var allOk = results.every(function(r) { return r.ok || r.success; });
-            if (allOk) {
+            if (res.ok || res.success) {
                 btn.textContent = '儲存完成'; btn.style.background = '#2e7d32';
                 var pBtn = document.getElementById('saveProteinBtn');
                 if (pBtn) { pBtn.textContent = '已同步'; pBtn.style.background = '#2e7d32'; setTimeout(function(){ pBtn.textContent = '更新'; pBtn.style.background = '#00897B'; }, 2500); }
                 setTimeout(function() { btn.textContent = '儲存碳水循環計劃'; btn.style.background = ''; }, 2500);
-            } else { btn.textContent = '儲存碳水循環計劃'; alert('部分儲存失敗，請重試'); }
+            } else { btn.textContent = '儲存碳水循環計劃'; alert('儲存失敗：' + (res.error || JSON.stringify(res))); }
         })
         .catch(function(err) { btn.disabled = false; btn.textContent = '儲存碳水循環計劃'; alert('儲存失敗：' + err.message); });
     }
 
-    function loadDietPlan(p) {
-        fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn) + '&planType=' + p)
+    function fixPlanData(plan) {
+        if (!plan || plan.length < 3) return null;
+        while (plan.length < MEAL_COUNT) plan.push(['-','-','-','-','-','-','-','-']);
+        for (var i = 0; i < plan.length; i++) {
+            if (plan[i].length === 7) plan[i].splice(2, 0, '-');
+        }
+        return plan;
+    }
+
+    function loadAllDietPlans() {
+        fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn))
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                if (data.plan && data.plan.length >= 3) {
-                    while (data.plan.length < MEAL_COUNT) {
-                        data.plan.push(['-','-','-','-','-','-','-','-']);
-                    }
-                    for (var i = 0; i < data.plan.length; i++) {
-                        if (data.plan[i].length === 7) {
-                            data.plan[i].splice(2, 0, '-');
-                        }
-                    }
-                    var rec = parseInt(document.getElementById('proteinInput').value) || 0;
-                    var packs = rec <= 110 ? 2 : 3;
-                    var mrG = packs * 20;
-                    var foodG = rec - mrG;
-                    renderDietPlan(p, data.plan, rec, packs, mrG, foodG);
-                } else {
-                    generateDietPlan(p);
+                var rec = parseInt(document.getElementById('proteinInput').value) || 0;
+                var packs = rec <= 110 ? 2 : 3;
+                var mrG = packs * 20;
+                var foodG = rec - mrG;
+
+                // 載入排程
+                if (data.schedule && data.schedule.length === 7) {
+                    cycleSchedule = data.schedule;
                 }
+                renderCycleSchedule();
+
+                // 載入各碳日
+                PLAN_TYPES.forEach(function(p) {
+                    var plan = fixPlanData(data[p]);
+                    if (plan) {
+                        renderDietPlan(p, plan, rec, packs, mrG, foodG);
+                    } else {
+                        generateDietPlan(p);
+                    }
+                });
             })
-            .catch(function() { generateDietPlan(p); });
+            .catch(function() {
+                renderCycleSchedule();
+                PLAN_TYPES.forEach(function(p) { generateDietPlan(p); });
+            });
     }
 
     var PLAN_TYPES = ['mid','high','low','fast'];
@@ -1250,15 +1259,7 @@
         var val = parseInt(document.getElementById('proteinInput').value) || 0;
         if (val <= 0) return;
         dietPlanInitialized = true;
-        // 載入排程
-        fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn) + '&planType=schedule')
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data.plan && data.plan.length === 7) cycleSchedule = data.plan;
-                renderCycleSchedule();
-            })
-            .catch(function() { renderCycleSchedule(); });
-        PLAN_TYPES.forEach(function(pt) { loadDietPlan(pt); });
+        loadAllDietPlans();
     }
 
     function applyPreset(text){document.getElementById('noteText').value=text;updateChar();}
