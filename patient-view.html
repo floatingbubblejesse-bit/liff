@@ -877,16 +877,16 @@
 
     // ====== 飲食計劃（中碳日 mid / 高碳日 high）======
     var DIET_COLS = [
-        {label:'代餐',       type:'select', unit:'包', opts:['-','1']},
-        {label:'配方',       type:'select', unit:'包', opts:['-','1']},
+        {label:'代餐',       type:'select', unit:'(包)', opts:['-','1']},
+        {label:'配方',       type:'select', unit:'(包)', opts:['-','1']},
         {label:'排糖包±排油包', type:'select', unit:'', opts:['-','1']},
-        {label:'食物蛋白',    type:'number', unit:'克', min:0, max:200, step:1},
+        {label:'食物蛋白',    type:'number', unit:'(克)', min:0, max:200, step:1},
         {label:'蔬菜',       type:'select', unit:'',  opts:['-','適量','大量'], sep:'+'},
-        {label:'Q寶',        type:'select', unit:'包', opts:['-','1']},
+        {label:'Q寶',        type:'select', unit:'(包)', opts:['-','1']},
         {label:'中碳水',      type:'select', unit:'',  opts:['-','1拳頭']},
         {label:'高碳水±高油脂', type:'select', unit:'', opts:['-','適量']},
     ];
-    var MEAL_NAMES = ['早餐','午餐','傍晚','晚餐','睡前'];
+    var MEAL_NAMES = ['早餐','午餐','下午','晚餐','睡前'];
     var MEAL_ICONS = ['🌅','☀️','🌆','🌙','😴'];
     var MEAL_COUNT = 5;
     var dietPlanInitialized = false;
@@ -903,14 +903,32 @@
         var plan;
 
         if (p === 'fast') {
-            // 斷食日：全空
-            plan = [
-                ['-','-','-','-','-','-','-','-'],
-                ['-','-','-','-','-','-','-','-'],
-                ['-','-','-','-','-','-','-','-'],
-                ['-','-','-','-','-','-','-','-'],
-                ['-','-','-','-','-','-','-','-'],
-            ];
+            // 斷食日：早餐食物蛋白30+Q寶, 代餐3或4包, Q寶分早+下午
+            var fastPacks = rec <= 100 ? 3 : 4;
+            var fastMrG = fastPacks * 20;
+            var fastFoodG = 30;
+            var fastTotal = fastMrG + fastFoodG;
+            if (fastPacks === 3) {
+                // 3包代餐：午、晚、睡前
+                plan = [
+                    ['-',  '-', '-', '30', '大量', '1', '-', '-'],  // 早餐: 食物蛋白30, Q寶=1
+                    ['1',  '1', '-', '-',  '-',    '-', '-', '-'],  // 午餐: 代餐=1
+                    ['-',  '-', '-', '-',  '-',    '1', '-', '-'],  // 下午: Q寶=1
+                    ['1',  '1', '-', '-',  '-',    '-', '-', '-'],  // 晚餐: 代餐=1
+                    ['1',  '1', '-', '-',  '-',    '-', '-', '-'],  // 睡前: 代餐=1, 配方=1
+                ];
+            } else {
+                // 4包代餐：午、下午、晚、睡前
+                plan = [
+                    ['-',  '-', '-', '30', '大量', '1', '-', '-'],  // 早餐: 食物蛋白30, Q寶=1
+                    ['1',  '1', '-', '-',  '-',    '-', '-', '-'],  // 午餐: 代餐=1
+                    ['1',  '-', '-', '-',  '-',    '1', '-', '-'],  // 下午: 代餐=1, Q寶=1
+                    ['1',  '1', '-', '-',  '-',    '-', '-', '-'],  // 晚餐: 代餐=1
+                    ['1',  '1', '-', '-',  '-',    '-', '-', '-'],  // 睡前: 代餐=1, 配方=1
+                ];
+            }
+            renderDietPlan(p, plan, fastTotal, fastPacks, fastMrG, fastFoodG);
+            return;
         } else {
             // 中碳日基底
             if (packs === 2) {
@@ -948,7 +966,7 @@
                 plan = [
                     ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 早餐
                     ['-',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 午餐
-                    ['-',  '-', '-', '-',  '-',    '1', '-', '-'],  // 傍晚: Q寶=1
+                    ['-',  '-', '-', '-',  '-',    '1', '-', '-'],  // 下午: Q寶=1
                     ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 晚餐
                     ['-',  '1', '-', '-',  '-',    '-', '-', '-'],  // 睡前: 配方=1
                 ];
@@ -956,7 +974,7 @@
                 plan = [
                     ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 早餐
                     ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 午餐
-                    ['-',  '-', '-', '-',  '-',    '1', '-', '-'],  // 傍晚: Q寶=1
+                    ['-',  '-', '-', '-',  '-',    '1', '-', '-'],  // 下午: Q寶=1
                     ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 晚餐
                     ['-',  '1', '-', '-',  '-',    '-', '-', '-'],  // 睡前: 配方=1
                 ];
@@ -1053,8 +1071,8 @@
                 document.getElementById('proteinInput').value = total;
             }
             var badge = document.getElementById(p + 'DietModeBadge');
-            var badgeText = totalPacks + '(包)代餐';
-            if (qbPacks > 0) badgeText += ' ' + qbPacks + '(包)Q寶';
+            var badgeText = totalPacks + '包代餐';
+            if (qbPacks > 0) badgeText += ' ' + qbPacks + '包Q寶';
             badge.textContent = badgeText;
             badge.className = 'diet-mode ' + (totalPacks <= 2 ? 'm2' : 'm3');
             var mrG = totalPacks * 20;
@@ -1065,7 +1083,7 @@
             }
             var perMeal = mealsWithFood > 0 ? Math.round(totalFood / mealsWithFood) : 0;
             var sumEl = document.getElementById(p + 'DietSummaryText');
-            if (sumEl) sumEl.innerHTML = '醫師建議 <b>' + total + '(克)</b> 蛋白質 → 代餐 ' + mrG + '(克)（' + totalPacks + '(包)×20(克)）+ 食物蛋白 ' + totalFood + '(克)' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + '(克)）' : '');
+            if (sumEl) sumEl.innerHTML = '醫師建議 <b>' + total + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + totalPacks + '包×20g）+ 食物蛋白 ' + totalFood + 'g' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + 'g）' : '');
         }
     }
 
@@ -1076,15 +1094,10 @@
         for (var qi = 0; qi < MEAL_COUNT; qi++) {
             if (plan[qi] && plan[qi][5] === '1') qbPacks++;
         }
-        if (p !== 'fast') {
-            var badgeText = packs + '(包)代餐';
-            if (qbPacks > 0) badgeText += ' ' + qbPacks + '(包)Q寶';
-            badge.textContent = badgeText;
-            badge.className = 'diet-mode ' + (packs <= 2 ? 'm2' : 'm3');
-        } else {
-            badge.textContent = '';
-            badge.className = 'diet-mode';
-        }
+        var badgeText = packs + '包代餐';
+        if (qbPacks > 0) badgeText += ' ' + qbPacks + '包Q寶';
+        badge.textContent = badgeText;
+        badge.className = 'diet-mode ' + (packs <= 2 ? 'm2' : 'm3');
         // 每個碳日各自的摘要
         var sumEl = document.getElementById(p + 'DietSummaryText');
         if (sumEl) {
@@ -1093,7 +1106,7 @@
                 if (plan[mi] && plan[mi][3] && plan[mi][3] !== '-' && parseInt(plan[mi][3]) > 0) mealsWithFood++;
             }
             var perMeal = mealsWithFood > 0 ? Math.round(foodG / mealsWithFood) : 0;
-            sumEl.innerHTML = '醫師建議 <b>' + rec + '(克)</b> 蛋白質 → 代餐 ' + mrG + '(克)（' + packs + '(包)×20(克)）+ 食物蛋白 ' + foodG + '(克)' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + '(克)）' : '');
+            sumEl.innerHTML = '醫師建議 <b>' + rec + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + packs + '包×20g）+ 食物蛋白 ' + foodG + 'g' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + 'g）' : '');
         }
         var html = '';
         for (var m = 0; m < MEAL_COUNT; m++) {
