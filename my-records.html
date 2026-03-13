@@ -67,11 +67,30 @@
     </div>
 
     <script>
+    // ====== API URLs ======
+    var GAS_URL  = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
     var MEALS_GAS = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
-    var LIFF_ID = '2009326025-n15mYNnW';
+    var LIFF_ID  = '2009326025-n15mYNnW';
+
+    // ====== Diet plan column definitions (same as doctor view) ======
+    var DIET_COLS = [
+        {label:'代餐',           type:'select', unit:'(包)', opts:['-','1']},
+        {label:'配方',           type:'select', unit:'(包)', opts:['-','1']},
+        {label:'排糖包±排油包',   type:'select', unit:'',    opts:['-','1']},
+        {label:'食物蛋白',       type:'number', unit:'(克)', min:0, max:200, step:1},
+        {label:'蔬菜',           type:'select', unit:'',    opts:['-','大量','大量§大量'], sep:'+'},
+        {label:'Q寶',            type:'select', unit:'(包)', opts:['-','1']},
+        {label:'中碳水',         type:'select', unit:'',    opts:['-','1拳頭']},
+        {label:'高碳水±高油脂',   type:'select', unit:'',    opts:['-','適量']}
+    ];
+    var MEAL_NAMES = ['早餐','午餐','下午','晚餐','睡前'];
+    var MEAL_ICONS = ['🌅','☀️','🌆','🌙','😴'];
+    var MEAL_COUNT = 5;
+
     var lineUid = '';
     var patientSn = '';
 
+    // ====== LIFF init ======
     liff.init({ liffId: LIFF_ID })
         .then(function() {
             if (!liff.isLoggedIn()) { liff.login(); return; }
@@ -81,7 +100,7 @@
             if (!profile) return;
             lineUid = profile.userId;
             document.getElementById('headerSub').textContent = profile.displayName + ' 的看診紀錄';
-            loadRecords();
+            loadPatientData();
         })
         .catch(function(err) {
             var params = new URLSearchParams(window.location.search);
@@ -89,58 +108,145 @@
             patientSn = params.get('id') || '';
             if (lineUid || patientSn) {
                 document.getElementById('headerSub').textContent = '看診紀錄';
-                loadRecords();
+                if (patientSn) { loadDietPlan(patientSn); }
+                else { loadPatientData(); }
             } else {
                 showError('無法取得使用者資料：' + err.message);
             }
         });
 
-    function loadRecords() {
-        var query = lineUid ? ('?userId=' + encodeURIComponent(lineUid) + '&dietHistory=1')
-                            : ('?dietHistory=' + encodeURIComponent(patientSn));
-        fetch(MEALS_GAS + query)
+    // ====== Step 1: Get patient SN from LINE userId ======
+    function loadPatientData() {
+        var param = lineUid ? ('uid=' + encodeURIComponent(lineUid)) : ('id=' + encodeURIComponent(patientSn));
+        fetch(GAS_URL + '?' + param)
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                document.getElementById('loadingDiv').style.display = 'none';
-                var records = data.records || [];
-                if (records.length === 0) {
-                    document.getElementById('mainContent').innerHTML = '<div class="no-data">尚無看診紀錄<br><span style="font-size:12px;color:#bbb">看診後醫師儲存飲食計劃，紀錄會自動出現在這裡</span></div>';
+                if (data.error || !data.customer) {
+                    showError('找不到病患資料');
                     return;
                 }
-                var byDate = {};
-                records.forEach(function(r) {
-                    var dateKey = normalizeDate(r.date);
-                    if (!byDate[dateKey] || (r.date || '') > (byDate[dateKey].date || '')) {
-                        r.date = dateKey;
-                        byDate[dateKey] = r;
-                    }
-                });
-                var deduped = Object.keys(byDate).sort().reverse().map(function(k) { return byDate[k]; });
-                renderCards(deduped);
+                patientSn = data.customer.sn;
+                loadDietPlan(patientSn);
             })
             .catch(function(err) {
-                document.getElementById('loadingDiv').style.display = 'none';
-                showError('載入失敗：' + err.message);
+                showError('載入病患資料失敗：' + err.message);
             });
     }
 
+    // ====== Step 2: Get diet plan from MEALS_GAS ======
+    function loadDietPlan(sn) {
+        fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(sn))
+            .then(function(r) { return r.json(); })
+            .then(function(plan) {
+                document.getElementById('loadingDiv').style.display = 'none';
+                if (!plan || (!plan.schedule && !plan.proteinRec)) {
+                    document.getElementById('mainContent').innerHTML = '<div class="no-data">尚無看診紀錄<br><span style="font-size:12px;color:#bbb">看診後醫師儲存飲食計劃，紀錄會自動出現在這裡</span></div>';
+                    return;
+                }
+                var record = buildRecordFromPlan(plan);
+                renderCards([record]);
+            })
+            .catch(function(err) {
+                document.getElementById('loadingDiv').style.display = 'none';
+                showError('載入飲食計劃失敗：' + err.message);
+            });
+    }
+
+    // ====== Build structured record from raw diet plan data ======
+    function buildRecordFromPlan(plan) {
+        var dateStr = normalizeDate(plan.date || '');
+        var protein = plan.proteinRec || 0;
+        var schedule = plan.schedule || [];
+        var DAY_ORDER = ['mid','high','low','fast'];
+
+        // Find which day types are used in the schedule
+        var usedTypes = [];
+        schedule.forEach(function(t) {
+            if (usedTypes.indexOf(t) === -1) usedTypes.push(t);
+        });
+        usedTypes.sort(function(a, b) { return DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b); });
+
+        var dayPlans = {};
+        var weeklyMr = 0, weeklyQb = 0;
+
+        usedTypes.forEach(function(p) {
+            var rawMeals = plan[p] || [];
+            var meals = [];
+            var mr = 0, qb = 0;
+
+            for (var m = 0; m < MEAL_COUNT; m++) {
+                var row = rawMeals[m];
+                if (!row) continue;
+                // Check if all values are empty/dash
+                var allDash = row.every(function(v) { return v === '-' || v === '0' || v === 0 || v === ''; });
+                if (allDash) continue;
+
+                var parts = [];
+                var seps = [];
+                for (var f = 0; f < DIET_COLS.length; f++) {
+                    var val = row[f];
+                    if (val === '-' || val === '0' || val === 0 || val === '') continue;
+                    var col = DIET_COLS[f];
+                    var unit = col.unit.replace(/[\(\)]/g, '');
+                    var sep = col.sep || '→';
+                    if (parts.length > 0) seps.push(sep);
+                    if (col.type === 'number') {
+                        parts.push(col.label + val + unit);
+                    } else if (val === '1') {
+                        parts.push(col.label + (unit ? '1' + unit : val));
+                    } else {
+                        parts.push(col.label + val);
+                    }
+                }
+
+                var itemStr = '';
+                for (var pi = 0; pi < parts.length; pi++) {
+                    if (pi > 0) itemStr += ' ' + seps[pi - 1] + ' ';
+                    itemStr += parts[pi];
+                }
+
+                meals.push({ name: MEAL_NAMES[m], icon: MEAL_ICONS[m], items: itemStr });
+
+                // Count MR and QB packs for this meal
+                if (row[0] === '1') mr++;
+                if (row[5] === '1') qb++;
+            }
+
+            dayPlans[p] = { meals: meals, mr: mr, qb: qb };
+        });
+
+        // Calculate weekly totals
+        schedule.forEach(function(t) {
+            if (dayPlans[t]) {
+                weeklyMr += dayPlans[t].mr;
+                weeklyQb += dayPlans[t].qb;
+            }
+        });
+
+        return {
+            date: dateStr,
+            protein: protein,
+            schedule: schedule,
+            dayPlans: dayPlans,
+            weeklyMr: weeklyMr,
+            weeklyQb: weeklyQb,
+            note: plan.note || '',
+            isCurrent: true
+        };
+    }
+
+    // ====== Date normalization ======
     function normalizeDate(dateStr) {
-        if (!dateStr) return '';
-        // Already in YYYY-MM-DD
+        if (!dateStr) return new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0') + '-' + String(new Date().getDate()).padStart(2,'0');
         if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-        // Handle "2026/3/13" or "2026/03/13" slash format directly
-        var slashMatch = String(dateStr).match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
-        if (slashMatch) {
-            return slashMatch[1] + '-' + String(slashMatch[2]).padStart(2,'0') + '-' + String(slashMatch[3]).padStart(2,'0');
-        }
-        // Try Date constructor as fallback
+        var slashMatch = String(dateStr).match(/(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+        if (slashMatch) return slashMatch[1] + '-' + String(slashMatch[2]).padStart(2,'0') + '-' + String(slashMatch[3]).padStart(2,'0');
         var d = new Date(dateStr);
-        if (!isNaN(d.getTime())) {
-            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-        }
+        if (!isNaN(d.getTime())) return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
         return dateStr;
     }
 
+    // ====== Render cards ======
     function renderCards(records) {
         var html = '';
         for (var i = 0; i < records.length; i++) {
@@ -180,6 +286,7 @@
         html += '</div>';
         html += '<div class="hx-body">';
 
+        // Schedule section
         if (schedule.length === 7) {
             html += '<div class="hx-section">';
             html += '<div class="hx-section-title">📅 碳水循環排程</div>';
@@ -192,6 +299,7 @@
             html += '</div></div>';
         }
 
+        // Weekly packs section
         if (rec.weeklyMr > 0 || rec.weeklyQb > 0) {
             html += '<div class="hx-section">';
             html += '<div class="hx-section-title">📦 每週所需</div>';
@@ -201,6 +309,7 @@
             html += '</div></div>';
         }
 
+        // Day plans
         var dayPlans = rec.dayPlans || {};
         var dayOrder = ['mid','high','low','fast'];
         var sortedDpKeys = dayOrder.filter(function(k){ return dayPlans[k]; });
@@ -219,6 +328,7 @@
             html += '</div>';
         });
 
+        // Note section
         if (rec.note) {
             html += '<div class="hx-section">';
             html += '<div class="hx-section-title">💬 醫師建議</div>';
@@ -230,29 +340,42 @@
         return html;
     }
 
+    // ====== Card toggle ======
     function toggleCard(idx) {
         var card = document.getElementById('hxCard' + idx);
         if (card) card.classList.toggle('open');
     }
 
-    // Event delegation for card toggle — more reliable on LINE in-app browser
+    var touchHandled = false;
+    document.addEventListener('touchend', function(e) {
+        var header = e.target.closest ? e.target.closest('.hx-header') : findParent(e.target, 'hx-header');
+        if (header) {
+            e.preventDefault();
+            touchHandled = true;
+            var idx = header.getAttribute('data-idx');
+            if (idx !== null) toggleCard(idx);
+            setTimeout(function() { touchHandled = false; }, 400);
+        }
+    }, { passive: false });
+
     document.addEventListener('click', function(e) {
-        var header = e.target.closest('.hx-header');
+        if (touchHandled) return;
+        var header = e.target.closest ? e.target.closest('.hx-header') : findParent(e.target, 'hx-header');
         if (header) {
             var idx = header.getAttribute('data-idx');
             if (idx !== null) toggleCard(idx);
         }
     });
-    // Also support touch for instant response on mobile
-    document.addEventListener('touchend', function(e) {
-        var header = e.target.closest('.hx-header');
-        if (header) {
-            e.preventDefault();
-            var idx = header.getAttribute('data-idx');
-            if (idx !== null) toggleCard(idx);
-        }
-    }, { passive: false });
 
+    function findParent(el, cls) {
+        while (el) {
+            if (el.classList && el.classList.contains(cls)) return el;
+            el = el.parentElement;
+        }
+        return null;
+    }
+
+    // ====== Utilities ======
     function showError(msg) {
         document.getElementById('loadingDiv').style.display = 'none';
         document.getElementById('mainContent').innerHTML = '<div class="error-box">⚠️ ' + esc(msg) + '</div>';
