@@ -1375,6 +1375,10 @@
 
     function fixPlanData(plan) {
         if (!plan || plan.length < 3) return null;
+        // 舊5餐→新6餐：在 index 1 插入空的早午餐列，資料往後移
+        if (plan.length === 5) {
+            plan.splice(1, 0, ['-','-','-','-','-','-','-','-']);
+        }
         while (plan.length < MEAL_COUNT) plan.push(['-','-','-','-','-','-','-','-']);
         for (var i = 0; i < plan.length; i++) {
             if (plan[i].length === 7) plan[i].splice(2, 0, '-');
