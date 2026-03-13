@@ -126,12 +126,18 @@
 
     function normalizeDate(dateStr) {
         if (!dateStr) return '';
+        // Already in YYYY-MM-DD
         if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+        // Handle "2026/3/13" or "2026/03/13" slash format directly
+        var slashMatch = String(dateStr).match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+        if (slashMatch) {
+            return slashMatch[1] + '-' + String(slashMatch[2]).padStart(2,'0') + '-' + String(slashMatch[3]).padStart(2,'0');
+        }
+        // Try Date constructor as fallback
         var d = new Date(dateStr);
         if (!isNaN(d.getTime())) {
             return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
         }
-        if (dateStr.length >= 10) return dateStr.substring(0, 10);
         return dateStr;
     }
 
@@ -164,7 +170,7 @@
         if (rec.weeklyMr) subParts.push('代餐 ' + rec.weeklyMr + '包/週');
 
         var html = '<div class="hx-card' + isOpen + '" id="hxCard' + idx + '">';
-        html += '<div class="hx-header" onclick="toggleCard(' + idx + ')">';
+        html += '<div class="hx-header" data-idx="' + idx + '">';
         html += '<div class="hx-date-icon"><div class="hx-date-month">' + esc(month) + '</div><div class="hx-date-day">' + esc(String(dayNum)) + '</div></div>';
         html += '<div class="hx-header-info">';
         html += '<div class="hx-header-title">📋 ' + esc(yearNum + '年' + monthNum + '月' + dayNum + '日') + ' 看診</div>';
@@ -228,6 +234,24 @@
         var card = document.getElementById('hxCard' + idx);
         if (card) card.classList.toggle('open');
     }
+
+    // Event delegation for card toggle — more reliable on LINE in-app browser
+    document.addEventListener('click', function(e) {
+        var header = e.target.closest('.hx-header');
+        if (header) {
+            var idx = header.getAttribute('data-idx');
+            if (idx !== null) toggleCard(idx);
+        }
+    });
+    // Also support touch for instant response on mobile
+    document.addEventListener('touchend', function(e) {
+        var header = e.target.closest('.hx-header');
+        if (header) {
+            e.preventDefault();
+            var idx = header.getAttribute('data-idx');
+            if (idx !== null) toggleCard(idx);
+        }
+    }, { passive: false });
 
     function showError(msg) {
         document.getElementById('loadingDiv').style.display = 'none';
