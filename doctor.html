@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>é«çæ¸æç¸½è¦½ï½éé¶¯æ¸é</title>
+    <title>醫生數據總覽｜金鶯減重</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -71,29 +71,29 @@
     <div class="header">
         <div class="header-top">
             <div>
-                <h1>ð¥ é«çæ¸æç¸½è¦½</h1>
-                <p>éé¶¯æ¸é â é«çµæç®¡çç³»çµ±</p>
+                <h1>🏥 醫生數據總覽</h1>
+                <p>金鶯減重 — 體組成管理系統</p>
             </div>
-            <button class="refresh-btn" onclick="loadData()">â» æ´æ°</button>
+            <button class="refresh-btn" onclick="loadData()">↻ 更新</button>
         </div>
     </div>
 
     <div id="loading" class="loading">
         <div class="spinner"></div>
-        <p style="color:#8B8B8B;font-size:13px;">è¼å¥çæ£è³æä¸­...</p>
+        <p style="color:#8B8B8B;font-size:13px;">載入病患資料中...</p>
     </div>
     <div id="error" style="display:none"></div>
     <div id="main" style="display:none">
         <div class="stats-bar" id="statsBar"></div>
         <div class="search-wrap">
-            <input type="text" class="search-input" id="searchInput" placeholder="æå°å§åãçæ­·è æ è¨­å®åç¨±..." oninput="filterPatients(this.value)">
+            <input type="text" class="search-input" id="searchInput" placeholder="搜尋姓名、病歷號 或 設定名稱..." oninput="filterPatients(this.value)">
         </div>
         <div class="section">
-            <div class="section-title">ð ææ°æ¸¬éç´é</div>
+            <div class="section-title">🕐 最新測量紀錄</div>
             <div id="recentList"></div>
         </div>
         <div class="section">
-            <div class="section-title">ð¥ ææçæ£</div>
+            <div class="section-title">👥 所有病患</div>
             <div id="patientList" class="patient-list"></div>
         </div>
         <div class="bottom-space"></div>
@@ -115,12 +115,12 @@
                 allPatients = data.patients || [];
                 renderAll(data);
             })
-            .catch(function(err) { showError('è³æè¼å¥å¤±æï¼' + (err.message || err)); });
+            .catch(function(err) { showError('資料載入失敗：' + (err.message || err)); });
     }
 
     function showError(msg) {
         document.getElementById('loading').style.display = 'none';
-        document.getElementById('error').innerHTML = '<div class="error-box">â ï¸ ' + esc(msg) + '</div>';
+        document.getElementById('error').innerHTML = '<div class="error-box">⚠️ ' + esc(msg) + '</div>';
         document.getElementById('error').style.display = 'block';
     }
 
@@ -142,24 +142,24 @@
 
     function renderAll(data) {
         var statsHtml = [
-            '<div class="stat-card"><div class="stat-num">' + (data.totalPatients || 0) + '</div><div class="stat-label">ç¸½çæ£æ¸</div></div>',
-            '<div class="stat-card"><div class="stat-num">' + (data.todayCount || 0) + '</div><div class="stat-label">ä»æ¥æ¸¬é</div></div>',
-            '<div class="stat-card"><div class="stat-num">' + (data.recentList ? data.recentList.length : 0) + '</div><div class="stat-label">è¿æç´é</div></div>'
+            '<div class="stat-card"><div class="stat-num">' + (data.totalPatients || 0) + '</div><div class="stat-label">總病患數</div></div>',
+            '<div class="stat-card"><div class="stat-num">' + (data.todayCount || 0) + '</div><div class="stat-label">今日測量</div></div>',
+            '<div class="stat-card"><div class="stat-num">' + (data.recentList ? data.recentList.length : 0) + '</div><div class="stat-label">近期紀錄</div></div>'
         ].join('');
         document.getElementById('statsBar').innerHTML = statsHtml;
 
         var recentHtml = '';
         var recent = (data.recentList || []).slice(0, 8);
         if (recent.length === 0) {
-            recentHtml = '<div class="no-results">å°ç¡æ¸¬éç´é</div>';
+            recentHtml = '<div class="no-results">尚無測量紀錄</div>';
         } else {
             recent.forEach(function(row) {
-                var sn = String(row['é¢åçæ­·è'] || '');
+                var sn = String(row['院區病歷號'] || '');
                 var name = getPatientName(sn, data.patients);
-                var date = (row['æ¸¬éæ¥æ/æé'] || '').substring(0, 10);
-                var weight = fmtNum(row['é«é']);
-                var fat = fmtNum(row['é«èç']);
-                var bmi = fmtNum(row['èº«é«è³ªéåæ¸ (BMI)']);
+                var date = (row['測量日期/時間'] || '').substring(0, 10);
+                var weight = fmtNum(row['體重']);
+                var fat = fmtNum(row['體脂率']);
+                var bmi = fmtNum(row['身體質量參數 (BMI)']);
                 recentHtml += '<a class="recent-card" href="' + PATIENT_URL + '?id=' + encodeURIComponent(sn) + '">'
                     + '<div class="recent-card-inner">'
                     + '<div class="patient-avatar">' + esc((name || '?')[0]) + '</div>'
@@ -167,46 +167,46 @@
                     + '<div class="recent-name">' + esc(name) + '</div>'
                     + '<div class="recent-sub">' + esc(sn) + ' ' + esc(date) + '</div>'
                     + '<div class="recent-metrics">'
-                    + (weight ? '<div class="mini-metric"><div class="mini-label">é«é</div><div class="mini-value">' + weight + '<span style="font-size:9px;color:#8B8B8B">kg</span></div></div>' : '')
-                    + (fat ? '<div class="mini-metric"><div class="mini-label">é«èç</div><div class="mini-value">' + fat + '<span style="font-size:9px;color:#8B8B8B">%</span></div></div>' : '')
+                    + (weight ? '<div class="mini-metric"><div class="mini-label">體重</div><div class="mini-value">' + weight + '<span style="font-size:9px;color:#8B8B8B">kg</span></div></div>' : '')
+                    + (fat ? '<div class="mini-metric"><div class="mini-label">體脂率</div><div class="mini-value">' + fat + '<span style="font-size:9px;color:#8B8B8B">%</span></div></div>' : '')
                     + (bmi ? '<div class="mini-metric"><div class="mini-label">BMI</div><div class="mini-value">' + bmi + '</div></div>' : '')
                     + '</div></div>'
-                    + '<div class="arrow-icon">âº</div>'
+                    + '<div class="arrow-icon">›</div>'
                     + '</div></a>';
             });
         }
         document.getElementById('recentList').innerHTML = recentHtml;
 
         renderPatientList(allPatients);
-        document.getElement"yId('loading').style.display = 'none';
+        document.getElementById('loading').style.display = 'none';
         document.getElementById('main').style.display = 'block';
     }
 
     function renderPatientList(patients) {
         if (patients.length === 0) {
-            document.getElementById('patientList').innerHTML = '<div class="no-results">æ¾ä¸å°ç¬¦åççæ£</div>';
+            document.getElementById('patientList').innerHTML = '<div class="no-results">找不到符合的病患</div>';
             return;
         }
         var html = '';
         patients.forEach(function(p) {
             var displayName = getDisplayName(p);
-            var weight = p.latest ? fmtNum(p.latest['é«é']) : null;
-            var fat = p.latest ? fmtNum(p.latest['é«èç']) : null;
-            var bmi = p.latest ? fmtNum(p.latest['èº«é«è³ªéåæ¸ (BMI)']) : null;
-            var date = p.latest ? (p.latest['æ¸¬éæ¥æ/æé'] || '').substring(0, 10) : '';
+            var weight = p.latest ? fmtNum(p.latest['體重']) : null;
+            var fat = p.latest ? fmtNum(p.latest['體脂率']) : null;
+            var bmi = p.latest ? fmtNum(p.latest['身體質量參數 (BMI)']) : null;
+            var date = p.latest ? (p.latest['測量日期/時間'] || '').substring(0, 10) : '';
             html += '<div class="p-card">'
                 + '<a class="p-card-link" href="' + PATIENT_URL + '?id=' + encodeURIComponent(p.sn) + '">'
                 + '<div class="p-card-body">'
                 + '<div class="p-avatar">' + esc(displayName[0]) + '</div>'
                 + '<div class="p-info">'
-                + '<div class="p-name">' + esc(displayName) + (p.hasLineUid ? '<span class="line-badge">LINE â</span>' : '') + '</div>'
-                + '<div class="p-sub">' + esc(p.sn) + (date ? ' ææ°ï¼' + date : ' å°ç¡ç´é') + ' å± ' + (p.count || 0) + ' æ¬¡</div></div>'
+                + '<div class="p-name">' + esc(displayName) + (p.hasLineUid ? '<span class="line-badge">LINE ✓</span>' : '') + '</div>'
+                + '<div class="p-sub">' + esc(p.sn) + (date ? ' 最新：' + date : ' 尚無紀錄') + ' 共 ' + (p.count || 0) + ' 次</div></div>'
                 + '<div class="p-metrics">'
-                + (weight ? '<div class="p-metric"><div class="p-metric-label">é«é</div><div class="p-metric-value">' + weight + '</div></div>' : '')
-                + (fat ? '<div class="p-metric"><div class="p-metric-label">é«è</div><div class="p-metric-value">' + fat + '</div></div>' : '')
-                + (bmi ? '<div class="p-metric"><div class="p-metric-label">BMI</div><div class="p-metric-value">' + bmi + '</div></div>' : (p.count === 0 ? '<span class="no-record-badge">æªæ¸¬é</span>' : ''))
+                + (weight ? '<div class="p-metric"><div class="p-metric-label">體重</div><div class="p-metric-value">' + weight + '</div></div>' : '')
+                + (fat ? '<div class="p-metric"><div class="p-metric-label">體脂</div><div class="p-metric-value">' + fat + '</div></div>' : '')
+                + (bmi ? '<div class="p-metric"><div class="p-metric-label">BMI</div><div class="p-metric-value">' + bmi + '</div></div>' : (p.count === 0 ? '<span class="no-record-badge">未測量</span>' : ''))
                 + '</div>'
-                + '<div class="p-arrow">âº</div>'
+                + '<div class="p-arrow">›</div>'
                 + '</div></a></div>';
         });
         document.getElementById('patientList').innerHTML = html;
