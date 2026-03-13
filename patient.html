@@ -9,52 +9,40 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <script>
     (function() {
-      var _origReplace = history.replaceState.bind(history);
-      var _origPush = history.pushState.bind(history);
-      history.replaceState = function(s, t, u) {
-        try { _origReplace(s, t, u); } catch(e) { console.warn('[iOS patch] replaceState suppressed:', e && e.message); }
-      };
-      history.pushState = function(s, t, u) {
-        try { _origPush(s, t, u); } catch(e) { console.warn('[iOS patch] pushState suppressed:', e && e.message); }
-      };
+        var _origReplace = history.replaceState.bind(history);
+        var _origPush = history.pushState.bind(history);
+        history.replaceState = function(s, t, u) {
+            try { _origReplace(s, t, u); } catch(e) { console.warn('[iOS patch] replaceState suppressed:', e && e.message); }
+        };
+        history.pushState = function(s, t, u) {
+            try { _origPush(s, t, u); } catch(e) { console.warn('[iOS patch] pushState suppressed:', e && e.message); }
+        };
     })();
     </script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
     <style>
         :root {
-            --primary: #3DAE8F;
-            --primary-dark: #2E8B6E;
-            --primary-light: #E8F7F3;
-            --warning: #F5A623;
-            --danger: #E05252;
-            --success: #4CAF50;
-            --text: #2D3748;
-            --text-muted: #718096;
-            --border: #E2E8F0;
-            --bg: #F7FDFC;
-            --card: #FFFFFF;
+            --primary: #7B8FA1;
+            --primary-dark: #6B7F91;
+            --primary-light: #EDE8E0;
+            --warning: #C4A882;
+            --danger: #A0626B;
+            --success: #6B8F71;
+            --text: #4A4A4A;
+            --text-muted: #8B8B8B;
+            --border: #E8E4DC;
+            --bg: #F5F3EF;
+            --card: #FDFBF7;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-            background: var(--bg); color: var(--text);
-            min-height: 100vh; padding-bottom: 32px;
-        }
-        #loading {
-            position: fixed; inset: 0;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: var(--primary-light); z-index: 999; gap: 16px;
-            transition: opacity 0.3s ease;
-        }
+        body { font-family: -apple-system, 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 32px; }
+        #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--primary-light); z-index: 999; gap: 16px; transition: opacity 0.3s ease; }
         #loading.fade-out { opacity: 0; pointer-events: none; }
         .spinner { width: 48px; height: 48px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         #loading p { color: var(--text-muted); font-size: 14px; }
-        header {
-            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
-            padding: 20px 16px 24px; color: white;
-        }
+        header { background: linear-gradient(135deg, #6B7F91 0%, #7B8FA1 100%); padding: 20px 16px 24px; color: white; }
         .header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
         .avatar { width: 48px; height: 48px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); object-fit: cover; background: rgba(255,255,255,0.3); }
         .avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 22px; }
@@ -69,19 +57,19 @@
         .protein-status { margin-top: 8px; font-size: 12px; text-align: center; opacity: 0.95; }
         .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px 16px; }
         .stat-card { background: var(--card); border-radius: 10px; padding: 10px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-        .stat-value { font-size: 20px; font-weight: 700; color: var(--primary-dark); }
+        .stat-value { font-size: 20px; font-weight: 700; color: #6B7F91; }
         .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
         .section-title { padding: 16px 16px 8px; font-size: 14px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
         .chart-card { background: var(--card); border-radius: 14px; margin: 0 12px 16px; padding: 14px 12px 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
         .chart-card canvas { display: block; width: 100% !important; }
         .day-accordion { background: var(--card); border-radius: 14px; margin: 0 12px 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         .day-header { display: flex; align-items: center; padding: 13px 14px; cursor: pointer; user-select: none; gap: 10px; -webkit-tap-highlight-color: transparent; }
-        .day-header:active { background: #f0faf7; }
+        .day-header:active { background: #F0EDE6; }
         .day-icon { font-size: 18px; flex-shrink: 0; }
         .day-info { flex: 1; }
         .day-date-label { font-size: 15px; font-weight: 700; color: var(--text); }
         .day-summary { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-        .day-protein-badge { font-size: 13px; font-weight: 700; color: var(--primary-dark); background: var(--primary-light); border-radius: 99px; padding: 3px 10px; flex-shrink: 0; }
+        .day-protein-badge { font-size: 13px; font-weight: 700; color: #6B7F91; background: #EDE8E0; border-radius: 99px; padding: 3px 10px; flex-shrink: 0; }
         .day-arrow { font-size: 11px; color: var(--text-muted); transition: transform 0.25s ease; flex-shrink: 0; }
         .day-accordion.open .day-arrow { transform: rotate(180deg); }
         .day-body { display: none; border-top: 1px solid var(--border); padding: 8px 10px 10px; background: #FAFFFE; }
@@ -91,7 +79,7 @@
         .meal-card-header { display: flex; align-items: center; padding: 10px 12px; cursor: pointer; user-select: none; gap: 8px; -webkit-tap-highlight-color: transparent; }
         .meal-card-header:active { background: #f8fffe; }
         .meal-card-time { flex: 1; font-size: 13px; color: var(--text); font-weight: 500; }
-        .meal-card-protein { font-size: 12px; color: var(--primary-dark); font-weight: 600; }
+        .meal-card-protein { font-size: 12px; color: #6B7F91; font-weight: 600; }
         .meal-card-arrow { font-size: 10px; color: var(--text-muted); transition: transform 0.2s ease; flex-shrink: 0; }
         .meal-card.open .meal-card-arrow { transform: rotate(180deg); }
         .meal-card-body { display: none; border-top: 1px solid var(--border); }
@@ -102,15 +90,15 @@
         .meal-body { padding: 12px 14px; }
         .foods-text { font-size: 14px; color: var(--text); line-height: 1.5; margin-bottom: 12px; }
         .macros-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
-        .macro-item { text-align: center; padding: 6px 4px; background: var(--bg); border-radius: 8px; }
-        .macro-value { font-size: 15px; font-weight: 700; color: var(--primary-dark); }
+        .macro-item { text-align: center; padding: 6px 4px; background: #F0EDE6; border-radius: 8px; }
+        .macro-value { font-size: 15px; font-weight: 700; color: #6B7F91; }
         .macro-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
-        .ai-note { background: #F0FFF4; border-left: 3px solid var(--primary); border-radius: 0 8px 8px 0; padding: 8px 10px; font-size: 13px; color: #2D6A4F; line-height: 1.5; margin-bottom: 10px; }
-        .ai-note-label { font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
-        .nutrition-advice { background: #FFF8E1; border-left: 3px solid var(--warning); border-radius: 0 8px 8px 0; padding: 8px 10px; font-size: 13px; color: #7B5800; line-height: 1.5; }
-        .nutrition-advice-label { font-size: 11px; font-weight: 700; color: var(--warning); margin-bottom: 4px; }
+        .ai-note { background: #F0EDE6; border-left: 3px solid #8B9D83; border-radius: 0 8px 8px 0; padding: 8px 10px; font-size: 13px; color: #5A6B5E; line-height: 1.5; margin-bottom: 10px; }
+        .ai-note-label { font-size: 11px; font-weight: 700; color: #8B9D83; margin-bottom: 4px; }
+        .nutrition-advice { background: #F5F0E5; border-left: 3px solid #C4A882; border-radius: 0 8px 8px 0; padding: 8px 10px; font-size: 13px; color: #7B6B4A; line-height: 1.5; }
+        .nutrition-advice-label { font-size: 11px; font-weight: 700; color: #C4A882; margin-bottom: 4px; }
         .score-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-        .score-stars { color: var(--warning); font-size: 14px; }
+        .score-stars { color: #C4A882; font-size: 14px; }
         .empty-state { text-align: center; padding: 48px 24px; color: var(--text-muted); }
         .empty-icon { font-size: 48px; margin-bottom: 12px; }
         .loading-hint { text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px; }
@@ -175,11 +163,8 @@
     async function fetchWithTimeout(url, timeoutMs) {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-        try {
-            const resp = await fetch(url, { signal: ctrl.signal });
-            clearTimeout(timer);
-            return resp;
-        } catch(e) { clearTimeout(timer); throw e; }
+        try { const resp = await fetch(url, { signal: ctrl.signal }); clearTimeout(timer); return resp; }
+        catch(e) { clearTimeout(timer); throw e; }
     }
 
     async function fetchRecords(userId) {
@@ -211,10 +196,7 @@
         document.getElementById('error-msg').textContent = msg || '請在 LINE App 中開啟此頁面';
     }
 
-    function getTaipeiToday() {
-        const now = new Date(Date.now() + 8 * 3600000);
-        return now.toISOString().split('T')[0];
-    }
+    function getTaipeiToday() { const now = new Date(Date.now() + 8 * 3600000); return now.toISOString().split('T')[0]; }
 
     function isToday(dateStr) {
         const today = getTaipeiToday();
@@ -232,26 +214,15 @@
         return '★'.repeat(Math.min(full, 5)) + '☆'.repeat(Math.max(0, 5 - full));
     }
 
-    function escHtml(str) {
-        return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
+    function escHtml(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
     function toDateKey(dateStr) {
         const m = String(dateStr).match(/(\d{4})\/(\d+)\/(\d+)/);
         if (!m) return '';
         return m[1] + '-' + String(m[2]).padStart(2,'0') + '-' + String(m[3]).padStart(2,'0');
     }
-
-    function formatDateKey(key) {
-        const parts = key.split('-');
-        return parseInt(parts[1]) + '/' + parseInt(parts[2]);
-    }
-
-    function formatTimeOnly(dateStr) {
-        const m = String(dateStr).match(/\d{4}\/\d+\/\d+\s*(.*)/);
-        return m ? m[1].trim() : dateStr;
-    }
-
+    function formatDateKey(key) { const parts = key.split('-'); return parseInt(parts[1]) + '/' + parseInt(parts[2]); }
+    function formatTimeOnly(dateStr) { const m = String(dateStr).match(/\d{4}\/\d+\/\d+\s*(.*)/); return m ? m[1].trim() : dateStr; }
     function formatDayLabel(key) {
         const parts = key.split('-');
         const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
@@ -264,9 +235,7 @@
         const total = todayRecs.reduce((s, r) => s + (r.protein || 0), 0);
         const excess = weight * 2;
         const rec = recommended || 0;
-
         document.getElementById('protein-text').textContent = Math.round(total) + 'g' + (rec ? ' / ' + Math.round(rec) + 'g' : '');
-
         if (rec > 0) {
             const pct = Math.min((total / excess) * 100, 100);
             document.getElementById('protein-bar').style.width = pct + '%';
@@ -279,7 +248,6 @@
             document.getElementById('protein-bar').style.width = '0%';
             document.getElementById('protein-status').textContent = '今日攝取：' + Math.round(total) + 'g';
         }
-
         const cal = todayRecs.reduce((s, r) => s + (r.calories || 0), 0);
         document.getElementById('stats-row').innerHTML = `
             <div class="stat-card"><div class="stat-value">${Math.round(cal)}</div><div class="stat-label">今日熱量 kcal</div></div>
@@ -290,14 +258,9 @@
 
     function renderChart(records, recommended) {
         const byDate = {};
-        records.forEach(r => {
-            const key = toDateKey(r.date);
-            if (!key) return;
-            byDate[key] = (byDate[key] || 0) + (r.protein || 0);
-        });
+        records.forEach(r => { const key = toDateKey(r.date); if (!key) return; byDate[key] = (byDate[key] || 0) + (r.protein || 0); });
         const keys = Object.keys(byDate).sort();
         if (keys.length === 0) { document.querySelector('.chart-card').style.display = 'none'; return; }
-
         const drawChart = () => {
             if (typeof Chart === 'undefined') { setTimeout(drawChart, 100); return; }
             const labels = keys.map(formatDateKey);
@@ -306,14 +269,14 @@
             const ctx = document.getElementById('protein-chart').getContext('2d');
             const datasets = [{
                 label: '每日蛋白質 (g)', data: values,
-                borderColor: '#3DAE8F', backgroundColor: 'rgba(61,174,143,0.12)',
-                borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#3DAE8F',
+                borderColor: '#7B8FA1', backgroundColor: 'rgba(123,143,161,0.12)',
+                borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#7B8FA1',
                 fill: true, tension: 0.3,
             }];
             if (rec > 0) {
                 datasets.push({
                     label: '醫師建議攝取量 ' + Math.round(rec) + 'g', data: keys.map(() => rec),
-                    borderColor: '#F5A623', borderWidth: 1.5, borderDash: [6, 4],
+                    borderColor: '#C4A882', borderWidth: 1.5, borderDash: [6, 4],
                     pointRadius: 0, fill: false, tension: 0,
                 });
             }
@@ -327,8 +290,8 @@
                         tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + 'g' } }
                     },
                     scales: {
-                        x: { ticks: { font: { size: 11 }, color: '#718096' }, grid: { display: false } },
-                        y: { ticks: { font: { size: 11 }, color: '#718096', callback: v => v + 'g' }, grid: { color: 'rgba(0,0,0,0.05)' }, beginAtZero: true }
+                        x: { ticks: { font: { size: 11 }, color: '#8B8B8B' }, grid: { display: false } },
+                        y: { ticks: { font: { size: 11 }, color: '#8B8B8B', callback: v => v + 'g' }, grid: { color: 'rgba(0,0,0,0.05)' }, beginAtZero: true }
                     }
                 }
             });
@@ -338,9 +301,7 @@
 
     function renderMealCardBody(r) {
         const imgUrl = r.imageId ? `${IMAGE_PROXY}?id=${r.imageId}` : '';
-        const imgHtml = imgUrl
-            ? `<img src="${imgUrl}" onerror="this.parentNode.innerHTML='<div class=img-placeholder>🍱</div>'" loading="lazy">`
-            : `<div class="img-placeholder">🍱</div>`;
+        const imgHtml = imgUrl ? `<img src="${imgUrl}" onerror="this.parentNode.innerHTML='<div class=img-placeholder>🍱</div>'" loading="lazy">` : `<div class="img-placeholder">🍱</div>`;
         const aiNote = r.aiNote ? `<div class="ai-note"><div class="ai-note-label">🤖 AI 飲食建議</div>${escHtml(r.aiNote)}</div>` : '';
         const stars = r.nutritionScore ? `<div class="score-row"><span class="score-stars">${scoreToStars(r.nutritionScore)}</span><span style="font-size:12px;color:#92400E">(${r.nutritionScore}分)</span></div>` : '';
         const advice = r.nutritionistAdvice ? `<div>${escHtml(r.nutritionistAdvice)}</div>` : '<div>（無備註）</div>';
@@ -365,16 +326,9 @@
 
     function renderRecords(records) {
         const list = document.getElementById('records-list');
-        if (records.length === 0) {
-            list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>尚無紀錄</p></div>`;
-            return;
-        }
+        if (records.length === 0) { list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>尚無紀錄</p></div>`; return; }
         const grouped = {};
-        records.forEach(r => {
-            const key = toDateKey(r.date);
-            if (!grouped[key]) grouped[key] = [];
-            grouped[key].push(r);
-        });
+        records.forEach(r => { const key = toDateKey(r.date); if (!grouped[key]) grouped[key] = []; grouped[key].push(r); });
         const sortedKeys = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
         let html = '';
         sortedKeys.forEach((dateKey, di) => {
@@ -416,15 +370,8 @@
         list.innerHTML = html;
     }
 
-    function toggleDayAccordion(di) {
-        const el = document.getElementById('day-' + di);
-        if (el) el.classList.toggle('open');
-    }
-
-    function toggleMealCard(cardId) {
-        const el = document.getElementById(cardId);
-        if (el) el.classList.toggle('open');
-    }
+    function toggleDayAccordion(di) { const el = document.getElementById('day-' + di); if (el) el.classList.toggle('open'); }
+    function toggleMealCard(cardId) { const el = document.getElementById(cardId); if (el) el.classList.toggle('open'); }
 
     async function init() {
         const loadingText = document.getElementById('loading-text');
@@ -433,19 +380,13 @@
             _step = '讀取URL';
             const urlParams = new URLSearchParams(location.search);
             const urlUserId = urlParams.get('userId');
-
             if (urlParams.has('liff.state') && !sessionStorage.getItem('_liff_stripped')) {
                 sessionStorage.setItem('_liff_stripped', '1');
                 urlParams.delete('liff.state');
-                try {
-                    const cleanUrl = (location.origin || '') + location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
-                    window.location.replace(cleanUrl);
-                    return;
-                } catch (navErr) { console.warn('iOS redirect failed:', navErr && navErr.message); }
+                try { const cleanUrl = (location.origin || '') + location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : ''); window.location.replace(cleanUrl); return; }
+                catch (navErr) { console.warn('iOS redirect failed:', navErr && navErr.message); }
             }
-
             let userId = null, displayName = null, pictureUrl = null;
-
             if (LIFF_ID && LIFF_ID !== 'YOUR_LIFF_ID_HERE' && !urlUserId) {
                 try {
                     loadingText.textContent = '正在連線 LINE…';
@@ -455,67 +396,42 @@
                     if (!liff.isLoggedIn()) { liff.login(); return; }
                     _step = 'getProfile';
                     const profile = await liff.getProfile();
-                    userId = profile.userId;
-                    displayName = profile.displayName;
-                    pictureUrl = profile.pictureUrl;
+                    userId = profile.userId; displayName = profile.displayName; pictureUrl = profile.pictureUrl;
                 } catch (liffErr) {
                     const eMsg = (liffErr && liffErr.message) ? String(liffErr.message) : String(liffErr);
                     const eName = (liffErr && liffErr.name) ? liffErr.name : 'Error';
                     const eCode = (liffErr && liffErr.code) ? String(liffErr.code) : '';
                     console.warn('LIFF failed [' + _step + ']:', eName, eCode, eMsg);
-                    if (!sessionStorage.getItem('_liff_retry')) {
-                        sessionStorage.setItem('_liff_retry', '1');
-                        location.reload();
-                        return;
-                    }
-                    if (eMsg.indexOf('did not match') !== -1 || eMsg.indexOf('pattern') !== -1 || eName === 'SyntaxError') {
-                        showError('iOS 相容性問題，請關閉後重新開啟');
-                        return;
-                    }
-                    showError('LIFF 初始化失敗 [' + _step + ']\n' + eName + ': ' + eMsg);
-                    return;
+                    if (!sessionStorage.getItem('_liff_retry')) { sessionStorage.setItem('_liff_retry', '1'); location.reload(); return; }
+                    if (eMsg.indexOf('did not match') !== -1 || eMsg.indexOf('pattern') !== -1 || eName === 'SyntaxError') { showError('iOS 相容性問題，請關閉後重新開啟'); return; }
+                    showError('LIFF 初始化失敗 [' + _step + ']\n' + eName + ': ' + eMsg); return;
                 }
             }
-
             if (!userId && urlUserId) { userId = urlUserId; displayName = '患者'; }
             if (!userId) { showError('請在 LINE App 中開啟此頁面'); return; }
-
-            if (pictureUrl) {
-                document.getElementById('avatar-wrap').innerHTML = `<img class="avatar" src="${pictureUrl}" alt="avatar">`;
-            }
+            if (pictureUrl) { document.getElementById('avatar-wrap').innerHTML = `<img class="avatar" src="${pictureUrl}" alt="avatar">`; }
             document.getElementById('patient-name').textContent = displayName || '您好';
-
             document.getElementById('main').style.display = 'block';
             const loadingEl = document.getElementById('loading');
             loadingEl.classList.add('fade-out');
             setTimeout(() => { loadingEl.style.display = 'none'; }, 300);
-
             loadingText.textContent = '載入飲食紀錄…';
             _step = '載入紀錄';
             const data = await fetchRecords(userId);
-
-            if (data.patient?.name) {
-                document.getElementById('patient-name').textContent = data.patient.name;
-            }
-
+            if (data.patient?.name) { document.getElementById('patient-name').textContent = data.patient.name; }
             const recs = data.records || [];
             const rec = data.patient?.doctorRecommendedProtein || data.patient?.recommendedProtein || 0;
             const wt = data.patient?.weight || 0;
-
             renderProteinProgress(recs, rec, wt);
             renderRecords(recs);
             renderChart(recs, rec);
-
         } catch (err) {
             console.error('Error [' + _step + ']:', err);
             if (document.getElementById('main').style.display === 'block') {
                 document.getElementById('records-list').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>載入失敗：${escHtml(err.message)}</p></div>`;
-            } else {
-                showError('載入失敗 [' + _step + ']：' + (err.message || err));
-            }
+            } else { showError('載入失敗 [' + _step + ']：' + (err.message || err)); }
         }
     }
-
     init();
     </script>
 </body>
