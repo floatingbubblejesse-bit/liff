@@ -1197,8 +1197,9 @@
     function buildDietLineMessage() {
         var dayLabels = {high:'高碳日', low:'低碳日', mid:'中碳日', fast:'斷食日'};
         var dayEmojis = {high:'🔴', low:'🟢', mid:'🟡', fast:'⚪'};
-        var dayColors = {high:'#c62828', low:'#2e7d32', mid:'#e65100', fast:'#424242'};
-        var dayBgColors = {high:'#F8D7DA', low:'#D4EDDA', mid:'#FFF3CD', fast:'#E2E3E5'};
+        // 莫蘭迪文青配色
+        var dayColors = {high:'#A0626B', low:'#6B8F71', mid:'#B8926A', fast:'#7B8B8B'};
+        var dayBgColors = {high:'#F2E0E0', low:'#E0EBE0', mid:'#F0E8D8', fast:'#E8E8E8'};
 
         // ── 排程 bubble ──
         var schDayBoxes = CYCLE_DAYS.map(function(d, i) {
@@ -1230,16 +1231,16 @@
 
         var scheduleBubble = {
             type:'bubble', size:'giga',
-            header:{type:'box',layout:'vertical',backgroundColor:'#1565C0',paddingAll:'20px',contents:[
+            header:{type:'box',layout:'vertical',backgroundColor:'#7B8FA1',paddingAll:'20px',contents:[
                 {type:'text',text:'📋 ' + dateStr + ' 看診',color:'#ffffff',weight:'bold',size:'xl'}
             ]},
             body:{type:'box',layout:'vertical',spacing:'md',paddingAll:'16px',contents:[
-                {type:'text',text:'📅 碳水循環排程',weight:'bold',size:'md',color:'#333333'},
+                {type:'text',text:'📅 碳水循環排程',weight:'bold',size:'md',color:'#4A4A4A'},
                 {type:'box',layout:'horizontal',spacing:'xs',margin:'md',contents:schDayBoxes},
                 {type:'separator',margin:'lg'},
-                {type:'text',text:weeklyText,weight:'bold',size:'sm',color:'#1565C0',wrap:true,margin:'lg'},
+                {type:'text',text:weeklyText,weight:'bold',size:'sm',color:'#7B8FA1',wrap:true,margin:'lg'},
                 {type:'separator',margin:'lg'},
-                {type:'text',text:'⚠️ 排糖包與排油包務必在高碳日用掉，才會瘦更快！',weight:'bold',size:'sm',color:'#333333',wrap:true,margin:'lg'}
+                {type:'text',text:'⚠️ 排糖包與排油包務必在高碳日用掉，才會瘦更快！',weight:'bold',size:'sm',color:'#4A4A4A',wrap:true,margin:'lg'}
             ]}
         };
 
@@ -1288,19 +1289,19 @@
                 }
                 if (mealContents.length > 0) mealContents.push({type:'separator',margin:'sm'});
                 mealContents.push({type:'box',layout:'horizontal',spacing:'sm',margin:'sm',contents:[
-                    {type:'text',text:MEAL_ICONS[m]+MEAL_NAMES[m],size:'sm',weight:'bold',color:'#333333',flex:0,gravity:'top'},
-                    {type:'text',text:mealText,size:'xs',color:'#555555',wrap:true,flex:4}
+                    {type:'text',text:MEAL_ICONS[m]+MEAL_NAMES[m],size:'sm',weight:'bold',color:'#4A4A4A',flex:0,gravity:'top'},
+                    {type:'text',text:mealText,size:'xs',color:'#6B6B6B',wrap:true,flex:4}
                 ]});
             }
 
             var bodyContents = [
                 {type:'box',layout:'horizontal',contents:[
-                    {type:'text',text:'蛋白質',size:'sm',color:'#888888',flex:0},
+                    {type:'text',text:'蛋白質',size:'sm',color:'#8B8B8B',flex:0},
                     {type:'text',text:total + 'g',size:'xl',weight:'bold',color:dayColors[p],align:'end'}
                 ]},
-                {type:'text',text:summaryText,size:'xs',color:'#888888',margin:'xs'}
+                {type:'text',text:summaryText,size:'xs',color:'#8B8B8B',margin:'xs'}
             ];
-            if (p === 'fast') bodyContents.push({type:'text',text:'☕ 隨時可補充茶、咖啡、清湯與雞蛋白',size:'xs',color:'#8B6914',wrap:true,margin:'sm'});
+            if (p === 'fast') bodyContents.push({type:'text',text:'☕ 隨時可補充茶、咖啡、清湯與雞蛋白',size:'xs',color:'#8B7B5E',wrap:true,margin:'sm'});
             bodyContents.push({type:'separator',margin:'md'});
             mealContents.forEach(function(c){ bodyContents.push(c); });
 
