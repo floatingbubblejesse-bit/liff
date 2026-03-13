@@ -908,6 +908,7 @@
             if (res.ok || res.success) {
                 btn.textContent = '更新完成';
                 btn.style.background = '#6B8F71';
+                ['mid','high','low','fast'].forEach(function(d){ generateDietPlan(d); });
                 setTimeout(function(){
                     btn.textContent = '更新';
                     btn.style.background = '#8B9D83';
