@@ -18,7 +18,7 @@
         @keyframes spin{to{transform:rotate(360deg)}}
         .error-box{margin:24px;padding:18px;background:#fff3f3;border:1px solid #ffcdd2;border-radius:12px;text-align:center;color:#c62828}
 
-        /* 卡片：類似 Flex Message */
+        /* 卡片樣式 - 與醫師後台完全一致 */
         .hx-card{background:white;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,0.08);margin-bottom:12px;overflow:hidden}
         .hx-header{display:flex;align-items:center;padding:14px 16px;cursor:pointer;user-select:none;gap:10px;-webkit-tap-highlight-color:transparent;transition:background 0.15s}
         .hx-header:active{background:#f0f4ff}
@@ -91,7 +91,6 @@
             loadRecords();
         })
         .catch(function(err) {
-            // fallback：從 URL 參數讀取（開發用）
             var params = new URLSearchParams(window.location.search);
             lineUid = params.get('uid') || '';
             patientSn = params.get('id') || '';
@@ -115,7 +114,17 @@
                     document.getElementById('mainContent').innerHTML = '<div class="no-data">尚無看診紀錄<br><span style="font-size:12px;color:#bbb">看診後醫師儲存飲食計劃，紀錄會自動出現在這裡</span></div>';
                     return;
                 }
-                renderCards(records);
+                // ── 同一天只保留最新一筆 ──
+                var byDate = {};
+                records.forEach(function(r) {
+                    var dateKey = normalizeDate(r.date);
+                    if (!byDate[dateKey] || (r.date || '') > (byDate[dateKey].date || '')) {
+                        r.date = dateKey; // 正規化日期
+                        byDate[dateKey] = r;
+                    }
+                });
+                var deduped = Object.keys(byDate).sort().reverse().map(function(k) { return byDate[k]; });
+                renderCards(deduped);
             })
             .catch(function(err) {
                 document.getElementById('loadingDiv').style.display = 'none';
@@ -123,16 +132,31 @@
             });
     }
 
+    // 將各種日期格式正規化為 YYYY-MM-DD
+    function normalizeDate(dateStr) {
+        if (!dateStr) return '';
+        // 已經是 YYYY-MM-DD
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+        // 嘗試 parse
+        var d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        }
+        // 嘗試取前10字元
+        if (dateStr.length >= 10) return dateStr.substring(0, 10);
+        return dateStr;
+    }
+
     function renderCards(records) {
-        records.sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); });
         var html = '';
         for (var i = 0; i < records.length; i++) {
-            html += buildCard(records[i], i);
+            html += buildHistoryCard(records[i], i);
         }
         document.getElementById('mainContent').innerHTML = html;
     }
 
-    function buildCard(rec, idx) {
+    // ====== 與醫師後台 buildHistoryCard 完全一致 ======
+    function buildHistoryCard(rec, idx) {
         var d = rec.date || '';
         var parts = d.split('-');
         var month = parts.length > 1 ? parseInt(parts[1]) + '月' : '';
@@ -151,11 +175,10 @@
         var subParts = [];
         if (rec.protein) subParts.push('蛋白質 ' + rec.protein + 'g');
         if (rec.weeklyMr) subParts.push('代餐 ' + rec.weeklyMr + '包/週');
-        if (rec.weeklyQb) subParts.push('Q寶 ' + rec.weeklyQb + '包/週');
 
         var html = '<div class="hx-card' + isOpen + '" id="hxCard' + idx + '">';
 
-        // Header
+        // ── Header ──
         html += '<div class="hx-header" onclick="toggleCard(' + idx + ')">';
         html += '<div class="hx-date-icon"><div class="hx-date-month">' + esc(month) + '</div><div class="hx-date-day">' + esc(String(day)) + '</div></div>';
         html += '<div class="hx-header-info">';
@@ -165,7 +188,7 @@
         html += '<span class="hx-arrow">▼</span>';
         html += '</div>';
 
-        // Body
+        // ── Body ──
         html += '<div class="hx-body">';
 
         // 排程
@@ -191,14 +214,14 @@
             html += '</div></div>';
         }
 
-        // 各碳日（排序：中高低斷）
+        // 各碳日餐食（排序：中高低斷）
         var dayPlans = rec.dayPlans || {};
         var dayOrder = ['mid','high','low','fast'];
-        dayOrder.forEach(function(p) {
-            if (!dayPlans[p]) return;
+        var sortedDpKeys = dayOrder.filter(function(k){ return dayPlans[k]; });
+        sortedDpKeys.forEach(function(p) {
             var dp = dayPlans[p];
             html += '<div class="hx-section">';
-            html += '<div class="hx-day-label">' + (dayEmojis[p]||'●') + ' ' + esc(dayLabels[p] || p) + '</div>';
+            html += '<div class="hx-day-label" style="margin-bottom:8px">' + (dayEmojis[p]||'●') + ' ' + esc(dayLabels[p] || p) + '</div>';
             if (dp.meals && dp.meals.length > 0) {
                 dp.meals.forEach(function(meal) {
                     html += '<div class="hx-meal-row">';
@@ -217,11 +240,6 @@
             html += '<div class="hx-note">' + esc(rec.note) + '</div>';
             html += '</div>';
         }
-
-        // 飲食提醒（固定）
-        html += '<div class="hx-section">';
-        html += '<div class="hx-tip">⚠️ 排糖包與排油包務必在高碳日用掉，才會瘦更快！</div>';
-        html += '</div>';
 
         html += '</div></div>';
         return html;
