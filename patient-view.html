@@ -595,7 +595,7 @@
         if (!mealsData) return;
         var recs = mealsData.records || [];
         var patient = mealsData.patient || {};
-        var recProtein = patient.recommendedProtein || 0;
+        var recProtein = parseFloat(patient.doctorRecommendedProtein) || parseFloat(patient.doctorProtein) || parseFloat(patient['醫師建議蛋白質攝取量']) || patient.recommendedProtein || 0;
         var weight = patient.weight || 0;
         var el = document.getElementById('tab-meals');
 
