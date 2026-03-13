@@ -143,6 +143,8 @@
         .diet-btn-row{display:flex;gap:8px;margin-top:12px}
         .diet-btn-regen{flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:white;font-size:12px;cursor:pointer;color:var(--blue);font-weight:600}
         .diet-btn-regen:active{background:#f0f4ff}
+        .diet-btn-update{flex:1;padding:10px;border:1px solid var(--green);border-radius:8px;background:white;font-size:12px;cursor:pointer;color:var(--green);font-weight:600}
+        .diet-btn-update:active{background:var(--green-light)}
         .diet-btn-save{flex:1;padding:10px;border:none;border-radius:8px;background:var(--green);color:white;font-size:12px;cursor:pointer;font-weight:600}
         .diet-btn-save:disabled{background:#90a4ae;cursor:not-allowed}
         .diet-toggle{font-size:10px;color:var(--muted);margin-left:auto;transition:transform 0.3s}
@@ -259,7 +261,7 @@
                     <div id="midDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="midDietSummaryText"></div>
                         <div id="midDietMeals"></div>
-                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('mid')">↩ 預設</button></div>
+                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('mid')">↩ 預設</button><button class="diet-btn-update" onclick="recalcDietProtein('mid')">🔄 更新</button></div>
                     </div>
                 </div>
                 <div class="diet-day-section">
@@ -267,7 +269,7 @@
                     <div id="highDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="highDietSummaryText"></div>
                         <div id="highDietMeals"></div>
-                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('high')">↩ 預設</button></div>
+                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('high')">↩ 預設</button><button class="diet-btn-update" onclick="recalcDietProtein('high')">🔄 更新</button></div>
                     </div>
                 </div>
                 <div class="diet-day-section">
@@ -275,7 +277,7 @@
                     <div id="lowDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="lowDietSummaryText"></div>
                         <div id="lowDietMeals"></div>
-                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('low')">↩ 預設</button></div>
+                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('low')">↩ 預設</button><button class="diet-btn-update" onclick="recalcDietProtein('low')">🔄 更新</button></div>
                     </div>
                 </div>
                 <div class="diet-day-section">
@@ -283,7 +285,7 @@
                     <div id="fastDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="fastDietSummaryText"></div>
                         <div id="fastDietMeals"></div>
-                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('fast')">↩ 預設</button></div>
+                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('fast')">↩ 預設</button><button class="diet-btn-update" onclick="recalcDietProtein('fast')">🔄 更新</button></div>
                     </div>
                 </div>
             </div>
@@ -318,7 +320,7 @@
         {label:'運動處方',text:'建議每週至少 150 分鐘中等強度運動，可選擇快走、游泳或騎車，循序漸進增加強度。'},
         {label:'血糖管理',text:'注意飲食中醣類的種類與份量，選擇低 GI 食物，定時定量進餐，避免空腹時間過長。'},
         {label:'血壓控制',text:'減少鈉鹽攝取，多吃蔬菜水果，維持正常體重，規律運動，並按時服藥。'},
-        {label:'蛋白質攝取',text:'每日蛋白質建議攝取量為體重（kg）× 1.2~1.5g，優先選擇雞胸肉、魚、豆腐、蛋等優質蛋白。'},
+        {label:'蛋白質攝取',text:'每日蛋白質建議攝取量為體重（kg）+40g（上限140g），優先選擇雞胸肉、魚、豆腐、蛋等優質蛋白。'},
         {label:'睡眠建議',text:'充足睡眠對代謝與體重管理至關重要，建議每天睡足 7~8 小時，維持固定作息。'},
         {label:'飲水建議',text:'每日飲水量建議為體重（kg）× 30~35 ml，分次補充，避免一次大量飲水，少喝含糖飲料。'},
         {label:'減脂進度',text:'本週體脂率已有進步，請繼續保持！重點在飲食控制，建議記錄每日飲食，下次回診帶來。'},
@@ -819,7 +821,7 @@
         var doctorRec = findField(cust, ['醫師建議蛋白質攝取量','doctorProtein','doctorRecommendedProtein']);
         if (isNaN(current)) {
             var wt = findField(cust, ['體重','weight']);
-            if (!isNaN(wt) && wt > 0) current = ceilProtein(wt * 1.5);
+            if (!isNaN(wt) && wt > 0) current = ceilProtein(wt + 40);
         } else {
             current = ceilProtein(current);
         }
@@ -828,7 +830,7 @@
             document.getElementById('currentProtein').textContent = current + ' g';
             currentProteinFilled = true;
         }
-        // 輸入框：優先 I 欄，I 欄空 → 用 H 欄（= 體重×1.5 進位）
+        // 輸入框：優先 I 欄，I 欄空 → 用 H 欄（= 體重+40，上限140）
         if (!proteinFilled) {
             var prefill = (!isNaN(doctorRec) && doctorRec > 0) ? doctorRec : (!isNaN(current) ? current : NaN);
             if (!isNaN(prefill)) {
@@ -845,7 +847,7 @@
         var p = mealsData.patient;
         var wt = parseFloat(p.weight);
         var hCol = parseFloat(p.recommendedProtein);
-        if (isNaN(hCol) && !isNaN(wt) && wt > 0) hCol = ceilProtein(wt * 1.5);
+        if (isNaN(hCol) && !isNaN(wt) && wt > 0) hCol = ceilProtein(wt + 40);
         else if (!isNaN(hCol)) hCol = ceilProtein(hCol);
         var iCol = parseFloat(p.doctorRecommendedProtein);
         if (isNaN(iCol)) iCol = parseFloat(p.doctorProtein);
@@ -1133,7 +1135,7 @@
             }
             var perMeal = mealsWithFood > 0 ? Math.round(totalFood / mealsWithFood) : 0;
             var sumEl = document.getElementById(p + 'DietSummaryText');
-            var sumHtml = '醫師建議 <b>' + total + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + totalPacks + '包×20g）+ 食物蛋白 ' + totalFood + 'g' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + 'g）' : '');
+            var sumHtml = '<b>' + total + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + totalPacks + '包×20g）+ 食物蛋白 ' + totalFood + 'g' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + 'g）' : '');
             if (p === 'fast') sumHtml += '<br><span style="color:#666">隨時都可以再補充茶、咖啡、清湯與雞蛋白</span>';
             if (sumEl) sumEl.innerHTML = sumHtml;
         }
@@ -1158,7 +1160,7 @@
                 if (plan[mi] && plan[mi][3] && plan[mi][3] !== '-' && parseInt(plan[mi][3]) > 0) mealsWithFood++;
             }
             var perMeal = mealsWithFood > 0 ? Math.round(foodG / mealsWithFood) : 0;
-            var sumHtml2 = '醫師建議 <b>' + rec + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + packs + '包×20g）+ 食物蛋白 ' + foodG + 'g' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + 'g）' : '');
+            var sumHtml2 = '<b>' + rec + 'g</b> 蛋白質 → 代餐 ' + mrG + 'g（' + packs + '包×20g）+ 食物蛋白 ' + foodG + 'g' + (mealsWithFood > 0 ? '（每餐約 ' + perMeal + 'g）' : '');
             if (p === 'fast') sumHtml2 += '<br><span style="color:#666">隨時都可以再補充茶、咖啡、清湯與雞蛋白</span>';
             sumEl.innerHTML = sumHtml2;
         }
