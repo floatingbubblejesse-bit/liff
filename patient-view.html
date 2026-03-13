@@ -164,6 +164,26 @@
         .cycle-day-btn.t-fast{background:#E2E3E5;border-color:#9e9e9e;color:#424242}
         .cycle-arrow{color:#ccc;font-size:11px;flex-shrink:0;margin:14px 1px 0;opacity:0;transition:opacity 0.2s}
         .cycle-schedule:hover .cycle-arrow{opacity:1}
+
+        /* ====== 看診紀錄 tab ====== */
+        .history-chart-card{background:white;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:14px}
+        .history-chart-card .card-title{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+        .history-chart-wrap{position:relative;height:220px}
+        .history-table{width:100%;border-collapse:collapse;font-size:12px}
+        .history-table th{background:#f5f7fa;padding:10px 8px;text-align:center;font-weight:700;color:#555;white-space:nowrap;border-bottom:2px solid var(--border)}
+        .history-table td{padding:10px 8px;text-align:center;border-bottom:1px solid #f0f0f0}
+        .history-table tr:hover td{background:#f8fafb}
+        .history-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+        .history-badge.b-high{background:#F8D7DA;color:#c62828}
+        .history-badge.b-low{background:#D4EDDA;color:#2e7d32}
+        .history-badge.b-mid{background:#FFF3CD;color:#e65100}
+        .history-badge.b-fast{background:#E2E3E5;color:#424242}
+        .history-summary-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+        .history-summary-item{background:white;border-radius:12px;padding:14px 10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+        .history-summary-value{font-size:22px;font-weight:700}
+        .history-summary-label{font-size:10px;color:var(--muted);margin-top:4px}
+        .history-summary-diff{font-size:11px;margin-top:2px}
+        .no-history{text-align:center;color:#aaa;padding:40px;font-size:14px}
     </style>
 </head>
 <body>
@@ -178,6 +198,7 @@
         <button class="tab-btn" id="tabBtn-body" onclick="switchTab('body')">🏋️ 身體組成</button>
         <button class="tab-btn" id="tabBtn-meals" onclick="switchTab('meals')">🍱 餐食記錄</button>
         <button class="tab-btn" id="tabBtn-note" onclick="switchTab('note')">📋 醫生建議</button>
+        <button class="tab-btn" id="tabBtn-history" onclick="switchTab('history')">📊 看診紀錄</button>
     </div>
     <div class="main">
         <div id="loadingDiv" class="loading" style="position:absolute;top:0;left:0;right:0;bottom:0">
@@ -260,6 +281,9 @@
                 <div class="send-success" id="sendSuccess">✅ 建議已成功傳送！</div>
             </div>
         </div>
+        <div id="tab-history" class="tab-pane" style="display:none">
+            <div id="historyContent"><div class="no-history">載入資料後即可查看看診紀錄</div></div>
+        </div>
     </div>
 
     <script>
@@ -298,7 +322,7 @@
     if (cachedUid) patientLineUid = cachedUid;
     // 從 hash 讀取上次的 tab（重新整理時維持在同一頁）
     var initTab = (location.hash || '').replace('#','') || 'body';
-    if (['body','meals','note'].indexOf(initTab) === -1) initTab = 'body';
+    if (['body','meals','note','history'].indexOf(initTab) === -1) initTab = 'body';
 
     if (!patientSn) { showError('缺少病患 ID，請從醫生總覽頁面進入。'); }
     else {
@@ -350,18 +374,20 @@
             .catch(function(err){showError('資料載入失敗：'+err.message);});
     }
 
+    var TAB_NAMES = ['body','meals','note','history'];
     function switchTab(name){
         activeTab=name;
         location.hash = name;
         document.querySelectorAll('.tab-btn').forEach(function(b,i){
-            b.classList.toggle('active',['body','meals','note'][i]===name);
+            b.classList.toggle('active',TAB_NAMES[i]===name);
         });
         if(name==='meals') loadMeals();
+        if(name==='history') renderHistoryTab();
         showTab(name);
     }
 
     function showTab(name){
-        ['body','meals','note'].forEach(function(t){
+        TAB_NAMES.forEach(function(t){
             var el=document.getElementById('tab-'+t);
             if(el){el.style.display=t===name?'block':'none';el.classList.toggle('active',t===name);}
         });
@@ -1423,6 +1449,281 @@
                 } else { alert('傳送失敗：'+(res.error||JSON.stringify(res))); }
             })
             .catch(function(err){btn.disabled=false;btn.innerHTML='<span>📤 傳送給病患（LINE）</span>';alert('傳送失敗：'+err.message);});
+    }
+
+    // ====== 看診紀錄 ======
+    var historyRendered = false;
+    var historyWeightChart = null, historyProteinChart = null;
+    var dietHistoryData = null, dietHistoryLoaded = false;
+
+    function renderHistoryTab() {
+        if (!allData) return;
+        var m = allData.measurements || [];
+        var cust = allData.customer || {};
+        var html = '';
+
+        // ── 摘要卡片 ──
+        if (m.length > 0) {
+            var latest = m[m.length - 1];
+            var first = m[0];
+            var wNow = parseFloat(latest['體重']);
+            var wFirst = parseFloat(first['體重']);
+            var wDiff = (!isNaN(wNow) && !isNaN(wFirst)) ? (wNow - wFirst) : NaN;
+            var fatNow = parseFloat(latest['體脂率']);
+            var fatFirst = parseFloat(first['體脂率']);
+            var fatDiff = (!isNaN(fatNow) && !isNaN(fatFirst)) ? (fatNow - fatFirst) : NaN;
+            var muscNow = parseFloat(latest['肌肉量']);
+            var muscFirst = parseFloat(first['肌肉量']);
+            var muscDiff = (!isNaN(muscNow) && !isNaN(muscFirst)) ? (muscNow - muscFirst) : NaN;
+
+            html += '<div class="history-summary-row">';
+            html += buildSummaryCard('體重', wNow, 'kg', wDiff, true);
+            html += buildSummaryCard('體脂率', fatNow, '%', fatDiff, true);
+            html += buildSummaryCard('肌肉量', muscNow, 'kg', muscDiff, false);
+            html += '</div>';
+        }
+
+        // ── 體重趨勢圖 ──
+        if (m.length > 1) {
+            html += '<div class="history-chart-card">';
+            html += '<div class="card-title">📉 體重變化趨勢</div>';
+            html += '<div class="history-chart-wrap"><canvas id="historyWeightCanvas"></canvas></div>';
+            html += '</div>';
+        }
+
+        // ── 蛋白質攝取建議趨勢圖 ──
+        if (m.length > 1) {
+            html += '<div class="history-chart-card">';
+            html += '<div class="card-title">🥩 蛋白質攝取量變化</div>';
+            html += '<div class="history-chart-wrap"><canvas id="historyProteinCanvas"></canvas></div>';
+            html += '</div>';
+        }
+
+        // ── 飲食計劃歷史 ──
+        html += '<div class="history-chart-card">';
+        html += '<div class="card-title">🍱 飲食計劃紀錄</div>';
+        html += '<div id="dietHistoryTable">';
+        if (dietHistoryData) {
+            html += buildDietHistoryTable(dietHistoryData);
+        } else {
+            html += '<div style="text-align:center;padding:20px;color:#aaa">載入飲食計劃歷史中...</div>';
+        }
+        html += '</div></div>';
+
+        // ── 測量歷史完整表 ──
+        if (m.length > 0) {
+            html += '<div class="history-chart-card">';
+            html += '<div class="card-title">📋 完整測量紀錄</div>';
+            html += '<div class="table-wrap"><table class="history-table"><tr><th>日期</th><th>體重</th><th>體脂率</th><th>肌肉量</th><th>BMI</th><th>內臟脂肪</th><th>腰圍</th></tr>';
+            m.slice().reverse().forEach(function(row) {
+                var d = (row['測量日期/時間'] || '').substring(0, 10);
+                html += '<tr>';
+                html += '<td style="font-size:11px;color:#888">' + esc(d) + '</td>';
+                html += '<td>' + fmtVal(row['體重']) + '</td>';
+                html += '<td>' + fmtVal(row['體脂率']) + '</td>';
+                html += '<td>' + fmtVal(row['肌肉量']) + '</td>';
+                html += '<td>' + fmtVal(row['身體質量參數 (BMI)']) + '</td>';
+                html += '<td>' + fmtVal(row['內臟脂肪指數']) + '</td>';
+                html += '<td>' + fmtVal(row['腰圍']) + '</td>';
+                html += '</tr>';
+            });
+            html += '</table></div></div>';
+        }
+
+        if (!m.length) {
+            html = '<div class="no-history">尚無看診紀錄</div>';
+        }
+
+        document.getElementById('historyContent').innerHTML = html;
+
+        // 畫圖表
+        setTimeout(function() {
+            renderWeightHistoryChart(m);
+            renderProteinHistoryChart(m, cust);
+        }, 150);
+
+        // 載入飲食計劃歷史
+        if (!dietHistoryLoaded) {
+            dietHistoryLoaded = true;
+            loadDietHistory();
+        }
+    }
+
+    function fmtVal(v) {
+        var n = parseFloat(v);
+        return isNaN(n) ? '-' : n;
+    }
+
+    function buildSummaryCard(label, value, unit, diff, lowerIsGood) {
+        var html = '<div class="history-summary-item">';
+        var color = label === '體重' ? '#1565C0' : (label === '體脂率' ? '#e53935' : '#2e7d32');
+        html += '<div class="history-summary-value" style="color:' + color + '">' + (isNaN(value) ? '-' : value) + '<span style="font-size:12px;color:#aaa"> ' + unit + '</span></div>';
+        html += '<div class="history-summary-label">' + label + '</div>';
+        if (!isNaN(diff) && diff !== 0) {
+            var good = lowerIsGood ? diff < 0 : diff > 0;
+            var cls = good ? 'diff-good' : 'diff-warn';
+            var arrow = diff > 0 ? '↑+' : '↓';
+            html += '<div class="history-summary-diff ' + cls + '">' + arrow + diff.toFixed(1) + unit + '（累計）</div>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    function renderWeightHistoryChart(m) {
+        var canvas = document.getElementById('historyWeightCanvas');
+        if (!canvas || m.length < 2) return;
+        var labels = [], wData = [], fatData = [];
+        m.forEach(function(row) {
+            var d = (row['測量日期/時間'] || '').substring(5, 10);
+            var w = parseFloat(row['體重']);
+            var f = parseFloat(row['體脂率']);
+            labels.push(d);
+            wData.push(isNaN(w) ? null : w);
+            fatData.push(isNaN(f) ? null : f);
+        });
+        if (historyWeightChart) historyWeightChart.destroy();
+        historyWeightChart = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: '體重 (kg)', data: wData, borderColor: '#1565C0', backgroundColor: 'rgba(21,101,192,0.08)', tension: 0.3, pointRadius: 5, pointBackgroundColor: '#1565C0', fill: true, yAxisID: 'y' },
+                    { label: '體脂率 (%)', data: fatData, borderColor: '#e53935', backgroundColor: 'rgba(229,57,53,0.08)', tension: 0.3, pointRadius: 5, pointBackgroundColor: '#e53935', borderDash: [5, 3], fill: false, yAxisID: 'y1' }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'top', labels: { font: { size: 11 }, usePointStyle: true, padding: 15 } } },
+                scales: {
+                    x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+                    y: { position: 'left', title: { display: true, text: '體重 (kg)', font: { size: 10 } }, ticks: { font: { size: 10 } } },
+                    y1: { position: 'right', title: { display: true, text: '體脂率 (%)', font: { size: 10 } }, ticks: { font: { size: 10 } }, grid: { drawOnChartArea: false } }
+                }
+            }
+        });
+    }
+
+    function renderProteinHistoryChart(m, cust) {
+        var canvas = document.getElementById('historyProteinCanvas');
+        if (!canvas || m.length < 2) return;
+        var labels = [], sysData = [], docData = [];
+        m.forEach(function(row) {
+            var d = (row['測量日期/時間'] || '').substring(5, 10);
+            labels.push(d);
+            // 系統計算蛋白質 = 體重 * 1.5（近似值）
+            var w = parseFloat(row['體重']);
+            sysData.push(isNaN(w) ? null : Math.round(w * 1.5));
+            docData.push(null); // 醫師建議需從飲食計劃歷史取得
+        });
+        // 最後一筆補上目前的醫師建議
+        var docRec = parseInt(document.getElementById('proteinInput').value) || 0;
+        if (docRec > 0 && docData.length > 0) docData[docData.length - 1] = docRec;
+
+        if (historyProteinChart) historyProteinChart.destroy();
+        historyProteinChart = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: '系統計算 (g)', data: sysData, borderColor: '#1565C0', backgroundColor: 'rgba(21,101,192,0.08)', tension: 0.3, pointRadius: 5, pointBackgroundColor: '#1565C0', fill: true },
+                    { label: '醫師建議 (g)', data: docData, borderColor: '#00897B', backgroundColor: 'rgba(0,137,123,0.08)', tension: 0.3, pointRadius: 5, pointBackgroundColor: '#00897B', borderDash: [5, 3], fill: false, spanGaps: true }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'top', labels: { font: { size: 11 }, usePointStyle: true, padding: 15 } } },
+                scales: {
+                    x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+                    y: { title: { display: true, text: '蛋白質 (g)', font: { size: 10 } }, ticks: { font: { size: 10 } } }
+                }
+            }
+        });
+    }
+
+    function loadDietHistory() {
+        fetch(MEALS_GAS + '?dietHistory=' + encodeURIComponent(patientSn))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                dietHistoryData = data.records || [];
+                var el = document.getElementById('dietHistoryTable');
+                if (el) el.innerHTML = buildDietHistoryTable(dietHistoryData);
+                // 補上蛋白質歷史到圖表
+                if (dietHistoryData.length > 0) updateProteinChartWithHistory(dietHistoryData);
+            })
+            .catch(function() {
+                var el = document.getElementById('dietHistoryTable');
+                if (el) el.innerHTML = buildDietHistoryFallback();
+            });
+    }
+
+    function buildDietHistoryTable(records) {
+        if (!records || records.length === 0) return buildDietHistoryFallback();
+        var html = '<div class="table-wrap"><table class="history-table">';
+        html += '<tr><th>日期</th><th>建議蛋白質</th><th>排程</th><th>代餐包數/週</th></tr>';
+        records.forEach(function(rec) {
+            html += '<tr>';
+            html += '<td style="font-size:11px;color:#888">' + esc(rec.date || '') + '</td>';
+            html += '<td>' + (rec.protein || '-') + 'g</td>';
+            html += '<td>' + formatScheduleBadges(rec.schedule || []) + '</td>';
+            html += '<td>' + (rec.weeklyPacks || '-') + '包</td>';
+            html += '</tr>';
+        });
+        html += '</table></div>';
+        return html;
+    }
+
+    function buildDietHistoryFallback() {
+        // 如果後端尚未支援 dietHistory，顯示當前計劃的資訊
+        var rec = parseInt(document.getElementById('proteinInput').value) || 0;
+        if (rec <= 0) return '<div style="text-align:center;padding:20px;color:#aaa">尚無飲食計劃紀錄</div>';
+        var packs = rec <= 110 ? 2 : 3;
+        var today = new Date();
+        var dateStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+        var html = '<div class="table-wrap"><table class="history-table">';
+        html += '<tr><th>日期</th><th>建議蛋白質</th><th>排程</th><th>代餐包數/週</th></tr>';
+        // 計算每週代餐包數
+        var weeklyMr = 0;
+        cycleSchedule.forEach(function(t) { weeklyMr += (t === 'fast' ? 0 : packs) * 3; });
+        html += '<tr>';
+        html += '<td style="font-size:11px;color:#888">' + dateStr + '（本次）</td>';
+        html += '<td>' + rec + 'g</td>';
+        html += '<td>' + formatScheduleBadges(cycleSchedule) + '</td>';
+        html += '<td>' + weeklyMr + '包</td>';
+        html += '</tr>';
+        html += '</table></div>';
+        return html;
+    }
+
+    function formatScheduleBadges(schedule) {
+        if (!schedule || !schedule.length) return '-';
+        var dayNames = ['六','日','一','二','三','四','五'];
+        var map = { high: 'b-high', low: 'b-low', mid: 'b-mid', fast: 'b-fast' };
+        var labelMap = { high: '高', low: '低', mid: '中', fast: '斷' };
+        var html = '';
+        for (var i = 0; i < schedule.length && i < 7; i++) {
+            var cls = map[schedule[i]] || 'b-mid';
+            var lbl = labelMap[schedule[i]] || '?';
+            html += '<span class="history-badge ' + cls + '" title="' + dayNames[i] + '">' + lbl + '</span> ';
+        }
+        return html;
+    }
+
+    function updateProteinChartWithHistory(records) {
+        if (!historyProteinChart || !allData) return;
+        var m = allData.measurements || [];
+        if (m.length < 2) return;
+        // 嘗試用日期匹配飲食計劃紀錄的蛋白質建議
+        var docData = historyProteinChart.data.datasets[1].data;
+        m.forEach(function(row, idx) {
+            var d = (row['測量日期/時間'] || '').substring(0, 10);
+            for (var r = 0; r < records.length; r++) {
+                if (records[r].date === d && records[r].protein) {
+                    docData[idx] = parseInt(records[r].protein);
+                    break;
+                }
+            }
+        });
+        historyProteinChart.update();
     }
 
     function showError(msg){
