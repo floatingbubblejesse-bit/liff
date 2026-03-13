@@ -143,8 +143,6 @@
         .diet-btn-row{display:flex;gap:8px;margin-top:12px}
         .diet-btn-regen{flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:white;font-size:12px;cursor:pointer;color:var(--blue);font-weight:600}
         .diet-btn-regen:active{background:#f0f4ff}
-        .diet-btn-update{flex:1;padding:10px;border:1px solid var(--green);border-radius:8px;background:white;font-size:12px;cursor:pointer;color:var(--green);font-weight:600}
-        .diet-btn-update:active{background:var(--green-light)}
         .diet-btn-save{flex:1;padding:10px;border:none;border-radius:8px;background:var(--green);color:white;font-size:12px;cursor:pointer;font-weight:600}
         .diet-btn-save:disabled{background:#90a4ae;cursor:not-allowed}
         .diet-toggle{font-size:10px;color:var(--muted);margin-left:auto;transition:transform 0.3s}
@@ -261,7 +259,7 @@
                     <div id="midDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="midDietSummaryText"></div>
                         <div id="midDietMeals"></div>
-                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('mid')">↩ 預設</button><button class="diet-btn-update" onclick="recalcDietProtein('mid')">🔄 更新</button></div>
+                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('mid')">↩ 預設</button></div>
                     </div>
                 </div>
                 <div class="diet-day-section">
@@ -269,7 +267,7 @@
                     <div id="highDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="highDietSummaryText"></div>
                         <div id="highDietMeals"></div>
-                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('high')">↩ 預設</button><button class="diet-btn-update" onclick="recalcDietProtein('high')">🔄 更新</button></div>
+                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('high')">↩ 預設</button></div>
                     </div>
                 </div>
                 <div class="diet-day-section">
@@ -277,7 +275,7 @@
                     <div id="lowDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="lowDietSummaryText"></div>
                         <div id="lowDietMeals"></div>
-                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('low')">↩ 預設</button><button class="diet-btn-update" onclick="recalcDietProtein('low')">🔄 更新</button></div>
+                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('low')">↩ 預設</button></div>
                     </div>
                 </div>
                 <div class="diet-day-section">
@@ -285,7 +283,7 @@
                     <div id="fastDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="fastDietSummaryText"></div>
                         <div id="fastDietMeals"></div>
-                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('fast')">↩ 預設</button><button class="diet-btn-update" onclick="recalcDietProtein('fast')">🔄 更新</button></div>
+                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('fast')">↩ 預設</button></div>
                     </div>
                 </div>
             </div>
