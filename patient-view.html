@@ -1512,6 +1512,8 @@
         cycleSchedule.forEach(function(t) { if (usedTypes.indexOf(t) === -1) usedTypes.push(t); });
         // 收集各碳日餐食
         var dayPlans = {};
+        var DAY_ORDER = ['mid','high','low','fast'];
+        usedTypes.sort(function(a,b){ return DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b); });
         usedTypes.forEach(function(p) {
             var plan = getDietPlanData(p);
             var meals = [];
@@ -1520,16 +1522,24 @@
                 var allDash = row.every(function(v){ return v === '-' || v === '0' || v === 0 || v === ''; });
                 if (allDash) continue;
                 var parts = [];
+                var seps = [];
                 for (var f = 0; f < DIET_COLS.length; f++) {
                     var val = row[f];
                     if (val === '-' || val === '0' || val === 0 || val === '') continue;
                     var col = DIET_COLS[f];
                     var unit = col.unit.replace(/[()]/g, '');
+                    var sep = col.sep || '→';
+                    if (parts.length > 0) seps.push(sep);
                     if (col.type === 'number') { parts.push(col.label + val + unit); }
                     else if (val === '1') { parts.push(col.label + (unit ? '1'+unit : '')); }
                     else { parts.push(col.label + val); }
                 }
-                meals.push({ name: MEAL_NAMES[m], icon: MEAL_ICONS[m], items: parts.join(' → ') });
+                var itemStr = '';
+                for (var pi = 0; pi < parts.length; pi++) {
+                    if (pi > 0) itemStr += ' ' + seps[pi-1] + ' ';
+                    itemStr += parts[pi];
+                }
+                meals.push({ name: MEAL_NAMES[m], icon: MEAL_ICONS[m], items: itemStr });
             }
             // 計算該碳日代餐 & Q寶
             var mr = 0, qb = 0;
@@ -1622,29 +1632,26 @@
             html += '</div></div>';
         }
 
-        // 各碳日餐食
+        // 各碳日餐食（排序：中高低斷）
         var dayPlans = rec.dayPlans || {};
-        var dpKeys = Object.keys(dayPlans);
-        if (dpKeys.length > 0) {
+        var dayOrder = ['mid','high','low','fast'];
+        var dayEmojis = {high:'🔴', low:'🟢', mid:'🟡', fast:'⚪'};
+        var sortedDpKeys = dayOrder.filter(function(k){ return dayPlans[k]; });
+        sortedDpKeys.forEach(function(p) {
+            var dp = dayPlans[p];
+            var dotColor = dayColors[p] || '#888';
             html += '<div class="hx-section">';
-            html += '<div class="hx-section-title">🍽️ 各碳日計劃</div>';
-            dpKeys.forEach(function(p) {
-                var dp = dayPlans[p];
-                var dotColor = dayColors[p] || '#888';
-                html += '<div class="hx-day-block">';
-                html += '<div class="hx-day-label"><span class="hx-day-dot" style="background:' + dotColor + '"></span>' + esc(dayLabels[p] || p) + '</div>';
-                if (dp.meals && dp.meals.length > 0) {
-                    dp.meals.forEach(function(meal) {
-                        html += '<div class="hx-meal-row">';
-                        html += '<span class="hx-meal-name">' + meal.icon + meal.name + '</span>';
-                        html += '<span class="hx-meal-items">' + esc(meal.items) + '</span>';
-                        html += '</div>';
-                    });
-                }
-                html += '</div>';
-            });
+            html += '<div class="hx-day-label" style="margin-bottom:8px">' + (dayEmojis[p]||'●') + ' ' + esc(dayLabels[p] || p) + '</div>';
+            if (dp.meals && dp.meals.length > 0) {
+                dp.meals.forEach(function(meal) {
+                    html += '<div class="hx-meal-row">';
+                    html += '<span class="hx-meal-name">' + meal.icon + meal.name + '</span>';
+                    html += '<span class="hx-meal-items">' + esc(meal.items) + '</span>';
+                    html += '</div>';
+                });
+            }
             html += '</div>';
-        }
+        });
 
         // 醫師建議
         if (rec.note) {
