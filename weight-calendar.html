@@ -4,387 +4,259 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>居家體重紀錄｜金鶯減重</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         :root { --blue: #7B8FA1; --blue-light: #EDE8E0; --green: #8B9D83; --green-light: #E8EDE6; --red: #A0626B; --orange: #C4A882; --brown: #B8926A; --bg: #F5F3EF; --card: #FDFBF7; --text: #4A4A4A; --muted: #8B8B8B; --border: #E8E4DC; }
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
-        .header{background:linear-gradient(135deg, #7B8FA1, #6B7F91);color:white;padding:14px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0}
-        .header h1{font-size:16px;font-weight:700;flex:1}
-        .header-sub{font-size:11px;opacity:0.8}
-        .back-btn{background:rgba(255,255,255,0.2);border:none;color:white;padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
-        .back-btn:hover{background:rgba(255,255,255,0.3)}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
-        /* Month Nav */
-        .month-nav{display:flex;align-items:center;justify-content:center;gap:16px;padding:14px;background:white;border-bottom:1px solid var(--border)}
-        .month-nav button{width:36px;height:36px;border:1px solid var(--border);border-radius:50%;background:white;font-size:16px;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center}
+        /* ====== Top: Today card ====== */
+        .today-card{background:linear-gradient(135deg, #7B8FA1, #8B9D83);color:white;padding:20px 20px 18px;text-align:center}
+        .today-date{font-size:18px;font-weight:700;margin-bottom:6px}
+        .today-type-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px}
+        .today-type-badge{display:inline-flex;align-items:center;justify-content:center;padding:4px 16px;border-radius:20px;font-size:14px;font-weight:700}
+        .today-type-badge.t-high{background:rgba(248,215,218,0.9);color:#A0626B}
+        .today-type-badge.t-mid{background:rgba(255,243,205,0.9);color:#B8926A}
+        .today-type-badge.t-low{background:rgba(212,237,218,0.9);color:#6B8F71}
+        .today-type-badge.t-fast{background:rgba(226,227,229,0.9);color:#4A4A4A}
+        .today-input-row{display:flex;align-items:center;justify-content:center;gap:8px}
+        .today-label{font-size:13px;opacity:0.9}
+        .today-input{width:80px;padding:8px 6px;border:none;border-radius:8px;font-size:16px;font-weight:700;text-align:center;color:var(--red);outline:none;background:rgba(255,255,255,0.95)}
+        .today-input::placeholder{color:#ccc;font-weight:400;font-size:13px}
+        .today-unit{font-size:14px;font-weight:600;opacity:0.9}
+        .today-save{padding:8px 24px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;background:white;color:var(--green)}
+        .today-save:active{background:#f0f0f0}
+        .today-save:disabled{opacity:0.5;cursor:not-allowed}
+
+        /* ====== Collapsible sections ====== */
+        .section{margin:10px;background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.07);overflow:hidden}
+        .section-header{display:flex;align-items:center;padding:14px 16px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;gap:8px}
+        .section-header:active{background:#FDFBF7}
+        .section-icon{font-size:18px}
+        .section-title{flex:1;font-size:14px;font-weight:700;color:var(--text)}
+        .section-arrow{font-size:11px;color:var(--muted);transition:transform 0.25s ease}
+        .section.open .section-arrow{transform:rotate(180deg)}
+        .section-body{display:none;border-top:1px solid var(--border);padding:10px}
+        .section.open .section-body{display:block}
+
+        /* ====== Calendar ====== */
+        .month-nav{display:flex;align-items:center;justify-content:center;gap:14px;padding:8px 0 6px}
+        .month-nav button{width:32px;height:32px;border:1px solid var(--border);border-radius:50%;background:white;font-size:14px;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center}
         .month-nav button:active{background:var(--bg)}
-        .month-title{font-size:17px;font-weight:700;min-width:120px;text-align:center}
-
-        /* Calendar Grid */
-        .cal-wrap{flex:1;overflow-y:auto;padding:8px}
+        .month-title{font-size:15px;font-weight:700;min-width:100px;text-align:center}
+        .legend{display:flex;justify-content:center;gap:10px;padding:4px 0 8px;flex-wrap:wrap}
+        .legend-item{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)}
+        .legend-dot{width:14px;height:14px;border-radius:3px;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center}
         .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-        .cal-weekday{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:6px 0}
+        .cal-weekday{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0}
         .cal-weekday.sat{color:var(--blue)}
         .cal-weekday.sun{color:var(--red)}
-
-        .cal-cell{background:white;border-radius:8px;padding:6px 2px;min-height:88px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;border:1px solid transparent;transition:all 0.15s}
+        .cal-cell{background:var(--bg);border-radius:8px;padding:6px 2px;min-height:80px;display:flex;flex-direction:column;align-items:center;gap:3px;border:1px solid transparent;transition:all 0.15s}
         .cal-cell.today{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
         .cal-cell.empty{background:transparent;border:none;min-height:0}
-        .cal-cell.other-month{opacity:0.3}
-
         .cal-date{font-size:12px;font-weight:600;color:var(--text);line-height:1}
         .cal-cell.today .cal-date{color:var(--blue);font-weight:800}
         .cal-cell.sat .cal-date{color:var(--blue)}
         .cal-cell.sun .cal-date{color:var(--red)}
-
-        /* Day type badge */
         .cal-type{width:26px;height:18px;border-radius:4px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s;user-select:none;-webkit-tap-highlight-color:transparent}
         .cal-type:active{transform:scale(0.85)}
         .cal-type.t-high{background:#F8D7DA;color:#A0626B}
         .cal-type.t-low{background:#D4EDDA;color:#6B8F71}
         .cal-type.t-mid{background:#FFF3CD;color:#B8926A}
         .cal-type.t-fast{background:#E2E3E5;color:#4A4A4A}
-        .cal-type.t-none{background:transparent;color:transparent;cursor:default}
+        .cal-weight-display{font-size:11px;font-weight:700;color:var(--red)}
+        .cal-weight-input{width:90%;max-width:44px;border:none;border-bottom:1px dashed var(--border);background:transparent;text-align:center;font-size:11px;font-weight:700;color:var(--red);padding:1px 0;outline:none;font-family:inherit}
+        .cal-weight-input::placeholder{color:#ddd;font-weight:400;font-size:10px}
+        .cal-weight-input:focus{border-bottom-color:var(--blue);border-bottom-style:solid}
 
-        /* Weight input */
-        .cal-weight{width:90%;max-width:48px;border:none;border-bottom:1px dashed var(--border);background:transparent;text-align:center;font-size:11px;font-weight:700;color:var(--red);padding:1px 0;outline:none;font-family:inherit}
-        .cal-weight::placeholder{color:#ccc;font-weight:400;font-size:10px}
-        .cal-weight:focus{border-bottom-color:var(--blue);border-bottom-style:solid}
-
-        /* Weight unit hint */
-        .cal-unit{font-size:8px;color:var(--muted);line-height:1;margin-top:-1px}
-
-        /* Stats bar */
-        .stats-bar{background:white;border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;flex-shrink:0}
+        /* ====== Stats row ====== */
+        .stats-row{display:flex;gap:6px;padding:8px 0 4px}
         .stat-item{flex:1;text-align:center;background:var(--bg);border-radius:8px;padding:8px 4px}
-        .stat-value{font-size:16px;font-weight:700;color:var(--red)}
+        .stat-value{font-size:15px;font-weight:700;color:var(--red)}
         .stat-label{font-size:10px;color:var(--muted);margin-top:2px}
 
-        /* Save button */
-        .save-bar{background:white;border-top:1px solid var(--border);padding:10px 16px;flex-shrink:0}
-        .save-btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;background:var(--green);color:white;display:flex;align-items:center;justify-content:center;gap:6px}
-        .save-btn:active{background:#7A8E74}
-        .save-btn:disabled{background:#aaa;cursor:not-allowed}
+        /* ====== Chart ====== */
+        .chart-wrap{position:relative;height:200px;padding:8px 0}
 
         /* Loading */
-        .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:50vh;gap:14px}
+        .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:40vh;gap:14px}
         .spinner{width:40px;height:40px;border:4px solid #E8E4DC;border-top-color:var(--blue);border-radius:50%;animation:spin .9s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
-
-        /* Legend */
-        .legend{display:flex;justify-content:center;gap:12px;padding:8px;flex-wrap:wrap}
-        .legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)}
-        .legend-dot{width:14px;height:14px;border-radius:3px;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center}
     </style>
 </head>
 <body>
 
-<div class="header">
-    <a class="back-btn" onclick="history.back()">← 返回</a>
-    <div>
-        <h1>居家體重紀錄</h1>
-        <div class="header-sub" id="patientInfo"></div>
+<!-- ====== 今日輸入區 ====== -->
+<div class="today-card" id="todayCard">
+    <div class="today-date" id="todayDate"></div>
+    <div class="today-type-row">
+        <div class="today-type-badge" id="todayTypeBadge"></div>
+    </div>
+    <div class="today-input-row">
+        <span class="today-label">請輸入今早體重：</span>
+        <input class="today-input" id="todayWeightInput" type="text" inputmode="decimal" placeholder="--.-">
+        <span class="today-unit">kg</span>
+        <button class="today-save" id="todaySaveBtn" onclick="saveTodayWeight()">儲存</button>
     </div>
 </div>
 
-<div class="month-nav">
-    <button onclick="changeMonth(-1)">◀</button>
-    <div class="month-title" id="monthTitle"></div>
-    <button onclick="changeMonth(1)">▶</button>
+<!-- ====== 日曆（收折） ====== -->
+<div class="section open" id="calSection">
+    <div class="section-header" onclick="toggleSection('calSection')">
+        <span class="section-icon">📅</span>
+        <span class="section-title">月曆紀錄</span>
+        <span class="section-arrow">▼</span>
+    </div>
+    <div class="section-body">
+        <div class="month-nav">
+            <button onclick="changeMonth(-1)">◀</button>
+            <div class="month-title" id="monthTitle"></div>
+            <button onclick="changeMonth(1)">▶</button>
+        </div>
+        <div class="legend">
+            <div class="legend-item"><div class="legend-dot t-high">高</div>高碳日</div>
+            <div class="legend-item"><div class="legend-dot t-mid">中</div>中碳日</div>
+            <div class="legend-item"><div class="legend-dot t-low">低</div>低碳日</div>
+            <div class="legend-item"><div class="legend-dot t-fast">斷</div>斷食日</div>
+        </div>
+        <div id="calWrap"></div>
+        <div class="stats-row" id="statsRow" style="display:none">
+            <div class="stat-item"><div class="stat-value" id="statStart">-</div><div class="stat-label">月初體重</div></div>
+            <div class="stat-item"><div class="stat-value" id="statLatest">-</div><div class="stat-label">最新體重</div></div>
+            <div class="stat-item"><div class="stat-value" id="statDiff">-</div><div class="stat-label">本月變化</div></div>
+            <div class="stat-item"><div class="stat-value" id="statCount">0</div><div class="stat-label">紀錄天數</div></div>
+        </div>
+    </div>
 </div>
 
-<div class="legend">
-    <div class="legend-item"><div class="legend-dot t-high">高</div>高碳日</div>
-    <div class="legend-item"><div class="legend-dot t-mid">中</div>中碳日</div>
-    <div class="legend-item"><div class="legend-dot t-low">低</div>低碳日</div>
-    <div class="legend-item"><div class="legend-dot t-fast">斷</div>斷食日</div>
+<!-- ====== 體重趨勢圖（收折） ====== -->
+<div class="section open" id="chartSection">
+    <div class="section-header" onclick="toggleSection('chartSection')">
+        <span class="section-icon">📈</span>
+        <span class="section-title">體重趨勢</span>
+        <span class="section-arrow">▼</span>
+    </div>
+    <div class="section-body">
+        <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
+    </div>
 </div>
 
-<div class="cal-wrap" id="calWrap">
-    <div class="loading"><div class="spinner"></div><span style="color:#8B8B8B;font-size:13px">載入中...</span></div>
-</div>
-
-<div class="stats-bar" id="statsBar" style="display:none">
-    <div class="stat-item"><div class="stat-value" id="statStart">-</div><div class="stat-label">月初體重</div></div>
-    <div class="stat-item"><div class="stat-value" id="statLatest">-</div><div class="stat-label">最新體重</div></div>
-    <div class="stat-item"><div class="stat-value" id="statDiff">-</div><div class="stat-label">本月變化</div></div>
-    <div class="stat-item"><div class="stat-value" id="statCount">0</div><div class="stat-label">紀錄天數</div></div>
-</div>
-
-<div class="save-bar">
-    <button class="save-btn" id="saveBtn" onclick="saveWeights()">💾 儲存體重紀錄</button>
+<div id="loadingOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px">
+    <div class="spinner"></div>
+    <span style="color:#8B8B8B;font-size:13px">載入中...</span>
 </div>
 
 <script>
     var MEALS_GAS = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
     var N8N = 'https://huangcs.app.n8n.cloud/webhook';
 
-    // 碳水類型
     var CYCLE_OPTS = [
-        {key:'high', label:'高', cls:'t-high'},
-        {key:'mid',  label:'中', cls:'t-mid'},
-        {key:'low',  label:'低', cls:'t-low'},
-        {key:'fast', label:'斷', cls:'t-fast'}
+        {key:'high', label:'高碳日', short:'高', cls:'t-high'},
+        {key:'mid',  label:'中碳日', short:'中', cls:'t-mid'},
+        {key:'low',  label:'低碳日', short:'低', cls:'t-low'},
+        {key:'fast', label:'斷食日', short:'斷', cls:'t-fast'}
     ];
-    var CYCLE_LABELS = {}; CYCLE_OPTS.forEach(function(o){ CYCLE_LABELS[o.key] = o.label; });
-    var CYCLE_CLS = {}; CYCLE_OPTS.forEach(function(o){ CYCLE_CLS[o.key] = o.cls; });
 
-    // State
-    var currentYear, currentMonth; // 0-indexed month
+    var currentYear, currentMonth;
     var patientSn = '', patientUid = '';
-    var cycleSchedule = ['high','high','mid','mid','high','mid','mid']; // 六日一二三四五
-    var visitDate = null; // Date object of last consultation
-    var weightData = {}; // { 'YYYY-MM-DD': { weight: number, type: string } }
-    var dayTypeOverrides = {}; // { 'YYYY-MM-DD': 'high'|'mid'|'low'|'fast' }
-    var visitRecords = []; // all visit records with dates and schedules
+    var cycleSchedule = ['high','high','mid','mid','high','mid','mid'];
+    var visitDate = null;
+    var weightData = {};
+    var dayTypeOverrides = {};
+    var visitRecords = [];
+    var chartInstance = null;
 
-    // Init
+    // ====== Init ======
     (function init() {
         var params = new URLSearchParams(location.search);
         patientSn = params.get('id') || '';
         patientUid = params.get('uid') || '';
-
         var now = new Date();
         currentYear = now.getFullYear();
         currentMonth = now.getMonth();
-
         loadData();
     })();
 
     function loadData() {
-        // Load diet plan (schedule) + visit history
         var loaded = 0, total = 2;
         function check() { loaded++; if (loaded >= total) onDataReady(); }
 
-        // 1. Load current diet plan (for schedule)
         if (patientSn) {
             fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn))
                 .then(function(r){ return r.json(); })
                 .then(function(data){
                     if (data.schedule && data.schedule.length === 7) cycleSchedule = data.schedule;
                     check();
-                })
-                .catch(check);
+                }).catch(check);
         } else { check(); }
 
-        // 2. Load visit history (for dates + past schedules)
         if (patientSn) {
             fetch(MEALS_GAS + '?dietHistory=' + encodeURIComponent(patientSn))
                 .then(function(r){ return r.json(); })
                 .then(function(data){
                     if (Array.isArray(data) && data.length > 0) {
                         visitRecords = data.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
-                        // 最近一次看診日期
                         var latest = visitRecords[visitRecords.length - 1];
                         if (latest && latest.date) {
                             var p = latest.date.split('-');
                             visitDate = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
-                            // 用最近一次的 schedule
-                            if (latest.schedule && latest.schedule.length === 7) {
-                                cycleSchedule = latest.schedule;
-                            }
-                        }
-                        // 載入患者資訊
-                        if (latest) {
-                            var info = document.getElementById('patientInfo');
-                            if (info) info.textContent = patientSn;
+                            if (latest.schedule && latest.schedule.length === 7) cycleSchedule = latest.schedule;
                         }
                     }
                     check();
-                })
-                .catch(check);
+                }).catch(check);
         } else { check(); }
 
-        // 3. Load saved weight data
         if (patientSn) {
             fetch(N8N + '/get-weight?sn=' + encodeURIComponent(patientSn))
                 .then(function(r){ return r.json(); })
                 .then(function(data){
                     if (data && typeof data === 'object') {
-                        // { '2026-03-15': { weight: 75.6, type: 'high' }, ... }
                         if (data.weights) weightData = data.weights;
                         if (data.overrides) dayTypeOverrides = data.overrides;
                     }
-                })
-                .catch(function(){});
+                }).catch(function(){});
         }
     }
 
     function onDataReady() {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        renderTodayCard();
         renderCalendar();
-        document.getElementById('statsBar').style.display = 'flex';
+        renderChart();
+        document.getElementById('statsRow').style.display = 'flex';
     }
 
-    // ====== 計算某日期的碳日類型 ======
-    function getDayType(dateObj) {
-        var dateStr = formatDate(dateObj);
+    // ====== Today Card ======
+    function renderTodayCard() {
+        var now = new Date();
+        var todayStr = formatDate(now);
+        var dayNames = ['日','一','二','三','四','五','六'];
+        var dateText = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日（' + dayNames[now.getDay()] + '）';
+        document.getElementById('todayDate').textContent = dateText;
 
-        // 手動覆蓋
-        if (dayTypeOverrides[dateStr]) return dayTypeOverrides[dateStr];
+        var dayType = getDayType(now);
+        var opt = CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || CYCLE_OPTS[1];
+        var badge = document.getElementById('todayTypeBadge');
+        badge.textContent = opt.label;
+        badge.className = 'today-type-badge ' + opt.cls;
 
-        // 找到該日期對應的看診紀錄（最近一次在此日期之前或當天的看診）
-        var applicableVisit = null;
-        for (var i = visitRecords.length - 1; i >= 0; i--) {
-            var vd = visitRecords[i].date;
-            if (vd && vd <= dateStr) { applicableVisit = visitRecords[i]; break; }
-        }
-
-        if (!applicableVisit || !applicableVisit.date) {
-            // 沒有看診紀錄，用預設 cycleSchedule
-            return getTypeFromSchedule(dateObj, visitDate || new Date(), cycleSchedule);
-        }
-
-        var vParts = applicableVisit.date.split('-');
-        var vDate = new Date(parseInt(vParts[0]), parseInt(vParts[1])-1, parseInt(vParts[2]));
-        var sch = (applicableVisit.schedule && applicableVisit.schedule.length === 7) ? applicableVisit.schedule : cycleSchedule;
-
-        return getTypeFromSchedule(dateObj, vDate, sch);
-    }
-
-    function getTypeFromSchedule(dateObj, startDate, schedule) {
-        // schedule 索引: 0=六, 1=日, 2=一, 3=二, 4=三, 5=四, 6=五
-        // JS getDay(): 0=日, 1=一, 2=二, 3=三, 4=四, 5=五, 6=六
-        // 從看診隔天開始排程
-        var jsDay = dateObj.getDay(); // 0=Sun...6=Sat
-        // 轉換為 schedule 索引: 六=0 → jsDay 6, 日=1 → jsDay 0, 一=2 → jsDay 1 ...
-        var schIdx;
-        if (jsDay === 0) schIdx = 1;      // 日
-        else if (jsDay === 6) schIdx = 0;  // 六
-        else schIdx = jsDay + 1;           // 一=2, 二=3, ...
-
-        return schedule[schIdx] || 'mid';
-    }
-
-    // ====== Render Calendar ======
-    function renderCalendar() {
-        var wrap = document.getElementById('calWrap');
-        var titleEl = document.getElementById('monthTitle');
-        titleEl.textContent = currentYear + '年 ' + (currentMonth + 1) + '月';
-
-        var firstDay = new Date(currentYear, currentMonth, 1);
-        var lastDay = new Date(currentYear, currentMonth + 1, 0);
-        var totalDays = lastDay.getDate();
-
-        // JS getDay: 0=Sun, we want to start from Mon
-        // 一二三四五六日
-        var startDow = firstDay.getDay(); // 0=Sun
-        // Convert to Mon-start: Mon=0, Tue=1, ..., Sun=6
-        var startOffset = (startDow === 0) ? 6 : startDow - 1;
-
-        var today = new Date();
-        var todayStr = formatDate(today);
-
-        var html = '<div class="cal-grid">';
-
-        // Weekday headers: 一二三四五六日
-        var weekdays = ['一','二','三','四','五','六','日'];
-        var weekCls = ['','','','','','sat','sun'];
-        for (var w = 0; w < 7; w++) {
-            html += '<div class="cal-weekday ' + weekCls[w] + '">' + weekdays[w] + '</div>';
-        }
-
-        // Empty cells before 1st
-        for (var e = 0; e < startOffset; e++) {
-            html += '<div class="cal-cell empty"></div>';
-        }
-
-        // Day cells
-        for (var d = 1; d <= totalDays; d++) {
-            var dateObj = new Date(currentYear, currentMonth, d);
-            var dateStr = formatDate(dateObj);
-            var isToday = dateStr === todayStr;
-            var dow = dateObj.getDay();
-            var isSat = dow === 6, isSun = dow === 0;
-
-            var dayType = getDayType(dateObj);
-            var opt = CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || CYCLE_OPTS[1];
-
-            var savedWeight = weightData[dateStr] ? weightData[dateStr].weight : '';
-
-            var cellCls = 'cal-cell' + (isToday ? ' today' : '') + (isSat ? ' sat' : '') + (isSun ? ' sun' : '');
-            html += '<div class="' + cellCls + '">';
-            html += '<div class="cal-date">' + d + '</div>';
-            html += '<div class="cal-type ' + opt.cls + '" onclick="toggleDayType(\'' + dateStr + '\')" title="點擊切換碳日類型">' + opt.label + '</div>';
-            html += '<input class="cal-weight" type="text" inputmode="decimal" placeholder="kg" data-date="' + dateStr + '" value="' + (savedWeight || '') + '" onchange="onWeightChange(this)" onfocus="this.select()">';
-            html += '</div>';
-        }
-
-        // Trailing empty cells
-        var totalCells = startOffset + totalDays;
-        var trailing = (7 - (totalCells % 7)) % 7;
-        for (var t = 0; t < trailing; t++) {
-            html += '<div class="cal-cell empty"></div>';
-        }
-
-        html += '</div>';
-        wrap.innerHTML = html;
-
-        updateStats();
-    }
-
-    // ====== Toggle Day Type ======
-    function toggleDayType(dateStr) {
-        var current = dayTypeOverrides[dateStr] || getDayTypeRaw(dateStr);
-        var idx = CYCLE_OPTS.findIndex(function(o){ return o.key === current; });
-        idx = (idx + 1) % CYCLE_OPTS.length;
-        dayTypeOverrides[dateStr] = CYCLE_OPTS[idx].key;
-        renderCalendar();
-    }
-
-    function getDayTypeRaw(dateStr) {
-        var p = dateStr.split('-');
-        var dateObj = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
-        // Temporarily remove override to get calculated type
-        var saved = dayTypeOverrides[dateStr];
-        delete dayTypeOverrides[dateStr];
-        var type = getDayType(dateObj);
-        if (saved) dayTypeOverrides[dateStr] = saved;
-        return type;
-    }
-
-    // ====== Weight Input ======
-    function onWeightChange(el) {
-        var dateStr = el.dataset.date;
-        var val = parseFloat(el.value);
-        if (!dateStr) return;
-        if (isNaN(val) || val <= 0) {
-            delete weightData[dateStr];
-            el.value = '';
-        } else {
-            if (!weightData[dateStr]) weightData[dateStr] = {};
-            weightData[dateStr].weight = val;
-        }
-        updateStats();
-    }
-
-    // ====== Stats ======
-    function updateStats() {
-        var monthKeys = Object.keys(weightData).filter(function(k) {
-            return k.startsWith(currentYear + '-' + String(currentMonth + 1).padStart(2, '0'));
-        }).sort();
-
-        var count = monthKeys.length;
-        var first = count > 0 ? weightData[monthKeys[0]].weight : null;
-        var last = count > 0 ? weightData[monthKeys[monthKeys.length - 1]].weight : null;
-
-        document.getElementById('statCount').textContent = count;
-        document.getElementById('statStart').textContent = first ? first.toFixed(1) : '-';
-        document.getElementById('statLatest').textContent = last ? last.toFixed(1) : '-';
-
-        if (first && last) {
-            var diff = last - first;
-            var sign = diff > 0 ? '+' : '';
-            document.getElementById('statDiff').textContent = sign + diff.toFixed(1);
-            document.getElementById('statDiff').style.color = diff < 0 ? '#6B8F71' : diff > 0 ? '#A0626B' : '#8B8B8B';
-        } else {
-            document.getElementById('statDiff').textContent = '-';
-            document.getElementById('statDiff').style.color = '';
+        // Pre-fill today's weight if exists
+        if (weightData[todayStr] && weightData[todayStr].weight) {
+            document.getElementById('todayWeightInput').value = weightData[todayStr].weight;
         }
     }
 
-    // ====== Save ======
-    function saveWeights() {
-        var btn = document.getElementById('saveBtn');
+    function saveTodayWeight() {
+        var input = document.getElementById('todayWeightInput');
+        var val = parseFloat(input.value);
+        if (isNaN(val) || val <= 0) { alert('請輸入有效的體重'); return; }
+
+        var todayStr = formatDate(new Date());
+        if (!weightData[todayStr]) weightData[todayStr] = {};
+        weightData[todayStr].weight = val;
+
+        var btn = document.getElementById('todaySaveBtn');
         btn.disabled = true;
         btn.textContent = '儲存中...';
 
@@ -405,21 +277,173 @@
             btn.disabled = false;
             if (res.ok || res.success) {
                 btn.textContent = '已儲存 ✓';
-                btn.style.background = '#6B8F71';
-                setTimeout(function(){ btn.textContent = '💾 儲存體重紀錄'; btn.style.background = ''; }, 2000);
+                btn.style.color = '#6B8F71';
+                setTimeout(function(){ btn.textContent = '儲存'; btn.style.color = ''; }, 2000);
             } else {
-                btn.textContent = '💾 儲存體重紀錄';
+                btn.textContent = '儲存';
                 alert('儲存失敗: ' + (res.error || ''));
             }
+            renderCalendar();
+            renderChart();
         })
         .catch(function(err){
             btn.disabled = false;
-            btn.textContent = '💾 儲存體重紀錄';
+            btn.textContent = '儲存';
             alert('儲存失敗: ' + err.message);
         });
     }
 
-    // ====== Month Navigation ======
+    // ====== Section Toggle ======
+    function toggleSection(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.toggle('open');
+    }
+
+    // ====== Day Type Calculation ======
+    function getDayType(dateObj) {
+        var dateStr = formatDate(dateObj);
+        if (dayTypeOverrides[dateStr]) return dayTypeOverrides[dateStr];
+        var applicableVisit = null;
+        for (var i = visitRecords.length - 1; i >= 0; i--) {
+            var vd = visitRecords[i].date;
+            if (vd && vd <= dateStr) { applicableVisit = visitRecords[i]; break; }
+        }
+        if (!applicableVisit || !applicableVisit.date) {
+            return getTypeFromSchedule(dateObj, visitDate || new Date(), cycleSchedule);
+        }
+        var vParts = applicableVisit.date.split('-');
+        var vDate = new Date(parseInt(vParts[0]), parseInt(vParts[1])-1, parseInt(vParts[2]));
+        var sch = (applicableVisit.schedule && applicableVisit.schedule.length === 7) ? applicableVisit.schedule : cycleSchedule;
+        return getTypeFromSchedule(dateObj, vDate, sch);
+    }
+
+    function getTypeFromSchedule(dateObj, startDate, schedule) {
+        var jsDay = dateObj.getDay();
+        var schIdx;
+        if (jsDay === 0) schIdx = 1;
+        else if (jsDay === 6) schIdx = 0;
+        else schIdx = jsDay + 1;
+        return schedule[schIdx] || 'mid';
+    }
+
+    // ====== Calendar ======
+    function renderCalendar() {
+        var wrap = document.getElementById('calWrap');
+        var titleEl = document.getElementById('monthTitle');
+        titleEl.textContent = currentYear + '年 ' + (currentMonth + 1) + '月';
+
+        var firstDay = new Date(currentYear, currentMonth, 1);
+        var lastDay = new Date(currentYear, currentMonth + 1, 0);
+        var totalDays = lastDay.getDate();
+        var startDow = firstDay.getDay();
+        var startOffset = (startDow === 0) ? 6 : startDow - 1;
+        var today = new Date();
+        var todayStr = formatDate(today);
+
+        var html = '<div class="cal-grid">';
+        var weekdays = ['一','二','三','四','五','六','日'];
+        var weekCls = ['','','','','','sat','sun'];
+        for (var w = 0; w < 7; w++) {
+            html += '<div class="cal-weekday ' + weekCls[w] + '">' + weekdays[w] + '</div>';
+        }
+        for (var e = 0; e < startOffset; e++) {
+            html += '<div class="cal-cell empty"></div>';
+        }
+        for (var d = 1; d <= totalDays; d++) {
+            var dateObj = new Date(currentYear, currentMonth, d);
+            var dateStr = formatDate(dateObj);
+            var isToday = dateStr === todayStr;
+            var dow = dateObj.getDay();
+            var isSat = dow === 6, isSun = dow === 0;
+            var dayType = getDayType(dateObj);
+            var opt = CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || CYCLE_OPTS[1];
+            var savedWeight = weightData[dateStr] ? weightData[dateStr].weight : '';
+
+            var cellCls = 'cal-cell' + (isToday ? ' today' : '') + (isSat ? ' sat' : '') + (isSun ? ' sun' : '');
+            html += '<div class="' + cellCls + '">';
+            html += '<div class="cal-date">' + d + '</div>';
+            html += '<div class="cal-type ' + opt.cls + '" onclick="toggleDayType(\'' + dateStr + '\')">' + opt.short + '</div>';
+            if (savedWeight) {
+                html += '<div class="cal-weight-display">' + savedWeight + '</div>';
+            } else {
+                html += '<input class="cal-weight-input" type="text" inputmode="decimal" placeholder="kg" data-date="' + dateStr + '" onchange="onCalWeightChange(this)" onfocus="this.select()">';
+            }
+            html += '</div>';
+        }
+        var totalCells = startOffset + totalDays;
+        var trailing = (7 - (totalCells % 7)) % 7;
+        for (var t = 0; t < trailing; t++) {
+            html += '<div class="cal-cell empty"></div>';
+        }
+        html += '</div>';
+        wrap.innerHTML = html;
+        updateStats();
+    }
+
+    function toggleDayType(dateStr) {
+        var current = dayTypeOverrides[dateStr];
+        if (!current) {
+            var p = dateStr.split('-');
+            var dateObj = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+            current = getDayType(dateObj);
+        }
+        var idx = CYCLE_OPTS.findIndex(function(o){ return o.key === current; });
+        idx = (idx + 1) % CYCLE_OPTS.length;
+        dayTypeOverrides[dateStr] = CYCLE_OPTS[idx].key;
+        renderCalendar();
+    }
+
+    function onCalWeightChange(el) {
+        var dateStr = el.dataset.date;
+        var val = parseFloat(el.value);
+        if (!dateStr) return;
+        if (isNaN(val) || val <= 0) {
+            delete weightData[dateStr];
+        } else {
+            if (!weightData[dateStr]) weightData[dateStr] = {};
+            weightData[dateStr].weight = val;
+        }
+        renderCalendar();
+        renderChart();
+        // Auto save
+        autoSave();
+    }
+
+    var autoSaveTimer = null;
+    function autoSave() {
+        if (autoSaveTimer) clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(function() {
+            fetch(N8N + '/save-weight', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ patientSn: patientSn, uid: patientUid, weights: weightData, overrides: dayTypeOverrides })
+            }).catch(function(){});
+        }, 2000);
+    }
+
+    function updateStats() {
+        var monthPrefix = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
+        var monthKeys = Object.keys(weightData).filter(function(k) {
+            return k.startsWith(monthPrefix);
+        }).sort();
+        var count = monthKeys.length;
+        var first = count > 0 ? weightData[monthKeys[0]].weight : null;
+        var last = count > 0 ? weightData[monthKeys[monthKeys.length - 1]].weight : null;
+
+        document.getElementById('statCount').textContent = count;
+        document.getElementById('statStart').textContent = first ? first.toFixed(1) : '-';
+        document.getElementById('statLatest').textContent = last ? last.toFixed(1) : '-';
+        if (first && last) {
+            var diff = last - first;
+            var sign = diff > 0 ? '+' : '';
+            document.getElementById('statDiff').textContent = sign + diff.toFixed(1);
+            document.getElementById('statDiff').style.color = diff < 0 ? '#6B8F71' : diff > 0 ? '#A0626B' : '#8B8B8B';
+        } else {
+            document.getElementById('statDiff').textContent = '-';
+            document.getElementById('statDiff').style.color = '';
+        }
+    }
+
     function changeMonth(delta) {
         currentMonth += delta;
         if (currentMonth > 11) { currentMonth = 0; currentYear++; }
@@ -427,15 +451,61 @@
         renderCalendar();
     }
 
+    // ====== Weight Chart ======
+    function renderChart() {
+        var allKeys = Object.keys(weightData).sort();
+        if (allKeys.length === 0) return;
+
+        // 最近30筆
+        var keys = allKeys.slice(-30);
+        var labels = keys.map(function(k) {
+            var p = k.split('-');
+            return parseInt(p[1]) + '/' + parseInt(p[2]);
+        });
+        var values = keys.map(function(k){ return weightData[k].weight; });
+
+        var canvas = document.getElementById('weightChart');
+        if (!canvas) return;
+
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '體重 (kg)',
+                    data: values,
+                    borderColor: '#7B8FA1',
+                    backgroundColor: 'rgba(123,143,161,0.1)',
+                    borderWidth: 2.5,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#7B8FA1',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) { return ctx.parsed.y + ' kg'; }
+                        }
+                    }
+                },
+                scales: {
+                    x: { ticks: { font: { size: 10 }, color: '#8B8B8B', maxRotation: 45 }, grid: { display: false } },
+                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B', callback: function(v){ return v + 'kg'; } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                }
+            }
+        });
+    }
+
     // ====== Helpers ======
     function formatDate(d) {
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-    }
-
-    function esc(s) {
-        var d = document.createElement('div');
-        d.appendChild(document.createTextNode(s));
-        return d.innerHTML;
     }
 </script>
 </body>
