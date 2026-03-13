@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的看診紀錄</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        :root { --blue:#1565C0; --green:#00897B; --bg:#f0f4f8; --card:#fff; --text:#1a202c; --muted:#718096; --border:#e2e8f0; }
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        .header{background:linear-gradient(135deg,#1565C0,#0D47A1);color:white;padding:16px 20px;text-align:center}
+        .header h1{font-size:17px;font-weight:700}
+        .header p{font-size:11px;opacity:0.8;margin-top:3px}
+        .content{padding:14px}
+        .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:14px}
+        .spinner{width:40px;height:40px;border:4px solid #e0e0e0;border-top-color:var(--blue);border-radius:50%;animation:spin .9s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .error-box{margin:24px;padding:18px;background:#fff3f3;border:1px solid #ffcdd2;border-radius:12px;text-align:center;color:#c62828}
+
+        /* 卡片：類似 Flex Message */
+        .hx-card{background:white;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,0.08);margin-bottom:12px;overflow:hidden}
+        .hx-header{display:flex;align-items:center;padding:14px 16px;cursor:pointer;user-select:none;gap:10px;-webkit-tap-highlight-color:transparent;transition:background 0.15s}
+        .hx-header:active{background:#f0f4ff}
+        .hx-date-icon{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#1565C0,#42A5F5);display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;flex-shrink:0}
+        .hx-date-month{font-size:9px;font-weight:600;line-height:1;opacity:0.85}
+        .hx-date-day{font-size:16px;font-weight:800;line-height:1.1}
+        .hx-header-info{flex:1;min-width:0}
+        .hx-header-title{font-size:14px;font-weight:700;color:var(--text)}
+        .hx-header-sub{font-size:11px;color:var(--muted);margin-top:2px}
+        .hx-arrow{font-size:11px;color:var(--muted);transition:transform 0.25s;flex-shrink:0}
+        .hx-card.open .hx-arrow{transform:rotate(180deg)}
+        .hx-body{display:none;border-top:1px solid var(--border);padding:0}
+        .hx-card.open .hx-body{display:block}
+        .hx-section{padding:12px 16px;border-bottom:1px solid #f0f0f0}
+        .hx-section:last-child{border-bottom:none}
+        .hx-section-title{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:8px}
+        .hx-schedule-row{display:flex;justify-content:center;gap:0}
+        .hx-sch-day{display:flex;flex-direction:column;align-items:center;flex:1}
+        .hx-sch-day-label{font-size:9px;color:var(--muted);margin-bottom:3px;font-weight:600}
+        .hx-sch-day-btn{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+        .hx-sch-day-btn.t-high{background:#F8D7DA;color:#c62828}
+        .hx-sch-day-btn.t-low{background:#D4EDDA;color:#2e7d32}
+        .hx-sch-day-btn.t-mid{background:#FFF3CD;color:#e65100}
+        .hx-sch-day-btn.t-fast{background:#E2E3E5;color:#424242}
+        .hx-packs-row{display:flex;gap:8px;flex-wrap:wrap}
+        .hx-pack-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
+        .hx-pack-mr{background:#e8f0fe;color:#1565C0}
+        .hx-pack-qb{background:#e0f2f1;color:#00897B}
+        .hx-day-label{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;margin-bottom:6px}
+        .hx-meal-row{display:flex;gap:6px;margin-bottom:4px;font-size:12px;line-height:1.5}
+        .hx-meal-row:last-child{margin-bottom:0}
+        .hx-meal-name{font-weight:600;color:var(--text);white-space:nowrap;min-width:42px}
+        .hx-meal-items{color:#555;word-break:break-all}
+        .hx-note{background:#FFF8E1;border-left:3px solid #F5A623;border-radius:0 8px 8px 0;padding:10px 12px;font-size:12px;color:#7B5800;line-height:1.6}
+        .hx-tip{background:#FFF8E1;border-left:3px solid #F5A623;border-radius:0 8px 8px 0;padding:10px 12px;font-size:12px;color:#7B5800;line-height:1.6;margin-top:8px}
+        .no-data{text-align:center;color:#aaa;padding:40px;font-size:14px}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📋 我的看診紀錄</h1>
+        <p id="headerSub">載入中...</p>
+    </div>
+    <div class="content" id="mainContent">
+        <div class="loading" id="loadingDiv">
+            <div class="spinner"></div>
+            <p style="color:#888;font-size:13px">載入資料中...</p>
+        </div>
+    </div>
+
+    <script>
+    var MEALS_GAS = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
+    var LIFF_ID = '2007171498-WnlxXpKa'; // 請替換成實際 LIFF ID
+    var lineUid = '';
+    var patientSn = '';
+
+    // ====== 初始化 LIFF ======
+    liff.init({ liffId: LIFF_ID })
+        .then(function() {
+            if (!liff.isLoggedIn()) {
+                liff.login();
+                return;
+            }
+            return liff.getProfile();
+        })
+        .then(function(profile) {
+            if (!profile) return;
+            lineUid = profile.userId;
+            document.getElementById('headerSub').textContent = profile.displayName + ' 的看診紀錄';
+            loadRecords();
+        })
+        .catch(function(err) {
+            // fallback：從 URL 參數讀取（開發用）
+            var params = new URLSearchParams(window.location.search);
+            lineUid = params.get('uid') || '';
+            patientSn = params.get('id') || '';
+            if (lineUid || patientSn) {
+                document.getElementById('headerSub').textContent = '看診紀錄';
+                loadRecords();
+            } else {
+                showError('無法取得使用者資料：' + err.message);
+            }
+        });
+
+    function loadRecords() {
+        var query = lineUid ? ('?userId=' + encodeURIComponent(lineUid) + '&dietHistory=1')
+                            : ('?dietHistory=' + encodeURIComponent(patientSn));
+        fetch(MEALS_GAS + query)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                document.getElementById('loadingDiv').style.display = 'none';
+                var records = data.records || [];
+                if (records.length === 0) {
+                    document.getElementById('mainContent').innerHTML = '<div class="no-data">尚無看診紀錄<br><span style="font-size:12px;color:#bbb">看診後醫師儲存飲食計劃，紀錄會自動出現在這裡</span></div>';
+                    return;
+                }
+                renderCards(records);
+            })
+            .catch(function(err) {
+                document.getElementById('loadingDiv').style.display = 'none';
+                showError('載入失敗：' + err.message);
+            });
+    }
+
+    function renderCards(records) {
+        records.sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); });
+        var html = '';
+        for (var i = 0; i < records.length; i++) {
+            html += buildCard(records[i], i);
+        }
+        document.getElementById('mainContent').innerHTML = html;
+    }
+
+    function buildCard(rec, idx) {
+        var d = rec.date || '';
+        var parts = d.split('-');
+        var month = parts.length > 1 ? parseInt(parts[1]) + '月' : '';
+        var day = parts.length > 2 ? parseInt(parts[2]) : '';
+        var yearStr = parts.length > 0 ? parts[0] + '年' : '';
+        var isOpen = idx === 0 ? ' open' : '';
+
+        var dayLabels = {high:'高碳日', low:'低碳日', mid:'中碳日', fast:'斷食日'};
+        var dayEmojis = {high:'🔴', low:'🟢', mid:'🟡', fast:'⚪'};
+        var dayColors = {high:'#c62828', low:'#2e7d32', mid:'#e65100', fast:'#424242'};
+        var cycleLabels = {high:'高', low:'低', mid:'中', fast:'斷'};
+        var cycleCls = {high:'t-high', low:'t-low', mid:'t-mid', fast:'t-fast'};
+        var DAYS = ['六','日','一','二','三','四','五'];
+
+        var schedule = rec.schedule || [];
+        var subParts = [];
+        if (rec.protein) subParts.push('蛋白質 ' + rec.protein + 'g');
+        if (rec.weeklyMr) subParts.push('代餐 ' + rec.weeklyMr + '包/週');
+        if (rec.weeklyQb) subParts.push('Q寶 ' + rec.weeklyQb + '包/週');
+
+        var html = '<div class="hx-card' + isOpen + '" id="hxCard' + idx + '">';
+
+        // Header
+        html += '<div class="hx-header" onclick="toggleCard(' + idx + ')">';
+        html += '<div class="hx-date-icon"><div class="hx-date-month">' + esc(month) + '</div><div class="hx-date-day">' + esc(String(day)) + '</div></div>';
+        html += '<div class="hx-header-info">';
+        html += '<div class="hx-header-title">📋 ' + esc(yearStr + month + day + '日') + ' 看診</div>';
+        html += '<div class="hx-header-sub">' + esc(subParts.join('　')) + '</div>';
+        html += '</div>';
+        html += '<span class="hx-arrow">▼</span>';
+        html += '</div>';
+
+        // Body
+        html += '<div class="hx-body">';
+
+        // 排程
+        if (schedule.length === 7) {
+            html += '<div class="hx-section">';
+            html += '<div class="hx-section-title">📅 碳水循環排程</div>';
+            html += '<div class="hx-schedule-row">';
+            for (var s = 0; s < 7; s++) {
+                var ck = schedule[s] || 'mid';
+                html += '<div class="hx-sch-day"><div class="hx-sch-day-label">' + DAYS[s] + '</div>';
+                html += '<div class="hx-sch-day-btn ' + (cycleCls[ck]||'t-mid') + '">' + (cycleLabels[ck]||'?') + '</div></div>';
+            }
+            html += '</div></div>';
+        }
+
+        // 代餐 & Q寶
+        if (rec.weeklyMr > 0 || rec.weeklyQb > 0) {
+            html += '<div class="hx-section">';
+            html += '<div class="hx-section-title">📦 每週所需</div>';
+            html += '<div class="hx-packs-row">';
+            if (rec.weeklyMr > 0) html += '<span class="hx-pack-badge hx-pack-mr">🥤 代餐 ' + rec.weeklyMr + '包</span>';
+            if (rec.weeklyQb > 0) html += '<span class="hx-pack-badge hx-pack-qb">💊 Q寶 ' + rec.weeklyQb + '包</span>';
+            html += '</div></div>';
+        }
+
+        // 各碳日（排序：中高低斷）
+        var dayPlans = rec.dayPlans || {};
+        var dayOrder = ['mid','high','low','fast'];
+        dayOrder.forEach(function(p) {
+            if (!dayPlans[p]) return;
+            var dp = dayPlans[p];
+            html += '<div class="hx-section">';
+            html += '<div class="hx-day-label">' + (dayEmojis[p]||'●') + ' ' + esc(dayLabels[p] || p) + '</div>';
+            if (dp.meals && dp.meals.length > 0) {
+                dp.meals.forEach(function(meal) {
+                    html += '<div class="hx-meal-row">';
+                    html += '<span class="hx-meal-name">' + meal.icon + meal.name + '</span>';
+                    html += '<span class="hx-meal-items">' + esc(meal.items) + '</span>';
+                    html += '</div>';
+                });
+            }
+            html += '</div>';
+        });
+
+        // 醫師建議
+        if (rec.note) {
+            html += '<div class="hx-section">';
+            html += '<div class="hx-section-title">💬 醫師建議</div>';
+            html += '<div class="hx-note">' + esc(rec.note) + '</div>';
+            html += '</div>';
+        }
+
+        // 飲食提醒（固定）
+        html += '<div class="hx-section">';
+        html += '<div class="hx-tip">⚠️ 排糖包與排油包務必在高碳日用掉，才會瘦更快！</div>';
+        html += '</div>';
+
+        html += '</div></div>';
+        return html;
+    }
+
+    function toggleCard(idx) {
+        var card = document.getElementById('hxCard' + idx);
+        if (card) card.classList.toggle('open');
+    }
+
+    function showError(msg) {
+        document.getElementById('loadingDiv').style.display = 'none';
+        document.getElementById('mainContent').innerHTML = '<div class="error-box">⚠️ ' + esc(msg) + '</div>';
+    }
+
+    function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    </script>
+</body>
+</html>
