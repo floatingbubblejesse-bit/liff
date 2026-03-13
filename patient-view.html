@@ -1183,9 +1183,9 @@
         var weeklyText = '📦 此計劃一週共需 ' + weeklyParts.join('、');
 
         var scheduleBubble = {
-            type:'bubble', size:'mega',
-            header:{type:'box',layout:'vertical',backgroundColor:'#1565C0',paddingAll:'16px',contents:[
-                {type:'text',text:'📋 ' + dateStr + ' 看診',color:'#ffffff',weight:'bold',size:'lg'}
+            type:'bubble', size:'giga',
+            header:{type:'box',layout:'vertical',backgroundColor:'#1565C0',paddingAll:'20px',contents:[
+                {type:'text',text:'📋 ' + dateStr + ' 看診',color:'#ffffff',weight:'bold',size:'xl'}
             ]},
             body:{type:'box',layout:'vertical',spacing:'md',paddingAll:'16px',contents:[
                 {type:'text',text:'📅 碳水循環排程',weight:'bold',size:'md',color:'#333333'},
@@ -1253,7 +1253,7 @@
             mealContents.forEach(function(c){ bodyContents.push(c); });
 
             dayBubbles.push({
-                type:'bubble', size:'mega',
+                type:'bubble', size:'giga',
                 header:{type:'box',layout:'horizontal',backgroundColor:dayBgColors[p],paddingAll:'14px',contents:[
                     {type:'text',text:dayEmojis[p]+' '+dayLabels[p],weight:'bold',size:'lg',color:dayColors[p],flex:1},
                 ]},
