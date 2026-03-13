@@ -6,24 +6,24 @@
     <title>我的看診紀錄</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        :root { --blue:#1565C0; --green:#00897B; --bg:#f0f4f8; --card:#fff; --text:#1a202c; --muted:#718096; --border:#e2e8f0; }
+        :root { --primary:#7B8FA1; --accent:#8B9D83; --warm:#C4A882; --brown:#B8926A; --bg:#F5F3EF; --card:#FDFBF7; --text:#4A4A4A; --muted:#8B8B8B; --border:#E8E4DC; }
         *{box-sizing:border-box;margin:0;padding:0}
         body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-        .header{background:linear-gradient(135deg,#1565C0,#0D47A1);color:white;padding:16px 20px;text-align:center}
-        .header h1{font-size:17px;font-weight:700}
-        .header p{font-size:11px;opacity:0.8;margin-top:3px}
+        .header{background:linear-gradient(135deg,#7B8FA1,#6B7F91);color:white;padding:18px 20px;text-align:center}
+        .header h1{font-size:17px;font-weight:700;letter-spacing:1px}
+        .header p{font-size:11px;opacity:0.85;margin-top:3px}
         .content{padding:14px}
         .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:14px}
-        .spinner{width:40px;height:40px;border:4px solid #e0e0e0;border-top-color:var(--blue);border-radius:50%;animation:spin .9s linear infinite}
+        .spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .9s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
-        .error-box{margin:24px;padding:18px;background:#fff3f3;border:1px solid #ffcdd2;border-radius:12px;text-align:center;color:#c62828}
+        .error-box{margin:24px;padding:18px;background:#FFF3F3;border:1px solid #E8C4C4;border-radius:12px;text-align:center;color:#A0626B}
 
-        /* 卡片樣式 - 與醫師後台完全一致 */
-        .hx-card{background:white;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,0.08);margin-bottom:12px;overflow:hidden}
+        /* 卡片 - 莫蘭迪文青風 */
+        .hx-card{background:var(--card);border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,0.06);margin-bottom:12px;overflow:hidden;border:1px solid var(--border)}
         .hx-header{display:flex;align-items:center;padding:14px 16px;cursor:pointer;user-select:none;gap:10px;-webkit-tap-highlight-color:transparent;transition:background 0.15s}
-        .hx-header:active{background:#f0f4ff}
-        .hx-date-icon{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#1565C0,#42A5F5);display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;flex-shrink:0}
-        .hx-date-month{font-size:9px;font-weight:600;line-height:1;opacity:0.85}
+        .hx-header:active{background:#F0EDE6}
+        .hx-date-icon{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#7B8FA1,#95A8B8);display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;flex-shrink:0}
+        .hx-date-month{font-size:9px;font-weight:600;line-height:1;opacity:0.9}
         .hx-date-day{font-size:16px;font-weight:800;line-height:1.1}
         .hx-header-info{flex:1;min-width:0}
         .hx-header-title{font-size:14px;font-weight:700;color:var(--text)}
@@ -32,28 +32,27 @@
         .hx-card.open .hx-arrow{transform:rotate(180deg)}
         .hx-body{display:none;border-top:1px solid var(--border);padding:0}
         .hx-card.open .hx-body{display:block}
-        .hx-section{padding:12px 16px;border-bottom:1px solid #f0f0f0}
+        .hx-section{padding:12px 16px;border-bottom:1px solid #F0EDE6}
         .hx-section:last-child{border-bottom:none}
         .hx-section-title{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:8px}
         .hx-schedule-row{display:flex;justify-content:center;gap:0}
         .hx-sch-day{display:flex;flex-direction:column;align-items:center;flex:1}
         .hx-sch-day-label{font-size:9px;color:var(--muted);margin-bottom:3px;font-weight:600}
         .hx-sch-day-btn{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
-        .hx-sch-day-btn.t-high{background:#F8D7DA;color:#c62828}
-        .hx-sch-day-btn.t-low{background:#D4EDDA;color:#2e7d32}
-        .hx-sch-day-btn.t-mid{background:#FFF3CD;color:#e65100}
-        .hx-sch-day-btn.t-fast{background:#E2E3E5;color:#424242}
+        .hx-sch-day-btn.t-high{background:#F2E0E0;color:#A0626B}
+        .hx-sch-day-btn.t-low{background:#E0EBE0;color:#6B8F71}
+        .hx-sch-day-btn.t-mid{background:#F0E8D8;color:#B8926A}
+        .hx-sch-day-btn.t-fast{background:#E8E8E8;color:#7B8B8B}
         .hx-packs-row{display:flex;gap:8px;flex-wrap:wrap}
         .hx-pack-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
-        .hx-pack-mr{background:#e8f0fe;color:#1565C0}
-        .hx-pack-qb{background:#e0f2f1;color:#00897B}
+        .hx-pack-mr{background:#E8EDE6;color:#6B8F71}
+        .hx-pack-qb{background:#EDE8E0;color:#B8926A}
         .hx-day-label{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;margin-bottom:6px}
         .hx-meal-row{display:flex;gap:6px;margin-bottom:4px;font-size:12px;line-height:1.5}
         .hx-meal-row:last-child{margin-bottom:0}
         .hx-meal-name{font-weight:600;color:var(--text);white-space:nowrap;min-width:42px}
-        .hx-meal-items{color:#555;word-break:break-all}
-        .hx-note{background:#FFF8E1;border-left:3px solid #F5A623;border-radius:0 8px 8px 0;padding:10px 12px;font-size:12px;color:#7B5800;line-height:1.6}
-        .hx-tip{background:#FFF8E1;border-left:3px solid #F5A623;border-radius:0 8px 8px 0;padding:10px 12px;font-size:12px;color:#7B5800;line-height:1.6;margin-top:8px}
+        .hx-meal-items{color:#6B6B6B;word-break:break-all}
+        .hx-note{background:#F5F0E5;border-left:3px solid var(--warm);border-radius:0 8px 8px 0;padding:10px 12px;font-size:12px;color:#7B6B4A;line-height:1.6}
         .no-data{text-align:center;color:#aaa;padding:40px;font-size:14px}
     </style>
 </head>
@@ -65,7 +64,7 @@
     <div class="content" id="mainContent">
         <div class="loading" id="loadingDiv">
             <div class="spinner"></div>
-            <p style="color:#888;font-size:13px">載入資料中...</p>
+            <p style="color:#8B8B8B;font-size:13px">載入資料中...</p>
         </div>
     </div>
 
@@ -75,13 +74,9 @@
     var lineUid = '';
     var patientSn = '';
 
-    // ====== 初始化 LIFF ======
     liff.init({ liffId: LIFF_ID })
         .then(function() {
-            if (!liff.isLoggedIn()) {
-                liff.login();
-                return;
-            }
+            if (!liff.isLoggedIn()) { liff.login(); return; }
             return liff.getProfile();
         })
         .then(function(profile) {
@@ -114,12 +109,12 @@
                     document.getElementById('mainContent').innerHTML = '<div class="no-data">尚無看診紀錄<br><span style="font-size:12px;color:#bbb">看診後醫師儲存飲食計劃，紀錄會自動出現在這裡</span></div>';
                     return;
                 }
-                // ── 同一天只保留最新一筆 ──
+                // 同一天只保留最新一筆
                 var byDate = {};
                 records.forEach(function(r) {
                     var dateKey = normalizeDate(r.date);
                     if (!byDate[dateKey] || (r.date || '') > (byDate[dateKey].date || '')) {
-                        r.date = dateKey; // 正規化日期
+                        r.date = dateKey;
                         byDate[dateKey] = r;
                     }
                 });
@@ -132,17 +127,13 @@
             });
     }
 
-    // 將各種日期格式正規化為 YYYY-MM-DD
     function normalizeDate(dateStr) {
         if (!dateStr) return '';
-        // 已經是 YYYY-MM-DD
         if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-        // 嘗試 parse
         var d = new Date(dateStr);
         if (!isNaN(d.getTime())) {
             return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
         }
-        // 嘗試取前10字元
         if (dateStr.length >= 10) return dateStr.substring(0, 10);
         return dateStr;
     }
@@ -155,18 +146,17 @@
         document.getElementById('mainContent').innerHTML = html;
     }
 
-    // ====== 與醫師後台 buildHistoryCard 完全一致 ======
     function buildHistoryCard(rec, idx) {
         var d = rec.date || '';
         var parts = d.split('-');
-        var month = parts.length > 1 ? parseInt(parts[1]) + '月' : '';
-        var day = parts.length > 2 ? parseInt(parts[2]) : '';
-        var yearStr = parts.length > 0 ? parts[0] + '年' : '';
+        var yearNum = parts.length > 0 ? parts[0] : '';
+        var monthNum = parts.length > 1 ? parseInt(parts[1]) : '';
+        var dayNum = parts.length > 2 ? parseInt(parts[2]) : '';
+        var month = monthNum ? monthNum + '月' : '';
         var isOpen = idx === 0 ? ' open' : '';
 
         var dayLabels = {high:'高碳日', low:'低碳日', mid:'中碳日', fast:'斷食日'};
         var dayEmojis = {high:'🔴', low:'🟢', mid:'🟡', fast:'⚪'};
-        var dayColors = {high:'#c62828', low:'#2e7d32', mid:'#e65100', fast:'#424242'};
         var cycleLabels = {high:'高', low:'低', mid:'中', fast:'斷'};
         var cycleCls = {high:'t-high', low:'t-low', mid:'t-mid', fast:'t-fast'};
         var DAYS = ['六','日','一','二','三','四','五'];
@@ -178,17 +168,17 @@
 
         var html = '<div class="hx-card' + isOpen + '" id="hxCard' + idx + '">';
 
-        // ── Header ──
+        // Header
         html += '<div class="hx-header" onclick="toggleCard(' + idx + ')">';
-        html += '<div class="hx-date-icon"><div class="hx-date-month">' + esc(month) + '</div><div class="hx-date-day">' + esc(String(day)) + '</div></div>';
+        html += '<div class="hx-date-icon"><div class="hx-date-month">' + esc(month) + '</div><div class="hx-date-day">' + esc(String(dayNum)) + '</div></div>';
         html += '<div class="hx-header-info">';
-        html += '<div class="hx-header-title">📋 ' + esc(yearStr + month + day + '日') + ' 看診</div>';
+        html += '<div class="hx-header-title">📋 ' + esc(yearNum + '年' + monthNum + '月' + dayNum + '日') + ' 看診</div>';
         html += '<div class="hx-header-sub">' + esc(subParts.join('　')) + '</div>';
         html += '</div>';
         html += '<span class="hx-arrow">▼</span>';
         html += '</div>';
 
-        // ── Body ──
+        // Body
         html += '<div class="hx-body">';
 
         // 排程
@@ -214,7 +204,7 @@
             html += '</div></div>';
         }
 
-        // 各碳日餐食（排序：中高低斷）
+        // 各碳日餐食（中高低斷）
         var dayPlans = rec.dayPlans || {};
         var dayOrder = ['mid','high','low','fast'];
         var sortedDpKeys = dayOrder.filter(function(k){ return dayPlans[k]; });
