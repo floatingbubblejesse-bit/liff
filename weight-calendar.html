@@ -207,16 +207,27 @@
                 }).catch(check);
         } else { check(); }
 
-        if (patientSn) {
-            fetch(N8N + '/get-weight?sn=' + encodeURIComponent(patientSn))
-                .then(function(r){ return r.json(); })
-                .then(function(data){
-                    if (data && typeof data === 'object') {
-                        if (data.weights) weightData = data.weights;
-                        if (data.overrides) dayTypeOverrides = data.overrides;
-                    }
-                }).catch(function(){});
-        }
+        // 從 localStorage 載入體重資料
+        loadLocalWeights();
+    }
+
+    function storageKey() { return 'weight_' + (patientSn || patientUid || 'default'); }
+
+    function loadLocalWeights() {
+        try {
+            var raw = localStorage.getItem(storageKey());
+            if (raw) {
+                var data = JSON.parse(raw);
+                if (data.weights) weightData = data.weights;
+                if (data.overrides) dayTypeOverrides = data.overrides;
+            }
+        } catch(e) {}
+    }
+
+    function saveLocalWeights() {
+        try {
+            localStorage.setItem(storageKey(), JSON.stringify({ weights: weightData, overrides: dayTypeOverrides }));
+        } catch(e) {}
     }
 
     function onDataReady() {
@@ -256,41 +267,15 @@
         if (!weightData[todayStr]) weightData[todayStr] = {};
         weightData[todayStr].weight = val;
 
+        saveLocalWeights();
+
         var btn = document.getElementById('todaySaveBtn');
-        btn.disabled = true;
-        btn.textContent = '儲存中...';
+        btn.textContent = '已儲存 ✓';
+        btn.style.color = '#6B8F71';
+        setTimeout(function(){ btn.textContent = '儲存'; btn.style.color = ''; }, 2000);
 
-        var payload = {
-            patientSn: patientSn,
-            uid: patientUid,
-            weights: weightData,
-            overrides: dayTypeOverrides
-        };
-
-        fetch(N8N + '/save-weight', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-        .then(function(r){ return r.json(); })
-        .then(function(res){
-            btn.disabled = false;
-            if (res.ok || res.success) {
-                btn.textContent = '已儲存 ✓';
-                btn.style.color = '#6B8F71';
-                setTimeout(function(){ btn.textContent = '儲存'; btn.style.color = ''; }, 2000);
-            } else {
-                btn.textContent = '儲存';
-                alert('儲存失敗: ' + (res.error || ''));
-            }
-            renderCalendar();
-            renderChart();
-        })
-        .catch(function(err){
-            btn.disabled = false;
-            btn.textContent = '儲存';
-            alert('儲存失敗: ' + err.message);
-        });
+        renderCalendar();
+        renderChart();
     }
 
     // ====== Section Toggle ======
@@ -409,16 +394,8 @@
         autoSave();
     }
 
-    var autoSaveTimer = null;
     function autoSave() {
-        if (autoSaveTimer) clearTimeout(autoSaveTimer);
-        autoSaveTimer = setTimeout(function() {
-            fetch(N8N + '/save-weight', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ patientSn: patientSn, uid: patientUid, weights: weightData, overrides: dayTypeOverrides })
-            }).catch(function(){});
-        }, 2000);
+        saveLocalWeights();
     }
 
     function updateStats() {
