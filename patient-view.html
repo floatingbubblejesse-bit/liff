@@ -711,7 +711,7 @@
         }];
         if (recommended > 0) {
             datasets.push({
-                label: '建議攝取量', data: keys.map(function(){ return recommended; }),
+                label: '醫師建議攝取量 ' + Math.round(recommended) + 'g', data: keys.map(function(){ return recommended; }),
                 borderColor: '#C4A882', borderWidth: 1.5, borderDash: [6, 4],
                 pointRadius: 0, fill: false, tension: 0
             });
