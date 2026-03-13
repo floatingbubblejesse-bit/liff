@@ -251,7 +251,7 @@
                 </div>
                 <!-- 更新狀態已整合到按鈕本身 -->
             </div>
-            <div class="card" id="dietPlanCard" style="display:none">
+            <div class="card" id="dietPlanCard">
                 <div class="card-title">🔄 碳水循環計劃</div>
                 <div class="cycle-schedule" id="cycleSchedule"></div>
                 <div class="diet-btn-row" style="margin-bottom:12px">
@@ -948,7 +948,7 @@
     // p = 'mid' | 'high' | 'low' | 'fast'
     function generateDietPlan(p) {
         var rec = parseInt(document.getElementById('proteinInput').value) || 0;
-        if (rec <= 0) { document.getElementById('dietPlanCard').style.display = 'none'; return; }
+        if (rec <= 0) return;
         var packs = rec <= 110 ? 2 : 3;
         var mrG = packs * 20;
         var foodG = rec - mrG;
