@@ -1264,26 +1264,32 @@
             if (qbPacks > 0) summaryText += ' + Q寶' + qbPacks + '包';
             if (totalFood > 0) summaryText += ' + 食物蛋白' + totalFood + 'g';
 
-            // 餐食行
+            // 餐食行（根據 DIET_COLS.sep 決定分隔符：→ 或 +）
             var mealContents = [];
             for (var m = 0; m < MEAL_COUNT; m++) {
                 var row = plan[m];
                 var allDash = row.every(function(v){ return v === '-' || v === '0' || v === 0; });
                 if (allDash) continue;
-                var parts = [];
+                var fParts = [], fSeps = [];
                 for (var f = 0; f < DIET_COLS.length; f++) {
                     var val = row[f];
                     if (val === '-' || val === '0' || val === 0) continue;
                     var col = DIET_COLS[f];
                     var unit = col.unit.replace(/[()]/g, '');
-                    if (col.type === 'number') { parts.push(col.label + val + unit); }
-                    else if (val === '1') { parts.push(col.label + (unit ? '1'+unit : '')); }
-                    else { parts.push(col.label + val); }
+                    if (fParts.length > 0) fSeps.push(col.sep || '→');
+                    if (col.type === 'number') { fParts.push(col.label + val + unit); }
+                    else if (val === '1') { fParts.push(col.label + (unit ? '1'+unit : '')); }
+                    else { fParts.push(col.label + val); }
+                }
+                var mealText = '';
+                for (var fi = 0; fi < fParts.length; fi++) {
+                    if (fi > 0) mealText += ' ' + fSeps[fi-1] + ' ';
+                    mealText += fParts[fi];
                 }
                 if (mealContents.length > 0) mealContents.push({type:'separator',margin:'sm'});
                 mealContents.push({type:'box',layout:'horizontal',spacing:'sm',margin:'sm',contents:[
                     {type:'text',text:MEAL_ICONS[m]+MEAL_NAMES[m],size:'sm',weight:'bold',color:'#333333',flex:0,gravity:'top'},
-                    {type:'text',text:parts.join(' → '),size:'xs',color:'#555555',wrap:true,flex:4}
+                    {type:'text',text:mealText,size:'xs',color:'#555555',wrap:true,flex:4}
                 ]});
             }
 
