@@ -36,8 +36,9 @@
         /* ====== Table ====== */
         .wt-table{width:100%;border-collapse:collapse;background:white}
         .wt-table thead th{position:sticky;top:0;background:#F8F6F2;font-size:12px;font-weight:700;color:var(--muted);padding:10px 8px;text-align:center;border-bottom:2px solid var(--border);z-index:2}
-        .wt-table tbody td{padding:4px 3px;text-align:center;border-bottom:1px solid #F0EDE6;font-size:13px;vertical-align:middle}
-        .wt-table th:last-child,.wt-table td:last-child{width:1px;white-space:nowrap;padding:4px 6px 4px 0}
+        .wt-table tbody td{padding:10px 4px;text-align:center;border-bottom:1px solid #F0EDE6;font-size:13px;vertical-align:middle}
+        .wt-table.editing-active tbody td{padding:3px 3px}
+        .wt-table th:last-child,.wt-table td:last-child{width:1px;white-space:nowrap;padding-right:6px}
         .wt-table tbody tr:active{background:#FDFBF7}
         .wt-table tbody tr.today-row{background:#EDF2F7}
         .wt-table tbody tr.today-row td{border-bottom-color:#D0DBE6}
@@ -101,7 +102,7 @@
 <div class="schedule-bar" id="scheduleBar" style="display:none"></div>
 
 <div class="stats-row">
-    <div class="stat-item" onclick="scrollToToday()" style="cursor:pointer"><div class="stat-value" style="color:var(--blue);font-size:13px">📍</div><div class="stat-label">回到今天</div></div>
+    <div class="stat-item" onclick="scrollToToday()" style="cursor:pointer"><div class="stat-value" style="color:var(--blue);font-size:13px">↩</div><div class="stat-label">回到今天</div></div>
     <div class="stat-item"><div class="stat-value" id="statLatest">-</div><div class="stat-label">最新體重</div></div>
     <div class="stat-item"><div class="stat-value" id="statDiff">-</div><div class="stat-label">排程變化</div></div>
     <div class="stat-item"><div class="stat-value" id="statCount">0</div><div class="stat-label">紀錄天數</div></div>
@@ -151,6 +152,7 @@
     var visitDate = null;
     var scheduleStart = null; // 排程開始日（看診日+1）
     var scheduleEnd = null;   // 排程結束日
+    var scheduleWeeks = 0;
     var weightData = {};
     var dayTypeOverrides = {};
     var visitRecords = [];
@@ -222,6 +224,7 @@
                     // 排程從看診日的隔天開始
                     scheduleStart = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate() + 1);
                     scheduleEnd = new Date(scheduleStart.getFullYear(), scheduleStart.getMonth(), scheduleStart.getDate() + (weeks * 7) - 1);
+                    scheduleWeeks = weeks;
                 }
                 checkDone();
             }).catch(function(e){ checkDone(); });
@@ -310,7 +313,7 @@
         var e = scheduleEnd;
         var sLabel = (s.getMonth()+1) + '/' + s.getDate() + '(' + DAY_NAMES[s.getDay()] + ')';
         var eLabel = (e.getMonth()+1) + '/' + e.getDate() + '(' + DAY_NAMES[e.getDay()] + ')';
-        bar.innerHTML = '📅 排程期間　<span class="sch-range">' + sLabel + ' ~ ' + eLabel + '</span>';
+        bar.innerHTML = '排程期間　<span class="sch-range">' + sLabel + ' ~ ' + eLabel + '</span>　' + scheduleWeeks + ' 週';
         bar.style.display = 'block';
     }
 
@@ -464,12 +467,12 @@
 
         updateStats();
 
-        // 首次載入：滾動到排程第一天（或今天）
+        // 首次載入：滾動到今天
         if (!skipScroll && !window._scrolledInit) {
             window._scrolledInit = true;
             setTimeout(function() {
                 var scrollEl = document.getElementById('tableScroll');
-                var target = document.getElementById('scheduleStartRow') || document.querySelector('.today-row');
+                var target = document.querySelector('.today-row') || document.getElementById('scheduleStartRow');
                 if (target && scrollEl) {
                     scrollEl.scrollTop = target.offsetTop - scrollEl.offsetTop;
                 }
@@ -490,10 +493,16 @@
         }, IDLE_TIMEOUT);
     }
 
+    function setEditingClass(on) {
+        var tbl = document.querySelector('.wt-table');
+        if (tbl) { if (on) tbl.classList.add('editing-active'); else tbl.classList.remove('editing-active'); }
+    }
+
     function startEdit(dateStr) {
         _editJustOpened = true;
         editingDate = dateStr;
         dirtyRows[dateStr] = true;
+        setEditingClass(true);
         renderTable();
         resetIdleTimer();
         setTimeout(function() { _editJustOpened = false; }, 300);
@@ -507,6 +516,7 @@
         if (prevDate && !dayTypeOverrides[prevDate]) {
             delete dirtyRows[prevDate];
         }
+        setEditingClass(false);
         renderTable();
     }
 
@@ -588,6 +598,7 @@
             delete dirtyRows[dateStr];
             setTimeout(function(){
                 editingDate = null;
+                setEditingClass(false);
                 renderTable();
                 renderChart();
             }, 800);
@@ -599,6 +610,7 @@
             delete dirtyRows[dateStr];
             setTimeout(function(){
                 editingDate = null;
+                setEditingClass(false);
                 renderTable();
                 renderChart();
             }, 800);
