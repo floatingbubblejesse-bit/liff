@@ -156,7 +156,7 @@
         .diet-day-header .diet-mode{font-size:10px}
         .diet-day-header .diet-toggle{margin-left:auto}
         /* 碳水循環排程 */
-        .cycle-schedule{display:flex;align-items:center;justify-content:center;gap:0;margin:10px 0 14px;flex-wrap:nowrap;overflow-x:auto}
+        .cycle-schedule{display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:nowrap;overflow-x:auto}
         .cycle-day{display:flex;flex-direction:column;align-items:center;min-width:0;flex-shrink:0}
         .cycle-day-label{font-size:10px;color:var(--muted);margin-bottom:4px;font-weight:600}
         .cycle-day-btn{width:40px;height:40px;border-radius:50%;border:2px solid var(--border);background:white;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;padding:0;line-height:1}
@@ -167,14 +167,18 @@
         .cycle-day-btn.t-fast{background:#E2E3E5;border-color:#9e9e9e;color:#4A4A4A}
         .cycle-arrow{color:#ccc;font-size:11px;flex-shrink:0;margin:14px 1px 0;opacity:0;transition:opacity 0.2s}
         .cycle-schedule:hover .cycle-arrow{opacity:1}
-        .cycle-weeks-row{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px}
+        .cycle-top-layout{display:flex;align-items:flex-start;gap:14px;margin:10px 0 14px}
+        .cycle-top-left{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+        .cycle-top-right{flex:1;overflow-x:auto}
+        .cycle-weeks-row{display:flex;align-items:center;gap:6px}
         .cycle-weeks-label{font-size:12px;color:var(--muted);font-weight:600}
         .cycle-weeks-ctrl{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:white;height:28px}
-        .cycle-weeks-ctrl button{width:24px;height:100%;border:none;background:#F5F3EF;cursor:pointer;font-size:14px;color:#4A4A4A;display:flex;align-items:center;justify-content:center;padding:0}
+        .cycle-weeks-ctrl button{width:24px;height:100%;border:none;background:#F5F3EF;cursor:pointer;font-size:14px;color:#4A4A4A;display:flex;align-items:center;justify-content:center;padding:0;opacity:0;transition:opacity 0.25s}
+        .cycle-weeks-ctrl:hover button,.cycle-weeks-ctrl.show-btns button{opacity:1}
         .cycle-weeks-ctrl button:active{background:#E8E4DC}
-        .cycle-weeks-val{width:32px;text-align:center;font-size:13px;font-weight:700;color:var(--red);background:transparent;border:none}
-        .cycle-packs-row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
-        .cycle-pack-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:16px}
+        .cycle-weeks-val{width:32px;text-align:center;font-size:13px;font-weight:700;color:var(--red);background:transparent;border:none;cursor:pointer}
+        .cycle-packs-row{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+        .cycle-pack-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:16px;white-space:nowrap}
         .cycle-pack-mr{background:#EDE8E0;color:#7B8FA1}
         .cycle-pack-qb{background:#E8EDE6;color:#6B8F71}
 
@@ -263,8 +267,10 @@
             </div>
             <div class="card" id="dietPlanCard">
                 <div class="card-title">🔄 碳水循環計劃</div>
-                <div class="cycle-schedule" id="cycleSchedule"></div>
-                <div id="cycleWeeksSummary" style="text-align:center;margin:8px 0 12px;font-size:13px;color:#4A4A4A;line-height:1.8"></div>
+                <div class="cycle-top-layout">
+                    <div class="cycle-top-left" id="cycleWeeksSummary"></div>
+                    <div class="cycle-top-right"><div class="cycle-schedule" id="cycleSchedule"></div></div>
+                </div>
                 <div class="diet-btn-row" style="margin-bottom:12px">
                     <button class="diet-btn-save" id="saveAllDietBtn" onclick="saveAllDietPlans()" style="width:100%">儲存並發送給客戶</button>
                 </div>
@@ -1487,18 +1493,18 @@
 
         var html = '<div class="cycle-weeks-row">';
         html += '<span class="cycle-weeks-label">共</span>';
-        html += '<div class="cycle-weeks-ctrl">';
-        html += '<button onclick="adjustCycleWeeks(-1)">−</button>';
+        html += '<div class="cycle-weeks-ctrl" onclick="this.classList.toggle(\'show-btns\')">';
+        html += '<button onclick="event.stopPropagation();adjustCycleWeeks(-1)">−</button>';
         html += '<span class="cycle-weeks-val">' + cycleWeeks + '</span>';
-        html += '<button onclick="adjustCycleWeeks(1)">+</button>';
+        html += '<button onclick="event.stopPropagation();adjustCycleWeeks(1)">+</button>';
         html += '</div>';
         html += '<span class="cycle-weeks-label">週</span>';
         html += '</div>';
 
         html += '<div class="cycle-packs-row">';
-        if (weeklyMr > 0) html += '<span class="cycle-pack-badge cycle-pack-mr">🥤 代餐 ' + weeklyMr + '包/週 × ' + cycleWeeks + '週 = <b>' + totalMr + '包</b></span>';
-        if (weeklyQb > 0) html += '<span class="cycle-pack-badge cycle-pack-qb">💊 Q寶 ' + weeklyQb + '包/週 × ' + cycleWeeks + '週 = <b>' + totalQb + '包</b></span>';
-        if (weeklyMr === 0 && weeklyQb === 0) html += '<span style="font-size:11px;color:#8B8B8B">請先展開碳日計劃以計算包數</span>';
+        if (weeklyMr > 0) html += '<span class="cycle-pack-badge cycle-pack-mr">🥤 代餐 ' + totalMr + '包</span>';
+        if (weeklyQb > 0) html += '<span class="cycle-pack-badge cycle-pack-qb">💊 Q寶 ' + totalQb + '包</span>';
+        if (weeklyMr === 0 && weeklyQb === 0) html += '<span style="font-size:10px;color:#8B8B8B">展開碳日計算</span>';
         html += '</div>';
 
         sumEl.innerHTML = html;
