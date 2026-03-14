@@ -660,8 +660,12 @@
         idx = (idx + 1) % CYCLE_OPTS.length;
         dayTypeOverrides[dateStr] = CYCLE_OPTS[idx].key;
         dirtyRows[dateStr] = true;
+        editingDate = dateStr;
+        _editOpenTime = Date.now();
+        setEditingClass(true);
         saveLocalWeights();
-        renderTable();
+        preserveScrollRender();
+        resetIdleTimer();
     }
 
     // ====== Stats ======
