@@ -781,7 +781,8 @@
         if (target && scrollEl) {
             var targetRect = target.getBoundingClientRect();
             var containerRect = scrollEl.getBoundingClientRect();
-            scrollEl.scrollTop = scrollEl.scrollTop + (targetRect.top - containerRect.top);
+            var rowH = target.offsetHeight || 44;
+            scrollEl.scrollTop = scrollEl.scrollTop + (targetRect.top - containerRect.top) - rowH;
         }
     }
 
