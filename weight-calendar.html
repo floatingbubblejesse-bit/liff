@@ -11,20 +11,26 @@
         body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
         /* ====== Top: Day card with swipe ====== */
-        .today-card{background:linear-gradient(135deg, #7B8FA1, #8B9D83);color:white;padding:16px 20px 14px;text-align:center;touch-action:pan-y;user-select:none;position:relative;overflow:hidden}
-        .today-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px}
-        .today-nav-btn{width:32px;height:32px;border:none;border-radius:50%;background:rgba(255,255,255,0.2);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .today-card{background:linear-gradient(135deg, #7B8FA1, #8B9D83);color:white;padding:34px 20px 28px;text-align:center;user-select:none;position:relative;overflow:hidden;touch-action:none}
+        .today-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px;position:relative}
+        .today-nav-btn{width:36px;height:36px;border:none;border-radius:50%;background:rgba(255,255,255,0.2);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;transition:opacity 0.3s ease;position:absolute;top:50%;transform:translateY(-50%)}
+        .today-nav-btn.nav-prev{left:0}
+        .today-nav-btn.nav-next{right:0}
+        .today-card.show-arrows .today-nav-btn{opacity:1}
         .today-nav-btn:active{background:rgba(255,255,255,0.35)}
-        .today-date{font-size:17px;font-weight:700}
-        .today-type-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px}
-        .today-type-badge{display:inline-flex;align-items:center;justify-content:center;padding:5px 20px;border-radius:20px;font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform 0.15s}
+        .today-date{font-size:18px;font-weight:700}
+        .today-slide-wrap{position:relative;overflow:hidden}
+        .today-content{will-change:transform,opacity}
+        .today-content.animating{transition:transform 0.35s cubic-bezier(.4,.0,.2,1),opacity 0.35s cubic-bezier(.4,.0,.2,1)}
+        .today-type-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;margin-top:6px}
+        .today-type-badge{display:inline-flex;align-items:center;justify-content:center;padding:6px 24px;border-radius:20px;font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform 0.15s}
         .today-type-badge:active{transform:scale(0.9)}
         .today-type-badge.t-high{background:rgba(248,215,218,0.9);color:#A0626B}
         .today-type-badge.t-mid{background:rgba(255,243,205,0.9);color:#B8926A}
         .today-type-badge.t-low{background:rgba(212,237,218,0.9);color:#6B8F71}
         .today-type-badge.t-fast{background:rgba(226,227,229,0.9);color:#4A4A4A}
-        .today-type-hint{font-size:10px;opacity:0.6;margin-top:2px}
-        .today-input-row{display:flex;align-items:center;justify-content:center;gap:8px}
+        .today-type-hint{font-size:10px;opacity:0.6;margin-top:4px}
+        .today-input-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
         .today-label{font-size:13px;opacity:0.9}
         .today-input{width:80px;padding:8px 6px;border:none;border-radius:8px;font-size:16px;font-weight:700;text-align:center;color:var(--red);outline:none;background:rgba(255,255,255,0.95)}
         .today-input::placeholder{color:#ccc;font-weight:400;font-size:13px}
@@ -94,19 +100,23 @@
 <!-- ====== 日期輸入區（可滑動切換日期） ====== -->
 <div class="today-card" id="todayCard">
     <div class="today-nav">
-        <button class="today-nav-btn" onclick="shiftSelectedDay(-1)">◀</button>
+        <button class="today-nav-btn nav-prev" onclick="event.stopPropagation();shiftSelectedDay(-1)">◀</button>
         <div class="today-date" id="todayDate"></div>
-        <button class="today-nav-btn" onclick="shiftSelectedDay(1)">▶</button>
+        <button class="today-nav-btn nav-next" onclick="event.stopPropagation();shiftSelectedDay(1)">▶</button>
     </div>
-    <div class="today-type-row">
-        <div class="today-type-badge" id="todayTypeBadge" onclick="cycleSelectedDayType()"></div>
-    </div>
-    <div class="today-type-hint" id="todayTypeHint">點擊切換碳日</div>
-    <div class="today-input-row">
-        <span class="today-label">請輸入今早體重：</span>
-        <input class="today-input" id="todayWeightInput" type="text" inputmode="decimal" placeholder="--.-">
-        <span class="today-unit">kg</span>
-        <button class="today-save" id="todaySaveBtn" onclick="saveTodayWeight()">儲存</button>
+    <div class="today-slide-wrap">
+        <div class="today-content" id="todayContent">
+            <div class="today-type-row">
+                <div class="today-type-badge" id="todayTypeBadge" onclick="cycleSelectedDayType()"></div>
+            </div>
+            <div class="today-type-hint" id="todayTypeHint">← 左右滑動切換日期 →</div>
+            <div class="today-input-row">
+                <span class="today-label">請輸入今早體重：</span>
+                <input class="today-input" id="todayWeightInput" type="text" inputmode="decimal" placeholder="--.-">
+                <span class="today-unit">kg</span>
+                <button class="today-save" id="todaySaveBtn" onclick="saveTodayWeight()">儲存</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -188,14 +198,100 @@
         selectedDate = new Date(now);
         loadData();
 
-        // Swipe support on top card
+        // ====== Drag-follow swipe on top card ======
         var card = document.getElementById('todayCard');
-        var startX = 0;
-        card.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; }, {passive:true});
+        var content = document.getElementById('todayContent');
+        var dateEl = document.getElementById('todayDate');
+        var arrowTimer = null;
+        var swipeState = { startX:0, currentX:0, dragging:false, swiped:false, animating:false };
+        var SWIPE_THRESHOLD = 60; // px to trigger day change
+
+        // Tap to show/hide arrows (only if not swiping)
+        card.addEventListener('click', function(e) {
+            if (swipeState.swiped) return;
+            if (card.classList.contains('show-arrows')) {
+                card.classList.remove('show-arrows');
+            } else {
+                card.classList.add('show-arrows');
+                clearTimeout(arrowTimer);
+                arrowTimer = setTimeout(function(){ card.classList.remove('show-arrows'); }, 3000);
+            }
+        });
+
+        card.addEventListener('touchstart', function(e) {
+            if (swipeState.animating) return;
+            swipeState.startX = e.touches[0].clientX;
+            swipeState.currentX = swipeState.startX;
+            swipeState.dragging = true;
+            swipeState.swiped = false;
+            content.classList.remove('animating');
+            dateEl.style.transition = 'none';
+        }, {passive:true});
+
+        card.addEventListener('touchmove', function(e) {
+            if (!swipeState.dragging) return;
+            swipeState.currentX = e.touches[0].clientX;
+            var dx = swipeState.currentX - swipeState.startX;
+            // Dampen the drag slightly for feel
+            var dampened = dx * 0.7;
+            var opacity = Math.max(0.3, 1 - Math.abs(dx) / 250);
+            content.style.transform = 'translateX(' + dampened + 'px)';
+            content.style.opacity = opacity;
+            dateEl.style.transform = 'translateX(' + (dampened * 0.5) + 'px)';
+            dateEl.style.opacity = opacity;
+            if (Math.abs(dx) > 10) swipeState.swiped = true;
+        }, {passive:true});
+
         card.addEventListener('touchend', function(e) {
-            var dx = e.changedTouches[0].clientX - startX;
-            if (Math.abs(dx) > 50) {
-                shiftSelectedDay(dx < 0 ? 1 : -1);
+            if (!swipeState.dragging) return;
+            swipeState.dragging = false;
+            var dx = swipeState.currentX - swipeState.startX;
+
+            if (Math.abs(dx) >= SWIPE_THRESHOLD) {
+                // Commit: slide out, change day, slide in
+                var direction = dx < 0 ? 1 : -1;
+                swipeState.animating = true;
+                content.classList.add('animating');
+                dateEl.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+                var outX = direction > 0 ? -120 : 120;
+                content.style.transform = 'translateX(' + outX + 'px)';
+                content.style.opacity = '0';
+                dateEl.style.transform = 'translateX(' + (outX * 0.5) + 'px)';
+                dateEl.style.opacity = '0';
+
+                setTimeout(function() {
+                    selectedDate.setDate(selectedDate.getDate() + direction);
+                    renderTodayCard();
+                    // Position from opposite side
+                    content.classList.remove('animating');
+                    dateEl.style.transition = 'none';
+                    content.style.transform = 'translateX(' + (-outX) + 'px)';
+                    content.style.opacity = '0';
+                    dateEl.style.transform = 'translateX(' + (-outX * 0.5) + 'px)';
+                    dateEl.style.opacity = '0';
+                    // Force reflow
+                    content.offsetHeight;
+                    // Animate in
+                    content.classList.add('animating');
+                    dateEl.style.transition = 'transform 0.35s cubic-bezier(.4,.0,.2,1), opacity 0.35s cubic-bezier(.4,.0,.2,1)';
+                    content.style.transform = 'translateX(0)';
+                    content.style.opacity = '1';
+                    dateEl.style.transform = 'translateX(0)';
+                    dateEl.style.opacity = '1';
+                    setTimeout(function() {
+                        content.classList.remove('animating');
+                        swipeState.animating = false;
+                    }, 360);
+                }, 200);
+            } else {
+                // Snap back
+                content.classList.add('animating');
+                dateEl.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+                content.style.transform = 'translateX(0)';
+                content.style.opacity = '1';
+                dateEl.style.transform = 'translateX(0)';
+                dateEl.style.opacity = '1';
+                setTimeout(function() { content.classList.remove('animating'); }, 310);
             }
         }, {passive:true});
     })();
@@ -289,8 +385,35 @@
     }
 
     function shiftSelectedDay(delta) {
-        selectedDate.setDate(selectedDate.getDate() + delta);
-        renderTodayCard();
+        if (swipeState.animating) return;
+        var cnt = document.getElementById('todayContent');
+        var dte = document.getElementById('todayDate');
+        swipeState.animating = true;
+        var outX = delta > 0 ? -120 : 120;
+        cnt.classList.add('animating');
+        dte.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+        cnt.style.transform = 'translateX(' + outX + 'px)';
+        cnt.style.opacity = '0';
+        dte.style.transform = 'translateX(' + (outX * 0.5) + 'px)';
+        dte.style.opacity = '0';
+        setTimeout(function() {
+            selectedDate.setDate(selectedDate.getDate() + delta);
+            renderTodayCard();
+            cnt.classList.remove('animating');
+            dte.style.transition = 'none';
+            cnt.style.transform = 'translateX(' + (-outX) + 'px)';
+            cnt.style.opacity = '0';
+            dte.style.transform = 'translateX(' + (-outX * 0.5) + 'px)';
+            dte.style.opacity = '0';
+            cnt.offsetHeight;
+            cnt.classList.add('animating');
+            dte.style.transition = 'transform 0.35s cubic-bezier(.4,.0,.2,1), opacity 0.35s cubic-bezier(.4,.0,.2,1)';
+            cnt.style.transform = 'translateX(0)';
+            cnt.style.opacity = '1';
+            dte.style.transform = 'translateX(0)';
+            dte.style.opacity = '1';
+            setTimeout(function() { cnt.classList.remove('animating'); swipeState.animating = false; }, 360);
+        }, 200);
     }
 
     function cycleSelectedDayType() {
