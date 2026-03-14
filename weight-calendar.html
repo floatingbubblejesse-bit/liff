@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>居家體重紀錄｜金鶯減重</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         :root { --blue: #7B8FA1; --blue-light: #EDE8E0; --green: #8B9D83; --green-light: #E8EDE6; --red: #A0626B; --orange: #C4A882; --brown: #B8926A; --bg: #F5F3EF; --card: #FDFBF7; --text: #4A4A4A; --muted: #8B8B8B; --border: #E8E4DC; }
@@ -168,6 +169,7 @@
 </div>
 
 <script>
+    var LIFF_ID = '2009326025-0pbHTZa7';
     var MEALS_GAS = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
     var N8N = 'https://huangcs.app.n8n.cloud/webhook';
 
@@ -199,7 +201,36 @@
         currentYear = now.getFullYear();
         currentMonth = now.getMonth();
         selectedDate = new Date(now);
-        loadData();
+
+        // 如果 URL 已有 ?id=，直接載入
+        if (patientSn) {
+            loadData();
+        } else {
+            // 透過 LIFF SDK 取得 LINE userId → 查詢院區病歷號
+            liff.init({ liffId: LIFF_ID }).then(function() {
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                return liff.getProfile();
+            }).then(function(profile) {
+                if (!profile) return;
+                patientUid = profile.userId;
+                console.log('[LIFF] userId:', patientUid);
+                // 用 GAS 查詢 LINE UID → 院區病歷號
+                return fetch(MEALS_GAS + '?lookupUid=' + encodeURIComponent(patientUid))
+                    .then(function(r){ return r.json(); });
+            }).then(function(result) {
+                if (!result) return;
+                if (result.patientSn) {
+                    patientSn = result.patientSn;
+                    console.log('[LIFF] 查到病歷號:', patientSn);
+                } else {
+                    console.log('[LIFF] 查詢失敗:', result.error);
+                }
+                loadData();
+            }).catch(function(err) {
+                console.log('[LIFF] init 錯誤:', err);
+                loadData(); // 即使失敗也顯示頁面
+            });
+        }
 
         // ====== Drag-follow swipe on top card ======
         var card = document.getElementById('todayCard');
