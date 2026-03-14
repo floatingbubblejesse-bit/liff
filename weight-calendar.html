@@ -485,27 +485,39 @@
     // ====== Day Type Calculation ======
     function getDayType(dateObj) {
         var dateStr = formatDate(dateObj);
+        // 1. 手動覆蓋優先
         if (dayTypeOverrides[dateStr]) return dayTypeOverrides[dateStr];
+        // 2. 找到適用的看診紀錄（最近一筆 date <= 當前日期）
         var applicableVisit = null;
         for (var i = visitRecords.length - 1; i >= 0; i--) {
             var vd = visitRecords[i].date;
             if (vd && vd <= dateStr) { applicableVisit = visitRecords[i]; break; }
         }
+        // 3. 沒有看診紀錄 → 預設 '-'
         if (!applicableVisit || !applicableVisit.date) {
-            return getTypeFromSchedule(dateObj, visitDate || new Date(), cycleSchedule);
+            return 'none';
         }
+        // 4. 有看診紀錄 → 檢查是否在排程範圍內（看診隔天起算，共 weeks×7 天）
         var vParts = applicableVisit.date.split('-');
         var vDate = new Date(parseInt(vParts[0]), parseInt(vParts[1])-1, parseInt(vParts[2]));
         var sch = (applicableVisit.schedule && applicableVisit.schedule.length === 7) ? applicableVisit.schedule : cycleSchedule;
-        return getTypeFromSchedule(dateObj, vDate, sch);
+        var weeks = applicableVisit.weeks || 4;
+        return getTypeFromSchedule(dateObj, vDate, sch, weeks);
     }
 
-    function getTypeFromSchedule(dateObj, startDate, schedule) {
+    function getTypeFromSchedule(dateObj, visitDateObj, schedule, weeks) {
+        // 排程從看診隔天開始
+        var startDate = new Date(visitDateObj.getFullYear(), visitDateObj.getMonth(), visitDateObj.getDate() + 1);
+        var endDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + (weeks * 7) - 1);
+        var d = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+        // 不在範圍內 → '-'
+        if (d < startDate || d > endDate) return 'none';
+        // 在範圍內 → 按星期幾對應排程
         var jsDay = dateObj.getDay();
         var schIdx;
-        if (jsDay === 0) schIdx = 1;
-        else if (jsDay === 6) schIdx = 0;
-        else schIdx = jsDay + 1;
+        if (jsDay === 0) schIdx = 1;      // 日 → index 1
+        else if (jsDay === 6) schIdx = 0;  // 六 → index 0
+        else schIdx = jsDay + 1;            // 一~五 → index 2~6
         return schedule[schIdx] || 'mid';
     }
 
