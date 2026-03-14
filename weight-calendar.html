@@ -317,8 +317,10 @@
             fetch(MEALS_GAS + '?dietHistory=' + encodeURIComponent(patientSn))
                 .then(function(r){ return r.json(); })
                 .then(function(data){
-                    if (Array.isArray(data) && data.length > 0) {
-                        visitRecords = data.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+                    // 相容兩種格式：直接陣列 [...] 或 { records: [...] }
+                    var recs = Array.isArray(data) ? data : (data.records || []);
+                    if (recs.length > 0) {
+                        visitRecords = recs.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
                         var latest = visitRecords[visitRecords.length - 1];
                         if (latest && latest.date) {
                             var p = latest.date.split('-');
