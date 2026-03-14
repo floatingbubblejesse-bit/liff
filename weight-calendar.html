@@ -36,14 +36,14 @@
         /* ====== Table ====== */
         .wt-table{width:100%;border-collapse:collapse;background:white;table-layout:fixed}
         .wt-table thead th{position:sticky;top:0;background:#F8F6F2;font-size:12px;font-weight:700;color:var(--muted);padding:10px 8px;border-bottom:2px solid var(--border);z-index:2}
-        .wt-table thead th:nth-child(1){width:33.3%;text-align:left;padding-left:16px}
+        .wt-table thead th:nth-child(1){width:33.3%;text-align:left;padding-left:24px}
         .wt-table thead th:nth-child(2){width:33.3%;text-align:center}
-        .wt-table thead th:nth-child(3){width:33.4%;text-align:right;padding-right:16px}
+        .wt-table thead th:nth-child(3){width:33.4%;text-align:right;padding-right:24px}
         .wt-table thead th:nth-child(4){display:none}
         .wt-table tbody td{padding:10px 4px;border-bottom:1px solid #F0EDE6;font-size:13px;vertical-align:middle}
-        .wt-table tbody td:nth-child(1){text-align:left;padding-left:16px}
+        .wt-table tbody td:nth-child(1){text-align:left;padding-left:24px}
         .wt-table tbody td:nth-child(2){text-align:center}
-        .wt-table tbody td:nth-child(3){text-align:right;padding-right:16px}
+        .wt-table tbody td:nth-child(3){text-align:right;padding-right:24px}
         .wt-table tbody td:nth-child(4){display:none}
         .wt-table.editing-active thead th:nth-child(1),.wt-table.editing-active tbody td:nth-child(1){width:25%}
         .wt-table.editing-active thead th:nth-child(2),.wt-table.editing-active tbody td:nth-child(2){width:25%}
@@ -295,6 +295,17 @@
         renderTable();
         renderChart();
         initInfiniteScroll();
+        // 等 infinite scroll 的 expandTop 穩定後再滾到今天
+        setTimeout(function() {
+            var scrollEl = document.getElementById('tableScroll');
+            var target = document.querySelector('.today-row') || document.getElementById('scheduleStartRow');
+            if (target && scrollEl) {
+                var targetRect = target.getBoundingClientRect();
+                var containerRect = scrollEl.getBoundingClientRect();
+                var rowH = target.offsetHeight || 44;
+                scrollEl.scrollTop = scrollEl.scrollTop + (targetRect.top - containerRect.top) - rowH * 2;
+            }
+        }, 500);
     }
 
     // ====== Infinite scroll ======
@@ -475,21 +486,6 @@
         }
 
         updateStats();
-
-        // 首次載入：滾動到今天
-        if (!skipScroll && !window._scrolledInit) {
-            window._scrolledInit = true;
-            setTimeout(function() {
-                var scrollEl = document.getElementById('tableScroll');
-                var target = document.querySelector('.today-row') || document.getElementById('scheduleStartRow');
-                if (target && scrollEl) {
-                    var targetRect = target.getBoundingClientRect();
-                    var containerRect = scrollEl.getBoundingClientRect();
-                    var rowH = target.offsetHeight || 44;
-                    scrollEl.scrollTop = scrollEl.scrollTop + (targetRect.top - containerRect.top) - rowH * 2;
-                }
-            }, 200);
-        }
     }
 
     // ====== Edit / Dismiss 系統 ======
