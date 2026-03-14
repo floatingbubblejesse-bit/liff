@@ -115,7 +115,7 @@
             <div class="today-type-hint" id="todayTypeHint">← 左右滑動切換日期 →</div>
             <div class="today-input-row">
                 <span class="today-label">請輸入今早體重：</span>
-                <input class="today-input" id="todayWeightInput" type="number" step="0.1" min="0" max="300" placeholder="--.-">
+                <input class="today-input" id="todayWeightInput" type="text" inputmode="decimal" pattern="[0-9.]*" placeholder="--.-">
                 <span class="today-unit">kg</span>
                 <button class="today-save" id="todaySaveBtn" onclick="saveTodayWeight()">儲存</button>
             </div>
