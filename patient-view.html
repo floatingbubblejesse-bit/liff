@@ -1441,6 +1441,7 @@
             btn.disabled = false;
             if (res.ok || res.success) {
                 btn.textContent = '已發送'; btn.style.background = '#6B8F71';
+                dietHistoryCache = null; // 清掉快取，讓看診紀錄 tab 重新載入
                 var pBtn = document.getElementById('saveProteinBtn');
                 if (pBtn) { pBtn.textContent = '已同步'; pBtn.style.background = '#6B8F71'; setTimeout(function(){ pBtn.textContent = '更新'; pBtn.style.background = '#8B9D83'; }, 2500); }
                 setTimeout(function() { btn.textContent = '儲存並發送給客戶'; btn.style.background = ''; }, 2500);
