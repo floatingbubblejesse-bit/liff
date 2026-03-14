@@ -62,6 +62,33 @@
         .send-btn:disabled{background:#90a4ae;cursor:not-allowed}
         .send-success{display:none;background:#E8EDE6;color:#6B8F71;padding:12px;border-radius:10px;text-align:center;font-size:13px;font-weight:600;margin-top:8px}
 
+        /* ====== 居家體重 tab ====== */
+        .hw-month-nav{display:flex;align-items:center;justify-content:center;gap:14px;padding:8px 0 6px}
+        .hw-month-nav button{width:32px;height:32px;border:1px solid var(--border);border-radius:50%;background:white;font-size:14px;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center}
+        .hw-month-nav button:active{background:var(--bg)}
+        .hw-month-title{font-size:15px;font-weight:700;min-width:100px;text-align:center}
+        .hw-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+        .hw-cal-weekday{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0}
+        .hw-cal-weekday.sat{color:var(--blue)}.hw-cal-weekday.sun{color:var(--red)}
+        .hw-cal-cell{background:var(--bg);border-radius:8px;padding:5px 2px;min-height:56px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+        .hw-cal-cell.empty{background:transparent;min-height:0}
+        .hw-cal-cell.today{border:1px solid var(--blue);box-shadow:0 0 0 1px var(--blue)}
+        .hw-cal-date{font-size:12px;font-weight:600;color:var(--text);line-height:1}
+        .hw-cal-cell.today .hw-cal-date{color:var(--blue);font-weight:800}
+        .hw-cal-cell.sat .hw-cal-date{color:var(--blue)}.hw-cal-cell.sun .hw-cal-date{color:var(--red)}
+        .hw-cal-type{width:28px;height:20px;border-radius:4px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+        .hw-cal-type.t-high{background:#F8D7DA;color:#A0626B}.hw-cal-type.t-mid{background:#FFF3CD;color:#B8926A}
+        .hw-cal-type.t-low{background:#D4EDDA;color:#6B8F71}.hw-cal-type.t-fast{background:#E2E3E5;color:#4A4A4A}
+        .hw-cal-type.t-none{background:var(--bg);color:var(--muted)}
+        .hw-cal-wt{font-size:10px;font-weight:700;color:var(--red)}
+        .hw-add-row{display:flex;gap:6px;align-items:center;margin-bottom:10px}
+        .hw-add-input{padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;flex:1;-moz-appearance:textfield}
+        .hw-add-input::-webkit-outer-spin-button,.hw-add-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+        .hw-add-input:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(123,143,161,0.15)}
+        .hw-add-btn{padding:8px 16px;background:var(--blue);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+        .hw-add-btn:active{background:#6B7F91}
+        .hw-add-btn:disabled{background:#90a4ae;cursor:not-allowed}
+
         /* ====== 餐食記錄 inline styles (from patient.html) ====== */
         .meal-protein-card{background:linear-gradient(135deg,#7B8FA1,#8B9D83);border-radius:12px;padding:14px;color:white}
         .meal-protein-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
@@ -232,6 +259,7 @@
     </div>
     <div class="tab-bar">
         <button class="tab-btn" id="tabBtn-body" onclick="switchTab('body')">🏋️ 身體組成</button>
+        <button class="tab-btn" id="tabBtn-weight" onclick="switchTab('weight')">⚖️ 居家體重</button>
         <button class="tab-btn" id="tabBtn-meals" onclick="switchTab('meals')">🍱 餐食記錄</button>
         <button class="tab-btn" id="tabBtn-note" onclick="switchTab('note')">📋 醫生建議</button>
         <button class="tab-btn" id="tabBtn-history" onclick="switchTab('history')">📊 看診紀錄</button>
@@ -243,6 +271,30 @@
         </div>
         <div id="errorDiv" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0"></div>
         <div id="tab-body" class="tab-pane" style="display:none"></div>
+        <div id="tab-weight" class="tab-pane" style="display:none">
+            <div class="card">
+                <div class="card-title">📅 月曆紀錄</div>
+                <div class="hw-month-nav">
+                    <button onclick="hwChangeMonth(-1)">◀</button>
+                    <div class="hw-month-title" id="hwMonthTitle"></div>
+                    <button onclick="hwChangeMonth(1)">▶</button>
+                </div>
+                <div id="hwCalWrap"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">📈 體重趨勢</div>
+                <div style="position:relative;height:180px"><canvas id="hwWeightChart"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-title">📋 體重紀錄表</div>
+                <div class="hw-add-row">
+                    <input type="text" inputmode="decimal" pattern="[0-9.]*" id="hwNewWeight" placeholder="體重 kg" class="hw-add-input">
+                    <input type="date" id="hwNewDate" class="hw-add-input" style="width:130px">
+                    <button class="hw-add-btn" onclick="hwAddWeight()">新增</button>
+                </div>
+                <div class="table-wrap" id="hwTableWrap"><div class="no-data">載入中…</div></div>
+            </div>
+        </div>
         <div id="tab-meals" class="tab-pane" style="display:none"></div>
         <div id="tab-note" class="tab-pane" style="display:none">
             <div class="card" id="proteinRecCard">
@@ -363,7 +415,7 @@
     if (cachedUid) patientLineUid = cachedUid;
     // 從 hash 讀取上次的 tab（重新整理時維持在同一頁）
     var initTab = (location.hash || '').replace('#','') || 'body';
-    if (['body','meals','note','history'].indexOf(initTab) === -1) initTab = 'body';
+    if (['body','weight','meals','note','history'].indexOf(initTab) === -1) initTab = 'body';
 
     if (!patientSn) { showError('缺少病患 ID，請從醫生總覽頁面進入。'); }
     else {
@@ -415,13 +467,14 @@
             .catch(function(err){showError('資料載入失敗：'+err.message);});
     }
 
-    var TAB_NAMES = ['body','meals','note','history'];
+    var TAB_NAMES = ['body','weight','meals','note','history'];
     function switchTab(name){
         activeTab=name;
         location.hash = name;
         document.querySelectorAll('.tab-btn').forEach(function(b,i){
             b.classList.toggle('active',TAB_NAMES[i]===name);
         });
+        if(name==='weight') loadHomeWeight();
         if(name==='meals') loadMeals();
         if(name==='history') renderHistoryTab();
         showTab(name);
@@ -1793,6 +1846,315 @@
     function toggleHxCard(idx) {
         var card = document.getElementById('hxCard' + idx);
         if (card) card.classList.toggle('open');
+    }
+
+    // ====== 居家體重紀錄 tab ======
+    var hwWeightData = {};   // { 'YYYY-MM-DD': { weight: 55.1, source: 'patient' } }
+    var hwLoaded = false;
+    var hwLoading = false;
+    var hwYear, hwMonth;
+    var hwChartInstance = null;
+    var HW_CYCLE_OPTS = [
+        {key:'high', label:'高', cls:'t-high'},
+        {key:'mid',  label:'中', cls:'t-mid'},
+        {key:'low',  label:'低', cls:'t-low'},
+        {key:'fast', label:'斷', cls:'t-fast'},
+        {key:'none', label:'-',  cls:'t-none'}
+    ];
+
+    (function hwInit() {
+        var now = new Date();
+        hwYear = now.getFullYear();
+        hwMonth = now.getMonth();
+        document.getElementById('hwNewDate').value = hwFormatDate(now);
+    })();
+
+    function hwFormatDate(d) {
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+
+    function loadHomeWeight() {
+        if (hwLoaded || hwLoading) {
+            hwRenderAll();
+            return;
+        }
+        hwLoading = true;
+        // 讀取居家體重紀錄
+        fetch(MEALS_GAS + '?homeWeight=' + encodeURIComponent(patientSn))
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                hwLoading = false;
+                hwLoaded = true;
+                if (data && data.records) {
+                    data.records.forEach(function(rec) {
+                        if (rec.date && rec.weight) {
+                            hwWeightData[rec.date] = { weight: parseFloat(rec.weight), source: rec.source || 'patient' };
+                        }
+                    });
+                }
+                hwRenderAll();
+            })
+            .catch(function(e){
+                hwLoading = false;
+                hwLoaded = true;
+                console.log('[居家體重] 載入失敗:', e);
+                hwRenderAll();
+            });
+    }
+
+    function hwRenderAll() {
+        hwRenderCalendar();
+        hwRenderChart();
+        hwRenderTable();
+    }
+
+    // 取得當天碳日類型（複用 dietPlan 排程資料）
+    function hwGetDayType(dateObj) {
+        if (!hwVisitRecords || hwVisitRecords.length === 0) return 'none';
+        var dateStr = hwFormatDate(dateObj);
+        var applicableVisit = null;
+        for (var i = hwVisitRecords.length - 1; i >= 0; i--) {
+            var vd = hwVisitRecords[i].date;
+            if (vd && vd <= dateStr) { applicableVisit = hwVisitRecords[i]; break; }
+        }
+        if (!applicableVisit || !applicableVisit.date) return 'none';
+        var vParts = applicableVisit.date.split('-');
+        var vDate = new Date(parseInt(vParts[0]), parseInt(vParts[1])-1, parseInt(vParts[2]));
+        var sch = applicableVisit.schedule;
+        var weeks = applicableVisit.weeks || 4;
+        // 排程從看診隔天開始
+        var startDate = new Date(vDate.getFullYear(), vDate.getMonth(), vDate.getDate() + 1);
+        var endDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + (weeks * 7) - 1);
+        var d = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+        if (d < startDate || d > endDate) return 'none';
+        var jsDay = dateObj.getDay();
+        var schIdx;
+        if (jsDay === 0) schIdx = 1;
+        else if (jsDay === 6) schIdx = 0;
+        else schIdx = jsDay + 1;
+        return sch[schIdx] || 'mid';
+    }
+
+    var hwVisitRecords = [];
+
+    // 載入排程資料（供日曆碳日標示用）
+    function hwLoadSchedule() {
+        fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn))
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                if (data.schedule && data.schedule.length === 7) {
+                    var planDate = hwParseDateToYMD(data.date);
+                    if (!planDate) planDate = hwFormatDate(new Date());
+                    hwVisitRecords = [{
+                        date: planDate,
+                        schedule: data.schedule,
+                        weeks: data.weeks || 4
+                    }];
+                    if (hwLoaded) hwRenderCalendar();
+                }
+            })
+            .catch(function(){});
+    }
+
+    function hwParseDateToYMD(dateVal) {
+        if (!dateVal) return '';
+        if (typeof dateVal === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateVal)) return dateVal.substring(0, 10);
+        var d = new Date(dateVal);
+        if (isNaN(d.getTime())) return '';
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+
+    // 首次進入 weight tab 時也載入排程
+    var hwScheduleLoaded = false;
+    var origLoadHomeWeight = loadHomeWeight;
+    loadHomeWeight = function() {
+        if (!hwScheduleLoaded) {
+            hwScheduleLoaded = true;
+            hwLoadSchedule();
+        }
+        origLoadHomeWeight();
+    };
+
+    function hwRenderCalendar() {
+        var wrap = document.getElementById('hwCalWrap');
+        var titleEl = document.getElementById('hwMonthTitle');
+        if (!wrap || !titleEl) return;
+        titleEl.textContent = hwYear + '年 ' + (hwMonth + 1) + '月';
+
+        var firstDay = new Date(hwYear, hwMonth, 1);
+        var lastDay = new Date(hwYear, hwMonth + 1, 0);
+        var totalDays = lastDay.getDate();
+        var startDow = firstDay.getDay();
+        var startOffset = (startDow === 0) ? 6 : startDow - 1;
+        var today = new Date();
+        var todayStr = hwFormatDate(today);
+
+        var html = '<div class="hw-cal-grid">';
+        var weekdays = ['一','二','三','四','五','六','日'];
+        var weekCls = ['','','','','','sat','sun'];
+        for (var w = 0; w < 7; w++) {
+            html += '<div class="hw-cal-weekday ' + weekCls[w] + '">' + weekdays[w] + '</div>';
+        }
+        for (var e = 0; e < startOffset; e++) {
+            html += '<div class="hw-cal-cell empty"></div>';
+        }
+        for (var d = 1; d <= totalDays; d++) {
+            var dateObj = new Date(hwYear, hwMonth, d);
+            var dateStr = hwFormatDate(dateObj);
+            var isToday = dateStr === todayStr;
+            var dow = dateObj.getDay();
+            var isSat = dow === 6, isSun = dow === 0;
+            var dayType = hwGetDayType(dateObj);
+            var opt = HW_CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || HW_CYCLE_OPTS[4];
+            var savedWeight = hwWeightData[dateStr] ? hwWeightData[dateStr].weight : '';
+
+            var cellCls = 'hw-cal-cell' + (isToday ? ' today' : '') + (isSat ? ' sat' : '') + (isSun ? ' sun' : '');
+            html += '<div class="' + cellCls + '">';
+            html += '<div class="hw-cal-date">' + d + '</div>';
+            html += '<div class="hw-cal-type ' + opt.cls + '">' + opt.label + '</div>';
+            if (savedWeight) {
+                html += '<div class="hw-cal-wt">' + savedWeight + '</div>';
+            }
+            html += '</div>';
+        }
+        var totalCells = startOffset + totalDays;
+        var trailing = (7 - (totalCells % 7)) % 7;
+        for (var t = 0; t < trailing; t++) {
+            html += '<div class="hw-cal-cell empty"></div>';
+        }
+        html += '</div>';
+        wrap.innerHTML = html;
+    }
+
+    function hwChangeMonth(delta) {
+        hwMonth += delta;
+        if (hwMonth > 11) { hwMonth = 0; hwYear++; }
+        if (hwMonth < 0) { hwMonth = 11; hwYear--; }
+        hwRenderCalendar();
+    }
+
+    function hwRenderChart() {
+        var allKeys = Object.keys(hwWeightData).sort();
+        var canvas = document.getElementById('hwWeightChart');
+        if (!canvas) return;
+        if (allKeys.length === 0) {
+            if (hwChartInstance) hwChartInstance.destroy();
+            hwChartInstance = null;
+            return;
+        }
+        var keys = allKeys.slice(-30);
+        var labels = keys.map(function(k) {
+            var p = k.split('-');
+            return parseInt(p[1]) + '/' + parseInt(p[2]);
+        });
+        var values = keys.map(function(k){ return hwWeightData[k].weight; });
+
+        if (hwChartInstance) hwChartInstance.destroy();
+        hwChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '體重 (kg)',
+                    data: values,
+                    borderColor: '#7B8FA1',
+                    backgroundColor: 'rgba(123,143,161,0.1)',
+                    borderWidth: 2.5,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#7B8FA1',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { font: { size: 10 }, color: '#8B8B8B' }, grid: { display: false } },
+                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B', callback: function(v){ return v + 'kg'; } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                }
+            }
+        });
+    }
+
+    function hwRenderTable() {
+        var wrap = document.getElementById('hwTableWrap');
+        if (!wrap) return;
+        var allKeys = Object.keys(hwWeightData).sort(function(a,b){ return b.localeCompare(a); });
+        if (allKeys.length === 0) {
+            wrap.innerHTML = '<div class="no-data">尚無居家體重紀錄</div>';
+            return;
+        }
+        var html = '<table><thead><tr><th>日期</th><th>體重</th><th>碳日</th><th>變化</th></tr></thead><tbody>';
+        for (var i = 0; i < allKeys.length; i++) {
+            var k = allKeys[i];
+            var wt = hwWeightData[k].weight;
+            var parts = k.split('-');
+            var dateObj = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+            var dayType = hwGetDayType(dateObj);
+            var opt = HW_CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || HW_CYCLE_OPTS[4];
+            var diff = '';
+            if (i < allKeys.length - 1) {
+                var prevWt = hwWeightData[allKeys[i+1]].weight;
+                var d = wt - prevWt;
+                var sign = d > 0 ? '+' : '';
+                var cls = d < 0 ? 'diff-good' : d > 0 ? 'diff-warn' : 'diff-same';
+                diff = '<span class="' + cls + '">' + sign + d.toFixed(1) + '</span>';
+            }
+            var dateLabel = parseInt(parts[1]) + '/' + parseInt(parts[2]);
+            html += '<tr><td class="date-col">' + esc(dateLabel) + '</td>';
+            html += '<td style="font-weight:700">' + wt.toFixed(1) + '</td>';
+            html += '<td><span class="hw-cal-type ' + opt.cls + '" style="display:inline-flex;width:auto;padding:2px 8px">' + opt.label + '</span></td>';
+            html += '<td>' + diff + '</td></tr>';
+        }
+        html += '</tbody></table>';
+        wrap.innerHTML = html;
+    }
+
+    function hwAddWeight() {
+        var weightInput = document.getElementById('hwNewWeight');
+        var dateInput = document.getElementById('hwNewDate');
+        var val = parseFloat(weightInput.value);
+        var dateStr = dateInput.value;
+        if (isNaN(val) || val <= 0) { alert('請輸入有效的體重'); return; }
+        if (!dateStr) { alert('請選擇日期'); return; }
+
+        var btn = document.querySelector('.hw-add-btn');
+        btn.disabled = true;
+        btn.textContent = '儲存中…';
+
+        // 寫入 MEALS_GAS
+        fetch(MEALS_GAS + '?saveHomeWeight=true', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                patientSn: patientSn,
+                date: dateStr,
+                weight: val,
+                source: 'doctor'
+            })
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            btn.disabled = false;
+            if (res.ok || res.success) {
+                btn.textContent = '已儲存 ✓';
+                btn.style.background = '#6B8F71';
+                hwWeightData[dateStr] = { weight: val, source: 'doctor' };
+                weightInput.value = '';
+                hwRenderAll();
+                setTimeout(function(){ btn.textContent = '新增'; btn.style.background = ''; }, 2000);
+            } else {
+                btn.textContent = '新增';
+                alert('儲存失敗：' + (res.error || JSON.stringify(res)));
+            }
+        })
+        .catch(function(err){
+            btn.disabled = false;
+            btn.textContent = '新增';
+            alert('儲存失敗：' + err.message);
+        });
     }
 
     function showError(msg){
