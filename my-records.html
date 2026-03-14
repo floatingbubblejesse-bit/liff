@@ -9,9 +9,13 @@
         :root { --primary:#7B8FA1; --accent:#8B9D83; --warm:#C4A882; --brown:#B8926A; --bg:#F5F3EF; --card:#FDFBF7; --text:#4A4A4A; --muted:#8B8B8B; --border:#E8E4DC; }
         *{box-sizing:border-box;margin:0;padding:0}
         body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-        .header{background:linear-gradient(135deg,#7B8FA1,#6B7F91);color:white;padding:18px 20px;text-align:center}
-        .header h1{font-size:17px;font-weight:700;letter-spacing:1px}
+        .header{background:linear-gradient(135deg,#6B7F91,#7B8FA1);color:white;padding:20px 16px 24px}
+        .header h1{font-size:17px;font-weight:700;letter-spacing:1px;text-align:center}
         .header p{font-size:11px;opacity:0.85;margin-top:3px}
+        .header-top{display:flex;align-items:center;gap:12px}
+        .avatar{width:48px;height:48px;border-radius:50%;border:2px solid rgba(255,255,255,0.6);object-fit:cover;background:rgba(255,255,255,0.3)}
+        .avatar-placeholder{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:22px}
+        .header-info h2{font-size:18px;font-weight:600}
         .content{padding:14px}
         .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:14px}
         .spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .9s linear infinite}
@@ -56,7 +60,10 @@
 </head>
 <body>
     <div class="header">
-        <p id="headerSub">載入中...</p>
+        <div class="header-top">
+            <div id="avatarWrap"><div class="avatar-placeholder">🧑</div></div>
+            <div class="header-info"><h2 id="headerSub">載入中...</h2></div>
+        </div>
     </div>
     <div class="content" id="mainContent">
         <div class="loading" id="loadingDiv">
@@ -86,6 +93,7 @@
             if (!profile) return;
             lineUid = profile.userId;
             document.getElementById('headerSub').textContent = profile.displayName;
+            if (profile.pictureUrl) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + profile.pictureUrl + '" alt="">'; }
             loadPatientData();
         })
         .catch(function(err) {

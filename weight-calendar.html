@@ -12,9 +12,13 @@
         body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
 
         /* ====== Header ====== */
-        .page-header{background:linear-gradient(135deg,#7B8FA1,#6B7F91);color:white;padding:18px 20px;text-align:center}
-        .page-header h1{font-size:17px;font-weight:700;letter-spacing:1px}
+        .page-header{background:linear-gradient(135deg,#6B7F91,#7B8FA1);color:white;padding:20px 16px 24px}
+        .page-header h1{font-size:17px;font-weight:700;letter-spacing:1px;text-align:center}
         .page-header p{font-size:11px;opacity:0.85;margin-top:3px}
+        .header-top{display:flex;align-items:center;gap:12px}
+        .avatar{width:48px;height:48px;border-radius:50%;border:2px solid rgba(255,255,255,0.6);object-fit:cover;background:rgba(255,255,255,0.3)}
+        .avatar-placeholder{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:22px}
+        .header-info h2{font-size:18px;font-weight:600}
 
         /* ====== Schedule info bar ====== */
         .schedule-bar{padding:10px 16px;background:white;border-bottom:1px solid var(--border);text-align:center;font-size:13px;font-weight:600;color:var(--text)}
@@ -88,8 +92,10 @@
 <body>
 
 <div class="page-header">
-    <h1>📋 居家體重紀錄</h1>
-    <p id="headerSub">載入中...</p>
+    <div class="header-top">
+        <div id="avatarWrap"><div class="avatar-placeholder">🧑</div></div>
+        <div class="header-info"><h2 id="headerSub">載入中...</h2></div>
+    </div>
 </div>
 
 <div class="schedule-bar" id="scheduleBar" style="display:none"></div>
@@ -166,7 +172,8 @@
             }).then(function(profile) {
                 if (!profile) return;
                 patientUid = profile.userId;
-                document.getElementById('headerSub').textContent = profile.displayName + ' 的體重紀錄';
+                document.getElementById('headerSub').textContent = profile.displayName;
+                if (profile.pictureUrl) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + profile.pictureUrl + '" alt="">'; }
                 return fetch(MEALS_GAS + '?lookupUid=' + encodeURIComponent(patientUid))
                     .then(function(r){ return r.json(); });
             }).then(function(result) {

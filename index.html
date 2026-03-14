@@ -9,14 +9,18 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-serif; background: #F5F3EF; color: #4A4A4A; min-height: 100vh; }
-        .header { background: linear-gradient(135deg, #7B8FA1, #6B7F91); color: white; padding: 20px 16px 28px; text-align: center; }
+        .header { background: linear-gradient(135deg, #6B7F91, #7B8FA1); color: white; padding: 20px 16px 24px; }
         .header h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
         .header p { font-size: 13px; opacity: 0.85; }
+        .header-top { display: flex; align-items: center; gap: 12px; }
+        .header-avatar { width: 48px; height: 48px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); object-fit: cover; background: rgba(255,255,255,0.3); }
+        .header-avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        .header-info h2 { font-size: 18px; font-weight: 600; }
         .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; gap: 16px; }
         .spinner { width: 44px; height: 44px; border: 4px solid #e0e0e0; border-top-color: #7B8FA1; border-radius: 50%; animation: spin 0.9s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .error-box { margin: 32px 16px; padding: 20px; background: #FFF3F3; border: 1px solid #E8C4C4; border-radius: 12px; text-align: center; color: #A0626B; white-space: pre-line; }
-        .content { padding: 0 12px 32px; margin-top: -12px; }
+        .content { padding: 12px 12px 32px; }
         .card { background: #FDFBF7; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
         .card-title { font-size: 13px; font-weight: 700; color: #6B6B6B; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
         .profile { display: flex; align-items: center; gap: 12px; }
@@ -49,8 +53,10 @@
 </head>
 <body>
     <div class="header">
-        <h1>📊 身體組成儀表板</h1>
-        <p>個人健康數據追蹤</p>
+        <div class="header-top">
+            <div id="headerAvatarWrap"><div class="header-avatar-placeholder">🧑</div></div>
+            <div class="header-info"><h2 id="headerName">載入中...</h2></div>
+        </div>
     </div>
     <div id="loading" class="loading">
         <div class="spinner"></div>
@@ -103,6 +109,7 @@
     var params = new URLSearchParams(window.location.search);
     var urlId = params.get('id');
     if (urlId) {
+        document.getElementById('headerName').textContent = urlId;
         fetchData('id', urlId);
     } else {
         setMsg('連接 LINE 中...');
@@ -114,6 +121,8 @@
             })
             .then(function(profile) {
                 if (!profile || !profile.userId) return;
+                document.getElementById('headerName').textContent = profile.displayName || '';
+                if (profile.pictureUrl) { document.getElementById('headerAvatarWrap').innerHTML = '<img class="header-avatar" src="' + profile.pictureUrl + '" alt="">'; }
                 fetchData('uid', profile.userId);
             })
             .catch(function(err) { showError('LIFF 初始化失敗：' + (err.message || err) + ' 請在 LINE 中開啟：https://liff.line.me/' + LIFF_ID); });
@@ -126,11 +135,8 @@
         var prev = m.length > 1 ? m[m.length - 2] : null;
         var html = '';
 
-        html += '<div class="card"><div class="profile">';
-        html += '<div class="avatar">' + esc((cust.name || '?')[0]) + '</div>';
-        html += '<div class="profile-info"><h2>' + esc(cust.name) + '</h2>';
-        html += '<p>院區病歷號：' + esc(cust.sn) + '</p>';
-        html += '</div></div></div>';
+        // 更新 header 名稱（如果 LIFF 沒取到 profile）
+        if (cust.name) { document.getElementById('headerName').textContent = cust.name; }
 
         if (latest) {
             var latestDate = latest['測量日期/時間'] || '';
