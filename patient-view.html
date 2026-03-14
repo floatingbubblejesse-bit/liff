@@ -1849,7 +1849,7 @@
     }
 
     // ====== 居家體重紀錄 tab ======
-    var hwWeightData = {};   // { 'YYYY-MM-DD': { weight: 55.1, source: 'patient' } }
+    var hwWeightData = {};   // { 'YYYY-MM-DD': { weight: 55.1 } }
     var hwLoaded = false;
     var hwLoading = false;
     var hwYear, hwMonth;
@@ -1888,7 +1888,7 @@
                 if (data && data.records) {
                     data.records.forEach(function(rec) {
                         if (rec.date && rec.weight) {
-                            hwWeightData[rec.date] = { weight: parseFloat(rec.weight), source: rec.source || 'patient' };
+                            hwWeightData[rec.date] = { weight: parseFloat(rec.weight) };
                         }
                     });
                 }
@@ -2124,24 +2124,21 @@
         btn.disabled = true;
         btn.textContent = '儲存中…';
 
-        // 寫入 MEALS_GAS
-        fetch(MEALS_GAS + '?saveHomeWeight=true', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                patientSn: patientSn,
-                date: dateStr,
-                weight: val,
-                source: 'doctor'
-            })
-        })
+        // 寫入 MEALS_GAS（用 GET 避免 CORS preflight）
+        var saveUrl = MEALS_GAS
+          + '?saveHomeWeight=true'
+          + '&patientSn=' + encodeURIComponent(patientSn)
+          + '&date=' + encodeURIComponent(dateStr)
+          + '&weight=' + encodeURIComponent(val);
+
+        fetch(saveUrl)
         .then(function(r){ return r.json(); })
         .then(function(res){
             btn.disabled = false;
             if (res.ok || res.success) {
                 btn.textContent = '已儲存 ✓';
                 btn.style.background = '#6B8F71';
-                hwWeightData[dateStr] = { weight: val, source: 'doctor' };
+                hwWeightData[dateStr] = { weight: val };
                 weightInput.value = '';
                 hwRenderAll();
                 setTimeout(function(){ btn.textContent = '新增'; btn.style.background = ''; }, 2000);
