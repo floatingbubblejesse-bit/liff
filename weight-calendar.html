@@ -531,13 +531,19 @@
     // 全部收起：清 editingDate + 所有非已改碳日的 dirtyRows
     function dismissAll() {
         clearIdleTimer();
+        // 先 blur 收起鍵盤，防止 iOS 殘留放大
+        if (editingDate) {
+            var inp = document.getElementById('editInput_' + editingDate);
+            if (inp) inp.blur();
+        }
+        if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+            document.activeElement.blur();
+        }
         var prevDate = editingDate;
         editingDate = null;
-        // 清掉沒有 dayTypeOverride 的 dirty（純體重編輯取消）
         if (prevDate && !dayTypeOverrides[prevDate]) {
             delete dirtyRows[prevDate];
         }
-        // 清掉所有 dirty（碳日切換的也收起）
         var keys = Object.keys(dirtyRows);
         for (var i = 0; i < keys.length; i++) {
             delete dirtyRows[keys[i]];
