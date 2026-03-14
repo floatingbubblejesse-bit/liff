@@ -36,8 +36,8 @@
         /* ====== Table ====== */
         .wt-table{width:100%;border-collapse:collapse;background:white}
         .wt-table thead th{position:sticky;top:0;background:#F8F6F2;font-size:12px;font-weight:700;color:var(--muted);padding:10px 8px;text-align:center;border-bottom:2px solid var(--border);z-index:2}
-        .wt-table tbody td{padding:5px 3px;text-align:center;border-bottom:1px solid #F0EDE6;font-size:13px;vertical-align:middle}
-        .wt-table th:last-child,.wt-table td:last-child{width:1px;white-space:nowrap;padding:5px 6px 5px 0}
+        .wt-table tbody td{padding:4px 3px;text-align:center;border-bottom:1px solid #F0EDE6;font-size:13px;vertical-align:middle}
+        .wt-table th:last-child,.wt-table td:last-child{width:1px;white-space:nowrap;padding:4px 6px 4px 0}
         .wt-table tbody tr:active{background:#FDFBF7}
         .wt-table tbody tr.today-row{background:#EDF2F7}
         .wt-table tbody tr.today-row td{border-bottom-color:#D0DBE6}
@@ -61,6 +61,10 @@
         .wt-type.t-low{background:#D4EDDA;color:#6B8F71}
         .wt-type.t-fast{background:#E2E3E5;color:#4A4A4A}
         .wt-type.t-none{background:var(--bg);color:var(--muted)}
+
+        /* ====== Year separator ====== */
+        .year-separator td{background:var(--bg);padding:4px 0;border-bottom:1px solid var(--border)}
+        .year-label{font-size:12px;font-weight:700;color:var(--blue);letter-spacing:2px}
 
         /* ====== Row save button ====== */
         .wt-row-save{display:none;padding:2px 8px;border:1px solid var(--green);border-radius:6px;background:white;color:var(--green);font-size:11px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap}
@@ -401,8 +405,15 @@
         }
 
         var html = '';
+        var lastYear = null;
         for (var i = 0; i < rows.length; i++) {
             var r = rows[i];
+
+            // 年分隔條：每年第一天（1/1）前插入
+            if (r.m === 0 && r.d === 1 && lastYear !== null) {
+                html += '<tr class="year-separator"><td colspan="4"><span class="year-label">' + r.y + ' 年</span></td></tr>';
+            }
+            lastYear = r.y;
 
             var dayName = DAY_NAMES[r.dateObj.getDay()];
             var dateLabel = (r.m + 1) + '/' + r.d + '<span class="wt-day">(' + dayName + ')</span>';
@@ -432,7 +443,7 @@
             // 碳日
             html += '<td><span class="wt-type ' + r.opt.cls + '" onclick="cycleDayType(\'' + r.dateStr + '\')">' + r.opt.short + '</span></td>';
 
-            // 儲存鈕（碳日右邊，點擊才顯示）
+            // 儲存鈕（碳日右邊，編輯/dirty 才顯示）
             var saveCls = (isEditing || isDirty) ? 'wt-row-save visible' : 'wt-row-save';
             html += '<td><button class="' + saveCls + '" id="saveBtn_' + r.dateStr + '" onclick="saveRow(\'' + r.dateStr + '\')">儲存</button></td>';
             html += '</tr>';
@@ -440,12 +451,14 @@
 
         document.getElementById('wtBody').innerHTML = html;
 
-        // focus 到正在編輯的 input
+        // focus 到正在編輯的 input + 綁定 idle reset
         if (editingDate) {
             var inp = document.getElementById('editInput_' + editingDate);
             if (inp) {
                 inp.focus();
                 inp.setSelectionRange(inp.value.length, inp.value.length);
+                inp.addEventListener('input', resetIdleTimer);
+                inp.addEventListener('focus', resetIdleTimer);
             }
         }
 
@@ -466,17 +479,29 @@
 
     // ====== Edit weight in row ======
     var _editJustOpened = false;
+    var _idleTimer = null;
+    var IDLE_TIMEOUT = 8000; // 8 秒沒動作自動收起
+
+    function resetIdleTimer() {
+        if (_idleTimer) clearTimeout(_idleTimer);
+        if (!editingDate) return;
+        _idleTimer = setTimeout(function() {
+            if (editingDate) cancelEdit();
+        }, IDLE_TIMEOUT);
+    }
 
     function startEdit(dateStr) {
         _editJustOpened = true;
         editingDate = dateStr;
         dirtyRows[dateStr] = true;
         renderTable();
+        resetIdleTimer();
         setTimeout(function() { _editJustOpened = false; }, 300);
     }
 
     function cancelEdit() {
         if (_editJustOpened) return;
+        if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
         var prevDate = editingDate;
         editingDate = null;
         if (prevDate && !dayTypeOverrides[prevDate]) {
@@ -485,21 +510,22 @@
         renderTable();
     }
 
+    function isEditSafeTarget(el) {
+        if (!el || !el.closest) return false;
+        // 允許：輸入框、儲存鈕、碳日鈕、鍵盤區域
+        if (el.closest('.wt-edit-input') || el.classList.contains('wt-edit-input')) return true;
+        if (el.closest('.wt-row-save') || el.classList.contains('wt-row-save')) return true;
+        if (el.closest('.wt-type')) return true;
+        return false;
+    }
+
     document.addEventListener('touchstart', function(e) {
         if (!editingDate || _editJustOpened) return;
-        var editRow = document.querySelector('.wt-edit-row.active');
-        if (editRow && !editRow.contains(e.target)) {
-            if (e.target.closest && (e.target.closest('.wt-type') || e.target.closest('.wt-weight-val'))) return;
-            cancelEdit();
-        }
+        if (!isEditSafeTarget(e.target)) cancelEdit();
     }, {passive: true});
     document.addEventListener('click', function(e) {
         if (!editingDate || _editJustOpened) return;
-        var editRow = document.querySelector('.wt-edit-row.active');
-        if (editRow && !editRow.contains(e.target)) {
-            if (e.target.closest && (e.target.closest('.wt-type') || e.target.closest('.wt-weight-val'))) return;
-            cancelEdit();
-        }
+        if (!isEditSafeTarget(e.target)) cancelEdit();
     });
 
     function adjWeightRow(dateStr, delta) {
