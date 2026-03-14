@@ -1888,7 +1888,7 @@
                 if (data && data.records) {
                     data.records.forEach(function(rec) {
                         if (rec.date && rec.weight) {
-                            hwWeightData[rec.date] = { weight: parseFloat(rec.weight) };
+                            hwWeightData[rec.date] = { weight: parseFloat(rec.weight), dayType: rec.dayType || '' };
                         }
                     });
                 }
@@ -2004,9 +2004,11 @@
             var isToday = dateStr === todayStr;
             var dow = dateObj.getDay();
             var isSat = dow === 6, isSun = dow === 0;
-            var dayType = hwGetDayType(dateObj);
+            var savedData = hwWeightData[dateStr];
+            var savedWeight = savedData ? savedData.weight : '';
+            // 優先使用實際紀錄的碳日，沒有則用排程推算
+            var dayType = (savedData && savedData.dayType) ? savedData.dayType : hwGetDayType(dateObj);
             var opt = HW_CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || HW_CYCLE_OPTS[4];
-            var savedWeight = hwWeightData[dateStr] ? hwWeightData[dateStr].weight : '';
 
             var cellCls = 'hw-cal-cell' + (isToday ? ' today' : '') + (isSat ? ' sat' : '') + (isSun ? ' sun' : '');
             html += '<div class="' + cellCls + '">';
@@ -2048,6 +2050,16 @@
             return parseInt(p[1]) + '/' + parseInt(p[2]);
         });
         var values = keys.map(function(k){ return hwWeightData[k].weight; });
+        var colorMap = { high: '#D4A574', mid: '#7B8FA1', low: '#6B8F71', fast: '#B8A9C9' };
+        var ptColors = keys.map(function(k){
+            var dt = hwWeightData[k].dayType;
+            if (!dt) {
+                var p = k.split('-');
+                var d = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+                dt = hwGetDayType(d);
+            }
+            return colorMap[dt] || '#8B8B8B';
+        });
 
         if (hwChartInstance) hwChartInstance.destroy();
         hwChartInstance = new Chart(canvas.getContext('2d'), {
@@ -2060,8 +2072,8 @@
                     borderColor: '#7B8FA1',
                     backgroundColor: 'rgba(123,143,161,0.1)',
                     borderWidth: 2.5,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#7B8FA1',
+                    pointRadius: 5,
+                    pointBackgroundColor: ptColors,
                     fill: true,
                     tension: 0.3
                 }]
@@ -2092,7 +2104,8 @@
             var wt = hwWeightData[k].weight;
             var parts = k.split('-');
             var dateObj = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-            var dayType = hwGetDayType(dateObj);
+            var savedDayType = hwWeightData[k].dayType;
+            var dayType = savedDayType ? savedDayType : hwGetDayType(dateObj);
             var opt = HW_CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || HW_CYCLE_OPTS[4];
             var diff = '';
             if (i < allKeys.length - 1) {
@@ -2124,12 +2137,18 @@
         btn.disabled = true;
         btn.textContent = '儲存中…';
 
+        // 計算該日碳日類型
+        var dtParts = dateStr.split('-');
+        var dtObj = new Date(parseInt(dtParts[0]), parseInt(dtParts[1])-1, parseInt(dtParts[2]));
+        var dayType = hwGetDayType(dtObj);
+
         // 寫入 MEALS_GAS（用 GET 避免 CORS preflight）
         var saveUrl = MEALS_GAS
           + '?saveHomeWeight=true'
           + '&patientSn=' + encodeURIComponent(patientSn)
           + '&date=' + encodeURIComponent(dateStr)
-          + '&weight=' + encodeURIComponent(val);
+          + '&weight=' + encodeURIComponent(val)
+          + '&dayType=' + encodeURIComponent(dayType);
 
         // no-cors: 無法讀回應但請求一定會送出
         fetch(saveUrl, { mode: 'no-cors', redirect: 'follow' })
@@ -2137,7 +2156,7 @@
             btn.disabled = false;
             btn.textContent = '已儲存 ✓';
             btn.style.background = '#6B8F71';
-            hwWeightData[dateStr] = { weight: val };
+            hwWeightData[dateStr] = { weight: val, dayType: dayType };
             weightInput.value = '';
             hwRenderAll();
             setTimeout(function(){ btn.textContent = '新增'; btn.style.background = ''; }, 2000);
