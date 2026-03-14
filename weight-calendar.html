@@ -29,6 +29,7 @@
         .today-type-badge.t-mid{background:rgba(255,243,205,0.9);color:#B8926A}
         .today-type-badge.t-low{background:rgba(212,237,218,0.9);color:#6B8F71}
         .today-type-badge.t-fast{background:rgba(226,227,229,0.9);color:#4A4A4A}
+        .today-type-badge.t-none{background:rgba(255,255,255,0.25);color:rgba(255,255,255,0.7)}
         .today-type-hint{font-size:10px;opacity:0.6;margin-top:4px}
         .today-input-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
         .today-label{font-size:13px;opacity:0.9}
@@ -75,6 +76,7 @@
         .cal-type.t-low{background:#D4EDDA;color:#6B8F71}
         .cal-type.t-mid{background:#FFF3CD;color:#B8926A}
         .cal-type.t-fast{background:#E2E3E5;color:#4A4A4A}
+        .cal-type.t-none{background:var(--bg);color:var(--muted)}
         .cal-weight-display{font-size:11px;font-weight:700;color:var(--red)}
         .cal-weight-input{width:90%;max-width:44px;border:none;border-bottom:1px dashed var(--border);background:transparent;text-align:center;font-size:11px;font-weight:700;color:var(--red);padding:1px 0;outline:none;font-family:inherit}
         .cal-weight-input::placeholder{color:#ddd;font-weight:400;font-size:10px}
@@ -174,7 +176,8 @@
         {key:'high', label:'高碳日', short:'高', cls:'t-high'},
         {key:'mid',  label:'中碳日', short:'中', cls:'t-mid'},
         {key:'low',  label:'低碳日', short:'低', cls:'t-low'},
-        {key:'fast', label:'斷食日', short:'斷', cls:'t-fast'}
+        {key:'fast', label:'斷食日', short:'斷', cls:'t-fast'},
+        {key:'none', label:'-',      short:'-',  cls:'t-none'}
     ];
 
     var currentYear, currentMonth;
