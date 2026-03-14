@@ -1252,10 +1252,12 @@
                 if (plan[m][5] === '1') weeklyQb++;
             }
         });
+        var totalMr = weeklyMr * cycleWeeks;
+        var totalQb = weeklyQb * cycleWeeks;
         var weeklyParts = [];
-        if (weeklyMr > 0) weeklyParts.push(weeklyMr + '包代餐');
-        if (weeklyQb > 0) weeklyParts.push(weeklyQb + '包Q寶');
-        var weeklyText = '📦 此計劃一週共需 ' + weeklyParts.join('、');
+        if (weeklyMr > 0) weeklyParts.push('代餐 ' + weeklyMr + '包/週 × ' + cycleWeeks + '週 = ' + totalMr + '包');
+        if (weeklyQb > 0) weeklyParts.push('Q寶 ' + weeklyQb + '包/週 × ' + cycleWeeks + '週 = ' + totalQb + '包');
+        var weeklyText = '📦 共 ' + cycleWeeks + ' 週\n' + weeklyParts.join('\n');
 
         var scheduleBubble = {
             type:'bubble', size:'giga',
@@ -1364,6 +1366,7 @@
             low:  getDietPlanData('low'),
             fast: getDietPlanData('fast'),
             schedule: cycleSchedule,
+            weeks: cycleWeeks,
             lineUid: patientLineUid,
             lineFlexMessage: lineMsg
         };
@@ -1642,13 +1645,18 @@
         cycleSchedule.forEach(function(t) {
             if (dayPlans[t]) { weeklyMr += dayPlans[t].mr; weeklyQb += dayPlans[t].qb; }
         });
+        var totalMr = weeklyMr * cycleWeeks;
+        var totalQb = weeklyQb * cycleWeeks;
         return {
             date: date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0'),
             protein: protein,
             schedule: cycleSchedule.slice(),
+            weeks: cycleWeeks,
             dayPlans: dayPlans,
             weeklyMr: weeklyMr,
             weeklyQb: weeklyQb,
+            totalMr: totalMr,
+            totalQb: totalQb,
             note: '',
             isCurrent: true
         };
@@ -1681,7 +1689,7 @@
         var schedule = rec.schedule || [];
         var subParts = [];
         if (rec.protein) subParts.push('蛋白質 ' + rec.protein + 'g');
-        if (rec.weeklyMr) subParts.push('代餐 ' + rec.weeklyMr + '包/週');
+        if (rec.weeks) subParts.push('共' + rec.weeks + '週');
 
         var html = '<div class="hx-card' + isOpen + '" id="hxCard' + idx + '">';
         // ── Header ──
@@ -1710,13 +1718,16 @@
             html += '</div></div>';
         }
 
-        // 代餐 & Q寶
+        // 週數 & 代餐 & Q寶
         if (rec.weeklyMr > 0 || rec.weeklyQb > 0) {
+            var rWeeks = rec.weeks || 1;
+            var rTotalMr = rec.totalMr || (rec.weeklyMr * rWeeks);
+            var rTotalQb = rec.totalQb || (rec.weeklyQb * rWeeks);
             html += '<div class="hx-section">';
-            html += '<div class="hx-section-title">📦 每週所需</div>';
+            html += '<div class="hx-section-title">📦 共 ' + rWeeks + ' 週</div>';
             html += '<div class="hx-packs-row">';
-            if (rec.weeklyMr > 0) html += '<span class="hx-pack-badge hx-pack-mr">🥤 代餐 ' + rec.weeklyMr + '包</span>';
-            if (rec.weeklyQb > 0) html += '<span class="hx-pack-badge hx-pack-qb">💊 Q寶 ' + rec.weeklyQb + '包</span>';
+            if (rec.weeklyMr > 0) html += '<span class="hx-pack-badge hx-pack-mr">🥤 代餐 ' + rec.weeklyMr + '包/週 × ' + rWeeks + '週 = ' + rTotalMr + '包</span>';
+            if (rec.weeklyQb > 0) html += '<span class="hx-pack-badge hx-pack-qb">💊 Q寶 ' + rec.weeklyQb + '包/週 × ' + rWeeks + '週 = ' + rTotalQb + '包</span>';
             html += '</div></div>';
         }
 
