@@ -186,6 +186,7 @@
     var visitRecords = [];
     var chartInstance = null;
     var selectedDate = new Date(); // 頂部卡片當前選擇的日期
+    var swipeState = { startX:0, currentX:0, dragging:false, swiped:false, animating:false };
 
     // ====== Init ======
     (function init() {
@@ -202,8 +203,6 @@
         var card = document.getElementById('todayCard');
         var content = document.getElementById('todayContent');
         var dateEl = document.getElementById('todayDate');
-        var arrowTimer = null;
-        var swipeState = { startX:0, currentX:0, dragging:false, swiped:false, animating:false };
         var SWIPE_THRESHOLD = 60; // px to trigger day change
 
         // Tap to show/hide arrows (only if not swiping)
