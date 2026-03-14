@@ -206,10 +206,14 @@
             html += '</div></div>';
         }
 
-        // Day plans
+        // Day plans — 只顯示排程中實際存在的碳日類型
         var dayPlans = rec.dayPlans || {};
         var dayOrder = ['mid','high','low','fast'];
-        var sortedDpKeys = dayOrder.filter(function(k){ return dayPlans[k]; });
+        var scheduleSet = {};
+        if (schedule.length > 0) {
+            for (var si = 0; si < schedule.length; si++) { scheduleSet[schedule[si]] = true; }
+        }
+        var sortedDpKeys = dayOrder.filter(function(k){ return dayPlans[k] && (schedule.length === 0 || scheduleSet[k]); });
         sortedDpKeys.forEach(function(p) {
             var dp = dayPlans[p];
             html += '<div class="hx-section">';
