@@ -1140,15 +1140,12 @@
         var total = totalPacks * 20 + totalFood;
         if (total > 0) {
             if (p === 'mid') {
-                var oldVal = parseInt(document.getElementById('proteinInput').value) || 0;
                 document.getElementById('proteinInput').value = total;
-                // 蛋白質改變時，同步重新產生其他碳日
-                if (total !== oldVal) {
-                    ['high', 'low'].forEach(function(other) { generateDietPlan(other); });
-                }
+                // 中碳日有變動，一律同步重新產生高碳日與低碳日
+                ['high', 'low'].forEach(function(other) { generateDietPlan(other); });
             }
             var badge = document.getElementById(p + 'DietModeBadge');
-            var badgeText = totalPacks + '包代餐';
+            var badgeText = total + 'g　' + totalPacks + '包代餐';
             if (qbPacks > 0) badgeText += ' ' + qbPacks + '包Q寶';
             badge.textContent = badgeText;
             badge.className = 'diet-mode ' + (totalPacks <= 2 ? 'm2' : 'm3');
@@ -1173,7 +1170,7 @@
         for (var qi = 0; qi < MEAL_COUNT; qi++) {
             if (plan[qi] && plan[qi][5] === '1') qbPacks++;
         }
-        var badgeText = packs + '包代餐';
+        var badgeText = rec + 'g　' + packs + '包代餐';
         if (qbPacks > 0) badgeText += ' ' + qbPacks + '包Q寶';
         badge.textContent = badgeText;
         badge.className = 'diet-mode ' + (packs <= 2 ? 'm2' : 'm3');
@@ -1660,7 +1657,8 @@
                 mr = calc.mr;
                 qb = calc.qb;
             }
-            dayPlans[p] = { meals: meals, mr: mr, qb: qb };
+            var dayProtein = (p === 'fast') ? 120 : (p === 'low') ? (protein + 20) : protein;
+            dayPlans[p] = { meals: meals, mr: mr, qb: qb, protein: dayProtein };
         });
         // 計算全週
         var weeklyMr = 0, weeklyQb = 0;
@@ -1762,7 +1760,8 @@
             var dp = dayPlans[p];
             var dotColor = dayColors[p] || '#888';
             html += '<div class="hx-section">';
-            html += '<div class="hx-day-label" style="margin-bottom:8px">' + (dayEmojis[p]||'●') + ' ' + esc(dayLabels[p] || p) + '</div>';
+            var dpProtein = dp.protein ? ('　' + dp.protein + 'g') : '';
+            html += '<div class="hx-day-label" style="margin-bottom:8px">' + (dayEmojis[p]||'●') + ' ' + esc(dayLabels[p] || p) + dpProtein + '</div>';
             if (dp.meals && dp.meals.length > 0) {
                 dp.meals.forEach(function(meal) {
                     html += '<div class="hx-meal-row">';
