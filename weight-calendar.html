@@ -490,18 +490,28 @@
         }
     }
 
-    // ====== Edit weight in row ======
-    var _editOpenTime = 0;
+    // ====== Edit / Dismiss 系統 ======
+    var _actionTime = 0;       // 最近一次操作時間戳（防止開啟瞬間被外部點擊關掉）
     var _idleTimer = null;
-    var IDLE_TIMEOUT = 3000; // 3 秒沒動作自動收起
-    var EDIT_GUARD_MS = 500; // 開啟後 500ms 內忽略外部點擊
+    var IDLE_TIMEOUT = 3000;
+    var GUARD_MS = 400;
+
+    function clearIdleTimer() {
+        if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
+    }
+
+    function startIdleTimer() {
+        clearIdleTimer();
+        _idleTimer = setTimeout(dismissAll, IDLE_TIMEOUT);
+    }
 
     function resetIdleTimer() {
-        if (_idleTimer) clearTimeout(_idleTimer);
-        if (!editingDate) return;
-        _idleTimer = setTimeout(function() {
-            if (editingDate) doDismissEdit();
-        }, IDLE_TIMEOUT);
+        if (editingDate || hasDirtyRows()) startIdleTimer();
+    }
+
+    function hasDirtyRows() {
+        for (var k in dirtyRows) { if (dirtyRows.hasOwnProperty(k)) return true; }
+        return false;
     }
 
     function setEditingClass(on) {
@@ -516,14 +526,31 @@
         if (scrollEl) scrollEl.scrollTop = savedTop;
     }
 
+    // 全部收起：清 editingDate + 所有非已改碳日的 dirtyRows
+    function dismissAll() {
+        clearIdleTimer();
+        var prevDate = editingDate;
+        editingDate = null;
+        // 清掉沒有 dayTypeOverride 的 dirty（純體重編輯取消）
+        if (prevDate && !dayTypeOverrides[prevDate]) {
+            delete dirtyRows[prevDate];
+        }
+        // 清掉所有 dirty（碳日切換的也收起）
+        var keys = Object.keys(dirtyRows);
+        for (var i = 0; i < keys.length; i++) {
+            delete dirtyRows[keys[i]];
+        }
+        setEditingClass(false);
+        preserveScrollRender();
+    }
+
     function startEdit(dateStr) {
-        _editOpenTime = Date.now();
+        _actionTime = Date.now();
         editingDate = dateStr;
         dirtyRows[dateStr] = true;
         setEditingClass(true);
         preserveScrollRender();
-        resetIdleTimer();
-        // 確保 input 在鍵盤上方可見
+        startIdleTimer();
         setTimeout(function() {
             var inp = document.getElementById('editInput_' + dateStr);
             if (inp) {
@@ -532,20 +559,8 @@
         }, 350);
     }
 
-    function doDismissEdit() {
-        if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
-        var prevDate = editingDate;
-        editingDate = null;
-        if (prevDate && !dayTypeOverrides[prevDate]) {
-            delete dirtyRows[prevDate];
-        }
-        setEditingClass(false);
-        preserveScrollRender();
-    }
-
     function isEditSafeTarget(el) {
         if (!el) return false;
-        // 走遍父層尋找安全目標
         var node = el;
         while (node && node !== document.body) {
             if (node.classList) {
@@ -559,17 +574,13 @@
         return false;
     }
 
-    // 點擊外部取消編輯（touchstart 比 click 快，在 LIFF 更可靠）
-    document.addEventListener('touchstart', function(e) {
-        if (!editingDate) return;
-        if (Date.now() - _editOpenTime < EDIT_GUARD_MS) return;
-        if (!isEditSafeTarget(e.target)) doDismissEdit();
-    }, {passive: true});
-    document.addEventListener('click', function(e) {
-        if (!editingDate) return;
-        if (Date.now() - _editOpenTime < EDIT_GUARD_MS) return;
-        if (!isEditSafeTarget(e.target)) doDismissEdit();
-    });
+    function onOutsideTap(e) {
+        if (!editingDate && !hasDirtyRows()) return;
+        if (Date.now() - _actionTime < GUARD_MS) return;
+        if (!isEditSafeTarget(e.target)) dismissAll();
+    }
+    document.addEventListener('touchstart', onOutsideTap, {passive: true});
+    document.addEventListener('click', onOutsideTap);
 
     function adjWeightRow(dateStr, delta) {
         var inp = document.getElementById('editInput_' + dateStr);
@@ -622,7 +633,7 @@
           + '&weight=' + encodeURIComponent(wt)
           + '&dayType=' + encodeURIComponent(dayType);
 
-        if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
+        clearIdleTimer();
         fetch(saveUrl, { mode: 'no-cors', redirect: 'follow' })
         .then(function(){
             btn.disabled = false;
@@ -631,9 +642,7 @@
             btn.style.borderColor = '#6B8F71';
             delete dirtyRows[dateStr];
             setTimeout(function(){
-                editingDate = null;
-                setEditingClass(false);
-                preserveScrollRender();
+                dismissAll();
                 renderChart();
             }, 800);
         })
@@ -643,9 +652,7 @@
             btn.style.color = '#6B8F71';
             delete dirtyRows[dateStr];
             setTimeout(function(){
-                editingDate = null;
-                setEditingClass(false);
-                preserveScrollRender();
+                dismissAll();
                 renderChart();
             }, 800);
         });
@@ -660,12 +667,11 @@
         idx = (idx + 1) % CYCLE_OPTS.length;
         dayTypeOverrides[dateStr] = CYCLE_OPTS[idx].key;
         dirtyRows[dateStr] = true;
-        editingDate = dateStr;
-        _editOpenTime = Date.now();
+        _actionTime = Date.now();
         setEditingClass(true);
         saveLocalWeights();
         preserveScrollRender();
-        resetIdleTimer();
+        startIdleTimer();
     }
 
     // ====== Stats ======
