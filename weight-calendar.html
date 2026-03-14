@@ -300,61 +300,45 @@
         }, {passive:true});
     })();
 
-    function loadData() {
-        var loaded = 0, total = 2;
-        var dietPlanData = null; // 暫存 dietPlan 回傳
-        function check() {
-            loaded++;
-            if (loaded >= total) {
-                // 如果 dietHistory 沒有紀錄但 dietPlan 有排程，用 dietPlan 建立一筆虛擬看診紀錄
-                if (visitRecords.length === 0 && dietPlanData && dietPlanData.schedule && dietPlanData.schedule.length === 7) {
-                    var planDate = dietPlanData.date || dietPlanData.savedDate || formatDate(new Date());
-                    visitRecords = [{
-                        date: planDate,
-                        schedule: dietPlanData.schedule,
-                        weeks: dietPlanData.weeks || 4
-                    }];
-                    var p = planDate.split('-');
-                    visitDate = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
-                    cycleSchedule = dietPlanData.schedule;
-                    console.log('[日曆] 用 dietPlan 建立虛擬看診紀錄:', visitRecords[0]);
-                }
-                onDataReady();
-            }
-        }
+    // 把各種日期格式轉成 YYYY-MM-DD
+    function parseDateToYMD(dateVal) {
+        if (!dateVal) return '';
+        // 已經是 YYYY-MM-DD
+        if (typeof dateVal === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateVal)) return dateVal.substring(0, 10);
+        // JS Date string 或其他格式 → 用 new Date() 解析
+        var d = new Date(dateVal);
+        if (isNaN(d.getTime())) return '';
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
 
+    function loadData() {
+        // 只需要 dietPlan（排程、日期、週數都在這裡）
         if (patientSn) {
             fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn))
                 .then(function(r){ return r.json(); })
                 .then(function(data){
                     console.log('[日曆] dietPlan 回傳:', JSON.stringify(data).substring(0, 500));
-                    dietPlanData = data;
-                    if (data.schedule && data.schedule.length === 7) cycleSchedule = data.schedule;
-                    check();
-                }).catch(function(e){ console.log('[日曆] dietPlan 錯誤:', e); check(); });
-        } else { check(); }
-
-        if (patientSn) {
-            fetch(MEALS_GAS + '?dietHistory=' + encodeURIComponent(patientSn))
-                .then(function(r){ return r.json(); })
-                .then(function(data){
-                    console.log('[日曆] dietHistory 回傳:', JSON.stringify(data).substring(0, 500));
-                    // 相容兩種格式：直接陣列 [...] 或 { records: [...] }
-                    var recs = Array.isArray(data) ? data : (data.records || []);
-                    console.log('[日曆] 解析後紀錄數:', recs.length, recs.length > 0 ? '第一筆:' + JSON.stringify(recs[0]).substring(0, 300) : '');
-                    if (recs.length > 0) {
-                        visitRecords = recs.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
-                        var latest = visitRecords[visitRecords.length - 1];
-                        if (latest && latest.date) {
-                            var p = latest.date.split('-');
-                            visitDate = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
-                            if (latest.schedule && latest.schedule.length === 7) cycleSchedule = latest.schedule;
-                        }
-                        console.log('[日曆] visitRecords 最新:', JSON.stringify(latest).substring(0, 300));
+                    if (data.schedule && data.schedule.length === 7) {
+                        cycleSchedule = data.schedule;
+                        var planDate = parseDateToYMD(data.date);
+                        if (!planDate) planDate = formatDate(new Date());
+                        visitRecords = [{
+                            date: planDate,
+                            schedule: data.schedule,
+                            weeks: data.weeks || 4
+                        }];
+                        var p = planDate.split('-');
+                        visitDate = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+                        console.log('[日曆] 看診紀錄:', visitRecords[0]);
                     }
-                    check();
-                }).catch(function(e){ console.log('[日曆] dietHistory 錯誤:', e); check(); });
-        } else { check(); }
+                    onDataReady();
+                }).catch(function(e){
+                    console.log('[日曆] dietPlan 錯誤:', e);
+                    onDataReady();
+                });
+        } else {
+            onDataReady();
+        }
 
         // 從 localStorage 載入體重資料
         loadLocalWeights();
