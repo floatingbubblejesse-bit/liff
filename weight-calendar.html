@@ -35,10 +35,21 @@
 
         /* ====== Table ====== */
         .wt-table{width:100%;border-collapse:collapse;background:white}
-        .wt-table thead th{position:sticky;top:0;background:#F8F6F2;font-size:12px;font-weight:700;color:var(--muted);padding:10px 8px;text-align:center;border-bottom:2px solid var(--border);z-index:2}
-        .wt-table tbody td{padding:10px 4px;text-align:center;border-bottom:1px solid #F0EDE6;font-size:13px;vertical-align:middle}
-        .wt-table.editing-active tbody td{padding:10px 1px}
-        .wt-table th:last-child,.wt-table td:last-child{width:1px;white-space:nowrap;padding-right:6px}
+        .wt-table thead th{position:sticky;top:0;background:#F8F6F2;font-size:12px;font-weight:700;color:var(--muted);padding:10px 8px;border-bottom:2px solid var(--border);z-index:2}
+        .wt-table thead th:nth-child(1){text-align:left;padding-left:14px}
+        .wt-table thead th:nth-child(2){text-align:left}
+        .wt-table thead th:nth-child(3){text-align:right;padding-right:14px}
+        .wt-table thead th:nth-child(4){width:0;padding:0}
+        .wt-table tbody td{padding:10px 4px;border-bottom:1px solid #F0EDE6;font-size:13px;vertical-align:middle}
+        .wt-table tbody td:nth-child(1){text-align:left;padding-left:14px}
+        .wt-table tbody td:nth-child(2){text-align:left}
+        .wt-table tbody td:nth-child(3){text-align:right;padding-right:14px}
+        .wt-table tbody td:nth-child(4){width:0;padding:0 2px}
+        .wt-table.editing-active{table-layout:fixed}
+        .wt-table.editing-active thead th:nth-child(1),.wt-table.editing-active tbody td:nth-child(1){width:28%}
+        .wt-table.editing-active thead th:nth-child(2),.wt-table.editing-active tbody td:nth-child(2){width:26%}
+        .wt-table.editing-active thead th:nth-child(3),.wt-table.editing-active tbody td:nth-child(3){width:24%;padding-right:4px}
+        .wt-table.editing-active thead th:nth-child(4),.wt-table.editing-active tbody td:nth-child(4){width:22%;padding:0 4px;text-align:center}
         .wt-table tbody tr:active{background:#FDFBF7}
         .wt-table tbody tr.today-row{background:#EDF2F7}
         .wt-table tbody tr.today-row td{border-bottom-color:#D0DBE6}
@@ -313,7 +324,7 @@
         var e = scheduleEnd;
         var sLabel = (s.getMonth()+1) + '/' + s.getDate() + '(' + DAY_NAMES[s.getDay()] + ')';
         var eLabel = (e.getMonth()+1) + '/' + e.getDate() + '(' + DAY_NAMES[e.getDay()] + ')';
-        bar.innerHTML = '排程期間　<span class="sch-range">' + sLabel + ' ~ ' + eLabel + '</span>　' + scheduleWeeks + ' 週';
+        bar.innerHTML = '最新排程期間　<span class="sch-range">' + sLabel + ' ~ ' + eLabel + '</span>　' + scheduleWeeks + ' 週';
         bar.style.display = 'block';
     }
 
@@ -471,25 +482,25 @@
         if (!skipScroll && !window._scrolledInit) {
             window._scrolledInit = true;
             setTimeout(function() {
-                var scrollEl = document.getElementById('tableScroll');
                 var target = document.querySelector('.today-row') || document.getElementById('scheduleStartRow');
-                if (target && scrollEl) {
-                    scrollEl.scrollTop = target.offsetTop - scrollEl.offsetTop;
+                if (target) {
+                    target.scrollIntoView({ block: 'start' });
                 }
-            }, 100);
+            }, 150);
         }
     }
 
     // ====== Edit weight in row ======
-    var _editJustOpened = false;
+    var _editOpenTime = 0;
     var _idleTimer = null;
     var IDLE_TIMEOUT = 3000; // 3 秒沒動作自動收起
+    var EDIT_GUARD_MS = 500; // 開啟後 500ms 內忽略外部點擊
 
     function resetIdleTimer() {
         if (_idleTimer) clearTimeout(_idleTimer);
         if (!editingDate) return;
         _idleTimer = setTimeout(function() {
-            if (editingDate) cancelEdit();
+            if (editingDate) doDismissEdit();
         }, IDLE_TIMEOUT);
     }
 
@@ -498,17 +509,19 @@
         if (tbl) { if (on) tbl.classList.add('editing-active'); else tbl.classList.remove('editing-active'); }
     }
 
-    function startEdit(dateStr) {
-        _editJustOpened = true;
-        editingDate = dateStr;
-        dirtyRows[dateStr] = true;
-        setEditingClass(true);
-        // 記住滾動位置，renderTable innerHTML 重建會丟失
+    function preserveScrollRender() {
         var scrollEl = document.getElementById('tableScroll');
         var savedTop = scrollEl ? scrollEl.scrollTop : 0;
         renderTable(true);
-        // 恢復滾動位置
         if (scrollEl) scrollEl.scrollTop = savedTop;
+    }
+
+    function startEdit(dateStr) {
+        _editOpenTime = Date.now();
+        editingDate = dateStr;
+        dirtyRows[dateStr] = true;
+        setEditingClass(true);
+        preserveScrollRender();
         resetIdleTimer();
         // 確保 input 在鍵盤上方可見
         setTimeout(function() {
@@ -516,12 +529,10 @@
             if (inp) {
                 inp.scrollIntoView({ block: 'center', behavior: 'smooth' });
             }
-            _editJustOpened = false;
         }, 350);
     }
 
-    function cancelEdit() {
-        if (_editJustOpened) return;
+    function doDismissEdit() {
         if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
         var prevDate = editingDate;
         editingDate = null;
@@ -529,28 +540,35 @@
             delete dirtyRows[prevDate];
         }
         setEditingClass(false);
-        var scrollEl = document.getElementById('tableScroll');
-        var savedTop = scrollEl ? scrollEl.scrollTop : 0;
-        renderTable(true);
-        if (scrollEl) scrollEl.scrollTop = savedTop;
+        preserveScrollRender();
     }
 
     function isEditSafeTarget(el) {
-        if (!el || !el.closest) return false;
-        // 允許：輸入框、儲存鈕、碳日鈕、鍵盤區域
-        if (el.closest('.wt-edit-input') || el.classList.contains('wt-edit-input')) return true;
-        if (el.closest('.wt-row-save') || el.classList.contains('wt-row-save')) return true;
-        if (el.closest('.wt-type')) return true;
+        if (!el) return false;
+        // 走遍父層尋找安全目標
+        var node = el;
+        while (node && node !== document.body) {
+            if (node.classList) {
+                if (node.classList.contains('wt-edit-input')) return true;
+                if (node.classList.contains('wt-row-save')) return true;
+                if (node.classList.contains('wt-type')) return true;
+            }
+            if (node.tagName === 'INPUT') return true;
+            node = node.parentElement;
+        }
         return false;
     }
 
+    // 點擊外部取消編輯（touchstart 比 click 快，在 LIFF 更可靠）
     document.addEventListener('touchstart', function(e) {
-        if (!editingDate || _editJustOpened) return;
-        if (!isEditSafeTarget(e.target)) cancelEdit();
+        if (!editingDate) return;
+        if (Date.now() - _editOpenTime < EDIT_GUARD_MS) return;
+        if (!isEditSafeTarget(e.target)) doDismissEdit();
     }, {passive: true});
     document.addEventListener('click', function(e) {
-        if (!editingDate || _editJustOpened) return;
-        if (!isEditSafeTarget(e.target)) cancelEdit();
+        if (!editingDate) return;
+        if (Date.now() - _editOpenTime < EDIT_GUARD_MS) return;
+        if (!isEditSafeTarget(e.target)) doDismissEdit();
     });
 
     function adjWeightRow(dateStr, delta) {
@@ -604,6 +622,7 @@
           + '&weight=' + encodeURIComponent(wt)
           + '&dayType=' + encodeURIComponent(dayType);
 
+        if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
         fetch(saveUrl, { mode: 'no-cors', redirect: 'follow' })
         .then(function(){
             btn.disabled = false;
@@ -614,10 +633,7 @@
             setTimeout(function(){
                 editingDate = null;
                 setEditingClass(false);
-                var sc = document.getElementById('tableScroll');
-                var st = sc ? sc.scrollTop : 0;
-                renderTable(true);
-                if (sc) sc.scrollTop = st;
+                preserveScrollRender();
                 renderChart();
             }, 800);
         })
@@ -629,10 +645,7 @@
             setTimeout(function(){
                 editingDate = null;
                 setEditingClass(false);
-                var sc = document.getElementById('tableScroll');
-                var st = sc ? sc.scrollTop : 0;
-                renderTable(true);
-                if (sc) sc.scrollTop = st;
+                preserveScrollRender();
                 renderChart();
             }, 800);
         });
@@ -735,10 +748,9 @@
 
     // ====== Scroll to today ======
     function scrollToToday() {
-        var scrollEl = document.getElementById('tableScroll');
         var target = document.querySelector('.today-row');
-        if (target && scrollEl) {
-            scrollEl.scrollTop = target.offsetTop - scrollEl.offsetTop;
+        if (target) {
+            target.scrollIntoView({ block: 'start' });
         }
     }
 
