@@ -10,15 +10,20 @@
         *{box-sizing:border-box;margin:0;padding:0}
         body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
-        /* ====== Top: Today card ====== */
-        .today-card{background:linear-gradient(135deg, #7B8FA1, #8B9D83);color:white;padding:20px 20px 18px;text-align:center}
-        .today-date{font-size:18px;font-weight:700;margin-bottom:6px}
-        .today-type-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px}
-        .today-type-badge{display:inline-flex;align-items:center;justify-content:center;padding:4px 16px;border-radius:20px;font-size:14px;font-weight:700}
+        /* ====== Top: Day card with swipe ====== */
+        .today-card{background:linear-gradient(135deg, #7B8FA1, #8B9D83);color:white;padding:16px 20px 14px;text-align:center;touch-action:pan-y;user-select:none;position:relative;overflow:hidden}
+        .today-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px}
+        .today-nav-btn{width:32px;height:32px;border:none;border-radius:50%;background:rgba(255,255,255,0.2);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .today-nav-btn:active{background:rgba(255,255,255,0.35)}
+        .today-date{font-size:17px;font-weight:700}
+        .today-type-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px}
+        .today-type-badge{display:inline-flex;align-items:center;justify-content:center;padding:5px 20px;border-radius:20px;font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform 0.15s}
+        .today-type-badge:active{transform:scale(0.9)}
         .today-type-badge.t-high{background:rgba(248,215,218,0.9);color:#A0626B}
         .today-type-badge.t-mid{background:rgba(255,243,205,0.9);color:#B8926A}
         .today-type-badge.t-low{background:rgba(212,237,218,0.9);color:#6B8F71}
         .today-type-badge.t-fast{background:rgba(226,227,229,0.9);color:#4A4A4A}
+        .today-type-hint{font-size:10px;opacity:0.6;margin-top:2px}
         .today-input-row{display:flex;align-items:center;justify-content:center;gap:8px}
         .today-label{font-size:13px;opacity:0.9}
         .today-input{width:80px;padding:8px 6px;border:none;border-radius:8px;font-size:16px;font-weight:700;text-align:center;color:var(--red);outline:none;background:rgba(255,255,255,0.95)}
@@ -51,14 +56,14 @@
         .cal-weekday{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0}
         .cal-weekday.sat{color:var(--blue)}
         .cal-weekday.sun{color:var(--red)}
-        .cal-cell{background:var(--bg);border-radius:8px;padding:6px 2px;min-height:80px;display:flex;flex-direction:column;align-items:center;gap:3px;border:1px solid transparent;transition:all 0.15s}
+        .cal-cell{background:var(--bg);border-radius:8px;padding:6px 2px;min-height:90px;display:flex;flex-direction:column;align-items:center;gap:3px;border:1px solid transparent;transition:all 0.15s}
         .cal-cell.today{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
         .cal-cell.empty{background:transparent;border:none;min-height:0}
         .cal-date{font-size:12px;font-weight:600;color:var(--text);line-height:1}
         .cal-cell.today .cal-date{color:var(--blue);font-weight:800}
         .cal-cell.sat .cal-date{color:var(--blue)}
         .cal-cell.sun .cal-date{color:var(--red)}
-        .cal-type{width:26px;height:18px;border-radius:4px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s;user-select:none;-webkit-tap-highlight-color:transparent}
+        .cal-type{width:32px;height:24px;border-radius:5px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s;user-select:none;-webkit-tap-highlight-color:transparent}
         .cal-type:active{transform:scale(0.85)}
         .cal-type.t-high{background:#F8D7DA;color:#A0626B}
         .cal-type.t-low{background:#D4EDDA;color:#6B8F71}
@@ -86,12 +91,17 @@
 </head>
 <body>
 
-<!-- ====== 今日輸入區 ====== -->
+<!-- ====== 日期輸入區（可滑動切換日期） ====== -->
 <div class="today-card" id="todayCard">
-    <div class="today-date" id="todayDate"></div>
-    <div class="today-type-row">
-        <div class="today-type-badge" id="todayTypeBadge"></div>
+    <div class="today-nav">
+        <button class="today-nav-btn" onclick="shiftSelectedDay(-1)">◀</button>
+        <div class="today-date" id="todayDate"></div>
+        <button class="today-nav-btn" onclick="shiftSelectedDay(1)">▶</button>
     </div>
+    <div class="today-type-row">
+        <div class="today-type-badge" id="todayTypeBadge" onclick="cycleSelectedDayType()"></div>
+    </div>
+    <div class="today-type-hint" id="todayTypeHint">點擊切換碳日</div>
     <div class="today-input-row">
         <span class="today-label">請輸入今早體重：</span>
         <input class="today-input" id="todayWeightInput" type="text" inputmode="decimal" placeholder="--.-">
@@ -165,6 +175,7 @@
     var dayTypeOverrides = {};
     var visitRecords = [];
     var chartInstance = null;
+    var selectedDate = new Date(); // 頂部卡片當前選擇的日期
 
     // ====== Init ======
     (function init() {
@@ -174,7 +185,19 @@
         var now = new Date();
         currentYear = now.getFullYear();
         currentMonth = now.getMonth();
+        selectedDate = new Date(now);
         loadData();
+
+        // Swipe support on top card
+        var card = document.getElementById('todayCard');
+        var startX = 0;
+        card.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; }, {passive:true});
+        card.addEventListener('touchend', function(e) {
+            var dx = e.changedTouches[0].clientX - startX;
+            if (Math.abs(dx) > 50) {
+                shiftSelectedDay(dx < 0 ? 1 : -1);
+            }
+        }, {passive:true});
     })();
 
     function loadData() {
@@ -238,24 +261,47 @@
         document.getElementById('statsRow').style.display = 'flex';
     }
 
-    // ====== Today Card ======
+    // ====== Top Day Card ======
     function renderTodayCard() {
-        var now = new Date();
-        var todayStr = formatDate(now);
+        var dateStr = formatDate(selectedDate);
         var dayNames = ['日','一','二','三','四','五','六'];
-        var dateText = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日（' + dayNames[now.getDay()] + '）';
+        var dateText = selectedDate.getFullYear() + '年' + (selectedDate.getMonth()+1) + '月' + selectedDate.getDate() + '日（' + dayNames[selectedDate.getDay()] + '）';
+
+        // 判斷是否為今天
+        var todayStr = formatDate(new Date());
+        if (dateStr === todayStr) dateText += ' 今天';
+
         document.getElementById('todayDate').textContent = dateText;
 
-        var dayType = getDayType(now);
+        var dayType = getDayType(selectedDate);
         var opt = CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || CYCLE_OPTS[1];
         var badge = document.getElementById('todayTypeBadge');
         badge.textContent = opt.label;
         badge.className = 'today-type-badge ' + opt.cls;
 
-        // Pre-fill today's weight if exists
-        if (weightData[todayStr] && weightData[todayStr].weight) {
-            document.getElementById('todayWeightInput').value = weightData[todayStr].weight;
+        // Pre-fill weight if exists
+        var input = document.getElementById('todayWeightInput');
+        if (weightData[dateStr] && weightData[dateStr].weight) {
+            input.value = weightData[dateStr].weight;
+        } else {
+            input.value = '';
         }
+    }
+
+    function shiftSelectedDay(delta) {
+        selectedDate.setDate(selectedDate.getDate() + delta);
+        renderTodayCard();
+    }
+
+    function cycleSelectedDayType() {
+        var dateStr = formatDate(selectedDate);
+        var current = getDayType(selectedDate);
+        var idx = CYCLE_OPTS.findIndex(function(o){ return o.key === current; });
+        idx = (idx + 1) % CYCLE_OPTS.length;
+        dayTypeOverrides[dateStr] = CYCLE_OPTS[idx].key;
+        saveLocalWeights();
+        renderTodayCard();
+        renderCalendar();
     }
 
     function saveTodayWeight() {
@@ -263,9 +309,9 @@
         var val = parseFloat(input.value);
         if (isNaN(val) || val <= 0) { alert('請輸入有效的體重'); return; }
 
-        var todayStr = formatDate(new Date());
-        if (!weightData[todayStr]) weightData[todayStr] = {};
-        weightData[todayStr].weight = val;
+        var dateStr = formatDate(selectedDate);
+        if (!weightData[dateStr]) weightData[dateStr] = {};
+        weightData[dateStr].weight = val;
 
         saveLocalWeights();
 
