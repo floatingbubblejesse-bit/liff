@@ -47,15 +47,14 @@
         .wt-weight-val{font-size:15px;font-weight:700;color:var(--red);cursor:pointer;-webkit-tap-highlight-color:transparent;min-height:24px;display:flex;align-items:center;justify-content:center;gap:2px}
         .wt-weight-val.empty{color:var(--muted);font-weight:400;font-size:12px}
 
-        /* ====== Inline edit row ====== */
-        .wt-edit-row{display:none;align-items:center;justify-content:center;gap:4px}
+        /* ====== Inline edit row (merged with weight display) ====== */
+        .wt-edit-row{display:none;align-items:center;justify-content:center;gap:6px}
         .wt-edit-row.active{display:flex}
-        .wt-edit-input{width:60px;padding:4px 0;border:none;border-bottom:2px solid var(--blue);font-size:15px;font-weight:700;text-align:center;color:var(--red);outline:none;background:transparent;-moz-appearance:textfield}
+        .wt-edit-input{width:52px;padding:2px 0;border:none;border-bottom:2px solid var(--blue);font-size:15px;font-weight:700;text-align:center;color:var(--red);outline:none;background:transparent;-moz-appearance:textfield}
         .wt-edit-input::-webkit-outer-spin-button,.wt-edit-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
         .wt-edit-input::placeholder{color:#ccc;font-weight:400;font-size:12px}
-        .wt-adj-btn{width:28px;height:28px;border:1px solid var(--border);border-radius:50%;background:white;color:var(--text);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+        .wt-adj-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:50%;background:white;color:var(--text);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
         .wt-adj-btn:active{background:var(--bg)}
-        .wt-unit{font-size:11px;color:var(--muted)}
 
         /* ====== Carb day badge ====== */
         .wt-type{display:inline-flex;align-items:center;justify-content:center;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform 0.15s;user-select:none}
@@ -67,7 +66,7 @@
         .wt-type.t-none{background:var(--bg);color:var(--muted)}
 
         /* ====== Row save button ====== */
-        .wt-row-save{display:none;padding:3px 10px;border:1px solid var(--green);border-radius:6px;background:white;color:var(--green);font-size:11px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap}
+        .wt-row-save{display:none;padding:2px 8px;border:1px solid var(--green);border-radius:6px;background:white;color:var(--green);font-size:11px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap;margin-left:2px}
         .wt-row-save:active{background:var(--green-light)}
         .wt-row-save.visible{display:inline-block}
 
@@ -81,7 +80,7 @@
         .section.open .section-arrow{transform:rotate(180deg)}
         .section-body{display:none;border-top:1px solid var(--border);padding:10px}
         .section.open .section-body{display:block}
-        .chart-wrap{position:relative;height:200px;padding:8px 0}
+        .chart-wrap{position:relative;height:160px;padding:4px 0}
 
         /* ====== Loading ====== */
         .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:40vh;gap:14px}
@@ -109,13 +108,13 @@
 
 <div class="table-scroll" id="tableScroll">
 <table class="wt-table">
-    <thead><tr><th>日期</th><th>體重</th><th>碳日</th><th></th></tr></thead>
+    <thead><tr><th>日期</th><th>體重</th><th>碳日</th></tr></thead>
     <tbody id="wtBody"></tbody>
 </table>
 </div>
 
 <!-- ====== 體重趨勢圖（收折） ====== -->
-<div class="section open" id="chartSection">
+<div class="section" id="chartSection">
     <div class="section-header" onclick="toggleSection('chartSection')">
         <span class="section-icon">📈</span>
         <span class="section-title">體重趨勢</span>
@@ -145,7 +144,8 @@
     ];
     var DAY_NAMES = ['日','一','二','三','四','五','六'];
 
-    var patientSn = '', patientUid = '';
+    var GAS_URL = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
+    var patientSn = '', patientUid = '', patientName = '';
     var cycleSchedule = ['high','high','mid','mid','high','mid','mid'];
     var visitDate = null;
     var scheduleStart = null; // 排程開始日（看診日+1）
@@ -172,6 +172,7 @@
             }).then(function(profile) {
                 if (!profile) return;
                 patientUid = profile.userId;
+                patientName = profile.displayName;
                 document.getElementById('headerSub').textContent = profile.displayName;
                 if (profile.pictureUrl) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + profile.pictureUrl + '" alt="">'; }
                 return fetch(MEALS_GAS + '?lookupUid=' + encodeURIComponent(patientUid))
@@ -263,8 +264,19 @@
 
     function onDataReady() {
         document.getElementById('loadingOverlay').style.display = 'none';
-        if (patientSn) {
+        if (patientName) {
+            document.getElementById('headerSub').textContent = patientName;
+        } else if (patientSn) {
             document.getElementById('headerSub').textContent = patientSn;
+            // 嘗試從 GAS 取得姓名
+            fetch(GAS_URL + '?id=' + encodeURIComponent(patientSn))
+                .then(function(r){ return r.json(); })
+                .then(function(data){
+                    if (data && data.name) {
+                        patientName = data.name;
+                        document.getElementById('headerSub').textContent = data.name;
+                    }
+                }).catch(function(){});
         }
         renderScheduleBar();
         renderTable();
@@ -407,15 +419,18 @@
             html += '<tr' + (trCls ? ' class="' + trCls + '"' : '') + trId + '>';
             html += '<td><div class="wt-date">' + dateLabel + '</div></td>';
 
-            // 體重欄
+            // 體重欄（含加減號與儲存鈕）
             html += '<td class="wt-weight-cell">';
             if (isEditing) {
                 html += '<div class="wt-edit-row active">';
                 html += '<button class="wt-adj-btn" onclick="adjWeightRow(\'' + r.dateStr + '\',-0.1)">−</button>';
                 html += '<input class="wt-edit-input" id="editInput_' + r.dateStr + '" type="text" inputmode="decimal" pattern="[0-9.]*" placeholder="--.-" value="' + (r.wt !== null ? r.wt.toFixed(1) : '') + '">';
                 html += '<button class="wt-adj-btn" onclick="adjWeightRow(\'' + r.dateStr + '\',0.1)">+</button>';
-                html += '<span class="wt-unit">kg</span>';
+                html += '<button class="wt-row-save visible" id="saveBtn_' + r.dateStr + '" onclick="saveRow(\'' + r.dateStr + '\')">儲存</button>';
                 html += '</div>';
+            } else if (isDirty) {
+                html += '<div class="wt-weight-val" onclick="startEdit(\'' + r.dateStr + '\')">' + (r.wt !== null ? r.wt.toFixed(1) : '-') + '</div>';
+                html += '<button class="wt-row-save visible" id="saveBtn_' + r.dateStr + '" onclick="saveRow(\'' + r.dateStr + '\')">儲存</button>';
             } else {
                 if (r.wt !== null) {
                     html += '<div class="wt-weight-val" onclick="startEdit(\'' + r.dateStr + '\')">' + r.wt.toFixed(1) + '</div>';
@@ -427,10 +442,6 @@
 
             // 碳日
             html += '<td><span class="wt-type ' + r.opt.cls + '" onclick="cycleDayType(\'' + r.dateStr + '\')">' + r.opt.short + '</span></td>';
-
-            // 儲存鈕
-            var saveCls = (isDirty || isEditing) ? 'wt-row-save visible' : 'wt-row-save';
-            html += '<td><button class="' + saveCls + '" id="saveBtn_' + r.dateStr + '" onclick="saveRow(\'' + r.dateStr + '\')">儲存</button></td>';
             html += '</tr>';
         }
 
@@ -664,7 +675,7 @@
                 },
                 scales: {
                     x: { ticks: { font: { size: 10 }, color: '#8B8B8B', maxRotation: 45 }, grid: { display: false } },
-                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B', callback: function(v){ return v + 'kg'; } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B' }, grid: { color: 'rgba(0,0,0,0.05)' } }
                 }
             }
         });
