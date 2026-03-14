@@ -101,7 +101,7 @@
 <div class="schedule-bar" id="scheduleBar" style="display:none"></div>
 
 <div class="stats-row">
-    <div class="stat-item"><div class="stat-value" id="statStart">-</div><div class="stat-label">期初體重</div></div>
+    <div class="stat-item" onclick="scrollToToday()" style="cursor:pointer"><div class="stat-value" style="color:var(--blue);font-size:13px">📍</div><div class="stat-label">回到今天</div></div>
     <div class="stat-item"><div class="stat-value" id="statLatest">-</div><div class="stat-label">最新體重</div></div>
     <div class="stat-item"><div class="stat-value" id="statDiff">-</div><div class="stat-label">排程變化</div></div>
     <div class="stat-item"><div class="stat-value" id="statCount">0</div><div class="stat-label">紀錄天數</div></div>
@@ -608,7 +608,6 @@
         var last = count > 0 ? weightData[rangeKeys[rangeKeys.length - 1]].weight : null;
 
         document.getElementById('statCount').textContent = count;
-        document.getElementById('statStart').textContent = first ? first.toFixed(1) : '-';
         document.getElementById('statLatest').textContent = last ? last.toFixed(1) : '-';
         if (first && last) {
             var diff = last - first;
@@ -669,6 +668,15 @@
                 }
             }
         });
+    }
+
+    // ====== Scroll to today ======
+    function scrollToToday() {
+        var scrollEl = document.getElementById('tableScroll');
+        var target = document.querySelector('.today-row');
+        if (target && scrollEl) {
+            scrollEl.scrollTop = target.offsetTop - scrollEl.offsetTop;
+        }
     }
 
     // ====== Helpers ======
