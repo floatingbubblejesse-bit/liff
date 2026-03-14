@@ -16,11 +16,9 @@
         .page-header h1{font-size:17px;font-weight:700;letter-spacing:1px}
         .page-header p{font-size:11px;opacity:0.85;margin-top:3px}
 
-        /* ====== Month nav ====== */
-        .month-bar{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 16px;background:white;border-bottom:1px solid var(--border)}
-        .month-bar button{width:32px;height:32px;border:1px solid var(--border);border-radius:50%;background:white;font-size:14px;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
-        .month-bar button:active{background:var(--bg)}
-        .month-title{font-size:15px;font-weight:700;min-width:110px;text-align:center}
+        /* ====== Schedule info bar ====== */
+        .schedule-bar{padding:10px 16px;background:white;border-bottom:1px solid var(--border);text-align:center;font-size:13px;font-weight:600;color:var(--text)}
+        .schedule-bar .sch-range{color:var(--blue);font-weight:700}
 
         /* ====== Stats row ====== */
         .stats-row{display:flex;gap:6px;padding:10px 14px;background:white;border-bottom:1px solid var(--border)}
@@ -35,6 +33,7 @@
         .wt-table tbody tr:active{background:#FDFBF7}
         .wt-table tbody tr.today-row{background:#EDF2F7}
         .wt-table tbody tr.today-row td{border-bottom-color:#D0DBE6}
+        .wt-table .month-sep td{padding:6px 8px;background:var(--bg);font-size:11px;font-weight:700;color:var(--muted);text-align:left;border-bottom:1px solid var(--border)}
         .wt-date{font-weight:600;color:var(--text);white-space:nowrap}
         .wt-date .wt-day{font-size:11px;color:var(--muted);font-weight:400}
         .wt-table tbody tr.today-row .wt-date{color:var(--blue);font-weight:800}
@@ -50,8 +49,6 @@
         .wt-edit-input::placeholder{color:#ccc;font-weight:400;font-size:12px}
         .wt-adj-btn{width:28px;height:28px;border:1px solid var(--border);border-radius:50%;background:white;color:var(--text);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
         .wt-adj-btn:active{background:var(--bg)}
-        .wt-save-btn{padding:3px 10px;border:1px solid var(--green);border-radius:6px;background:white;color:var(--green);font-size:11px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
-        .wt-save-btn:active{background:var(--green-light)}
         .wt-unit{font-size:11px;color:var(--muted)}
 
         /* ====== Carb day badge ====== */
@@ -63,7 +60,7 @@
         .wt-type.t-fast{background:#E2E3E5;color:#4A4A4A}
         .wt-type.t-none{background:var(--bg);color:var(--muted)}
 
-        /* ====== Row save button (replaces diff column) ====== */
+        /* ====== Row save button ====== */
         .wt-row-save{display:none;padding:3px 10px;border:1px solid var(--green);border-radius:6px;background:white;color:var(--green);font-size:11px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap}
         .wt-row-save:active{background:var(--green-light)}
         .wt-row-save.visible{display:inline-block}
@@ -93,16 +90,12 @@
     <p id="headerSub">載入中...</p>
 </div>
 
-<div class="month-bar">
-    <button onclick="changeMonth(-1)">◀</button>
-    <div class="month-title" id="monthTitle"></div>
-    <button onclick="changeMonth(1)">▶</button>
-</div>
+<div class="schedule-bar" id="scheduleBar" style="display:none"></div>
 
 <div class="stats-row">
-    <div class="stat-item"><div class="stat-value" id="statStart">-</div><div class="stat-label">月初體重</div></div>
+    <div class="stat-item"><div class="stat-value" id="statStart">-</div><div class="stat-label">期初體重</div></div>
     <div class="stat-item"><div class="stat-value" id="statLatest">-</div><div class="stat-label">最新體重</div></div>
-    <div class="stat-item"><div class="stat-value" id="statDiff">-</div><div class="stat-label">本月變化</div></div>
+    <div class="stat-item"><div class="stat-value" id="statDiff">-</div><div class="stat-label">排程變化</div></div>
     <div class="stat-item"><div class="stat-value" id="statCount">0</div><div class="stat-label">紀錄天數</div></div>
 </div>
 
@@ -142,25 +135,23 @@
     ];
     var DAY_NAMES = ['日','一','二','三','四','五','六'];
 
-    var currentYear, currentMonth;
     var patientSn = '', patientUid = '';
     var cycleSchedule = ['high','high','mid','mid','high','mid','mid'];
     var visitDate = null;
+    var scheduleStart = null; // 排程開始日（看診日+1）
+    var scheduleEnd = null;   // 排程結束日
     var weightData = {};
     var dayTypeOverrides = {};
     var visitRecords = [];
     var chartInstance = null;
-    var editingDate = null; // 目前正在編輯的日期
-    var dirtyRows = {};     // 哪些 row 有未儲存的變更 { dateStr: true }
+    var editingDate = null;
+    var dirtyRows = {};
 
     // ====== Init ======
     (function init() {
         var params = new URLSearchParams(location.search);
         patientSn = params.get('id') || '';
         patientUid = params.get('uid') || '';
-        var now = new Date();
-        currentYear = now.getFullYear();
-        currentMonth = now.getMonth();
 
         if (patientSn) {
             loadData();
@@ -207,13 +198,17 @@
                     cycleSchedule = data.schedule;
                     var planDate = parseDateToYMD(data.date);
                     if (!planDate) planDate = formatDate(new Date());
+                    var weeks = data.weeks || 4;
                     visitRecords = [{
                         date: planDate,
                         schedule: data.schedule,
-                        weeks: data.weeks || 4
+                        weeks: weeks
                     }];
                     var p = planDate.split('-');
                     visitDate = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+                    // 排程從看診日的隔天開始
+                    scheduleStart = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate() + 1);
+                    scheduleEnd = new Date(scheduleStart.getFullYear(), scheduleStart.getMonth(), scheduleStart.getDate() + (weeks * 7) - 1);
                 }
                 checkDone();
             }).catch(function(e){ checkDone(); });
@@ -260,8 +255,21 @@
         if (patientSn) {
             document.getElementById('headerSub').textContent = patientSn;
         }
+        renderScheduleBar();
         renderTable();
         renderChart();
+    }
+
+    // ====== Schedule info bar ======
+    function renderScheduleBar() {
+        var bar = document.getElementById('scheduleBar');
+        if (!scheduleStart || !scheduleEnd) { bar.style.display = 'none'; return; }
+        var s = scheduleStart;
+        var e = scheduleEnd;
+        var sLabel = (s.getMonth()+1) + '/' + s.getDate() + '(' + DAY_NAMES[s.getDay()] + ')';
+        var eLabel = (e.getMonth()+1) + '/' + e.getDate() + '(' + DAY_NAMES[e.getDay()] + ')';
+        bar.innerHTML = '📅 排程期間　<span class="sch-range">' + sLabel + ' ~ ' + eLabel + '</span>';
+        bar.style.display = 'block';
     }
 
     // ====== Day Type Calculation ======
@@ -294,31 +302,62 @@
         return schedule[schIdx] || 'mid';
     }
 
+    // ====== Calculate display range ======
+    function getDisplayRange() {
+        var today = new Date();
+        var rangeStart, rangeEnd;
+
+        if (scheduleStart && scheduleEnd) {
+            // 從排程開始月的1號 到 排程結束月的最後一天
+            rangeStart = new Date(scheduleStart.getFullYear(), scheduleStart.getMonth(), 1);
+            rangeEnd = new Date(scheduleEnd.getFullYear(), scheduleEnd.getMonth() + 1, 0);
+            // 確保包含今天
+            if (today > rangeEnd) {
+                rangeEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            }
+            if (today < rangeStart) {
+                rangeStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            }
+        } else {
+            // 沒有排程：顯示本月
+            rangeStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            rangeEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        }
+
+        return { start: rangeStart, end: rangeEnd };
+    }
+
     // ====== Render Table ======
     function renderTable() {
-        var titleEl = document.getElementById('monthTitle');
-        titleEl.textContent = currentYear + '年 ' + (currentMonth + 1) + '月';
-
-        var lastDay = new Date(currentYear, currentMonth + 1, 0);
-        var totalDays = lastDay.getDate();
+        var range = getDisplayRange();
         var todayStr = formatDate(new Date());
 
-        // 收集本月所有日期（舊→新，1號在上）
+        // 收集所有日期
         var rows = [];
-        for (var d = 1; d <= totalDays; d++) {
-            var dateObj = new Date(currentYear, currentMonth, d);
+        var cursor = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate());
+        while (cursor <= range.end) {
+            var dateObj = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
             var dateStr = formatDate(dateObj);
             var dayType = getDayType(dateObj);
             var opt = CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || CYCLE_OPTS[4];
             var wt = (weightData[dateStr] && weightData[dateStr].weight) ? weightData[dateStr].weight : null;
-            rows.push({ d: d, dateObj: dateObj, dateStr: dateStr, dayType: dayType, opt: opt, wt: wt, isToday: dateStr === todayStr });
+            rows.push({ d: dateObj.getDate(), m: dateObj.getMonth(), y: dateObj.getFullYear(), dateObj: dateObj, dateStr: dateStr, dayType: dayType, opt: opt, wt: wt, isToday: dateStr === todayStr });
+            cursor.setDate(cursor.getDate() + 1);
         }
 
         var html = '';
+        var prevMonth = -1;
         for (var i = 0; i < rows.length; i++) {
             var r = rows[i];
+
+            // 月份分隔行
+            if (r.m !== prevMonth) {
+                prevMonth = r.m;
+                html += '<tr class="month-sep"><td colspan="4">' + r.y + '年 ' + (r.m + 1) + '月</td></tr>';
+            }
+
             var dayName = DAY_NAMES[r.dateObj.getDay()];
-            var dateLabel = (r.dateObj.getMonth() + 1) + '/' + r.d + '<span class="wt-day">(' + dayName + ')</span>';
+            var dateLabel = (r.m + 1) + '/' + r.d + '<span class="wt-day">(' + dayName + ')</span>';
             var isEditing = editingDate === r.dateStr;
             var isDirty = !!dirtyRows[r.dateStr];
 
@@ -347,7 +386,7 @@
             // 碳日
             html += '<td><span class="wt-type ' + r.opt.cls + '" onclick="cycleDayType(\'' + r.dateStr + '\')">' + r.opt.short + '</span></td>';
 
-            // 儲存鈕（有變更才顯示）
+            // 儲存鈕
             var saveCls = (isDirty || isEditing) ? 'wt-row-save visible' : 'wt-row-save';
             html += '<td><button class="' + saveCls + '" id="saveBtn_' + r.dateStr + '" onclick="saveRow(\'' + r.dateStr + '\')">儲存</button></td>';
             html += '</tr>';
@@ -355,7 +394,7 @@
 
         document.getElementById('wtBody').innerHTML = html;
 
-        // 如果正在編輯，focus 到 input
+        // focus 到正在編輯的 input
         if (editingDate) {
             var inp = document.getElementById('editInput_' + editingDate);
             if (inp) {
@@ -366,7 +405,7 @@
 
         updateStats();
 
-        // 頁面剛載入時滾動到今天的行
+        // 頁面剛載入時滾動到今天
         if (!window._scrolledToToday) {
             window._scrolledToToday = true;
             setTimeout(function() {
@@ -377,7 +416,7 @@
     }
 
     // ====== Edit weight in row ======
-    var _editJustOpened = false; // 防止 startEdit 和 document click 在同一事件中衝突
+    var _editJustOpened = false;
 
     function startEdit(dateStr) {
         _editJustOpened = true;
@@ -391,19 +430,16 @@
         if (_editJustOpened) return;
         var prevDate = editingDate;
         editingDate = null;
-        // 如果只是開了編輯但沒改碳日，取消 dirty
         if (prevDate && !dayTypeOverrides[prevDate]) {
             delete dirtyRows[prevDate];
         }
         renderTable();
     }
 
-    // 點擊編輯區外面才取消編輯
     document.addEventListener('touchstart', function(e) {
         if (!editingDate || _editJustOpened) return;
         var editRow = document.querySelector('.wt-edit-row.active');
         if (editRow && !editRow.contains(e.target)) {
-            // 不取消如果點的是碳日 badge 或另一個體重欄
             if (e.target.closest && (e.target.closest('.wt-type') || e.target.closest('.wt-weight-val'))) return;
             cancelEdit();
         }
@@ -422,7 +458,6 @@
         if (!inp) return;
         var val = parseFloat(inp.value);
         if (isNaN(val) || val <= 0) {
-            // 找最近有紀錄的體重當起始值
             var keys = Object.keys(weightData).sort();
             val = (keys.length > 0 && weightData[keys[keys.length - 1]].weight) ? weightData[keys[keys.length - 1]].weight : 50.0;
         }
@@ -437,12 +472,10 @@
         var btn = document.getElementById('saveBtn_' + dateStr);
         if (!btn) return;
 
-        // 如果正在編輯此行體重，先讀取 input
         var inp = document.getElementById('editInput_' + dateStr);
         if (inp) {
             var rawVal = inp.value.trim();
             if (rawVal === '') {
-                // 清空體重
                 if (weightData[dateStr]) {
                     delete weightData[dateStr].weight;
                     if (!weightData[dateStr].dayType) delete weightData[dateStr];
@@ -512,13 +545,22 @@
 
     // ====== Stats ======
     function updateStats() {
-        var monthPrefix = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
-        var monthKeys = Object.keys(weightData).filter(function(k) {
-            return k.startsWith(monthPrefix) && weightData[k].weight;
+        // 統計排程期間（或全部）的體重
+        var allKeys = Object.keys(weightData).filter(function(k) {
+            return weightData[k].weight;
         }).sort();
-        var count = monthKeys.length;
-        var first = count > 0 ? weightData[monthKeys[0]].weight : null;
-        var last = count > 0 ? weightData[monthKeys[monthKeys.length - 1]].weight : null;
+
+        // 如果有排程，只算排程期間
+        var rangeKeys = allKeys;
+        if (scheduleStart && scheduleEnd) {
+            var sStr = formatDate(scheduleStart);
+            var eStr = formatDate(scheduleEnd);
+            rangeKeys = allKeys.filter(function(k) { return k >= sStr && k <= eStr; });
+        }
+
+        var count = rangeKeys.length;
+        var first = count > 0 ? weightData[rangeKeys[0]].weight : null;
+        var last = count > 0 ? weightData[rangeKeys[rangeKeys.length - 1]].weight : null;
 
         document.getElementById('statCount').textContent = count;
         document.getElementById('statStart').textContent = first ? first.toFixed(1) : '-';
@@ -532,14 +574,6 @@
             document.getElementById('statDiff').textContent = '-';
             document.getElementById('statDiff').style.color = '';
         }
-    }
-
-    function changeMonth(delta) {
-        currentMonth += delta;
-        if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-        if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-        editingDate = null;
-        renderTable();
     }
 
     // ====== Section Toggle ======
