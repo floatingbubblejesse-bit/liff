@@ -167,6 +167,16 @@
         .cycle-day-btn.t-fast{background:#E2E3E5;border-color:#9e9e9e;color:#4A4A4A}
         .cycle-arrow{color:#ccc;font-size:11px;flex-shrink:0;margin:14px 1px 0;opacity:0;transition:opacity 0.2s}
         .cycle-schedule:hover .cycle-arrow{opacity:1}
+        .cycle-weeks-row{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px}
+        .cycle-weeks-label{font-size:12px;color:var(--muted);font-weight:600}
+        .cycle-weeks-ctrl{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:white;height:28px}
+        .cycle-weeks-ctrl button{width:24px;height:100%;border:none;background:#F5F3EF;cursor:pointer;font-size:14px;color:#4A4A4A;display:flex;align-items:center;justify-content:center;padding:0}
+        .cycle-weeks-ctrl button:active{background:#E8E4DC}
+        .cycle-weeks-val{width:32px;text-align:center;font-size:13px;font-weight:700;color:var(--red);background:transparent;border:none}
+        .cycle-packs-row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+        .cycle-pack-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:16px}
+        .cycle-pack-mr{background:#EDE8E0;color:#7B8FA1}
+        .cycle-pack-qb{background:#E8EDE6;color:#6B8F71}
 
         /* ====== 看診紀錄 tab ====== */
         .hx-card{background:white;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,0.08);margin-bottom:12px;overflow:hidden}
@@ -254,6 +264,7 @@
             <div class="card" id="dietPlanCard">
                 <div class="card-title">🔄 碳水循環計劃</div>
                 <div class="cycle-schedule" id="cycleSchedule"></div>
+                <div id="cycleWeeksSummary" style="text-align:center;margin:8px 0 12px;font-size:13px;color:#4A4A4A;line-height:1.8"></div>
                 <div class="diet-btn-row" style="margin-bottom:12px">
                     <button class="diet-btn-save" id="saveAllDietBtn" onclick="saveAllDietPlans()" style="width:100%">儲存並發送給客戶</button>
                 </div>
@@ -1179,6 +1190,8 @@
         }
         document.getElementById(p + 'DietMeals').innerHTML = html;
         document.getElementById('dietPlanCard').style.display = '';
+        // 更新週數摘要（代餐/Q寶包數）
+        setTimeout(updateCycleWeeksSummary, 50);
     }
 
     function getDietPlanData(p) {
@@ -1419,6 +1432,7 @@
         {key:'fast', label:'斷', cls:'t-fast'},
     ];
     var cycleSchedule = ['high','high','mid','mid','high','mid','mid']; // 預設：六日一二三四五
+    var cycleWeeks = 4; // 預設4週
 
     function renderCycleSchedule() {
         var el = document.getElementById('cycleSchedule');
@@ -1433,6 +1447,7 @@
             html += '</div>';
         }
         el.innerHTML = html;
+        updateCycleWeeksSummary();
     }
 
     function cycleDayType(idx) {
@@ -1440,6 +1455,53 @@
         cur = (cur + 1) % CYCLE_OPTS.length;
         cycleSchedule[idx] = CYCLE_OPTS[cur].key;
         renderCycleSchedule();
+    }
+
+    function adjustCycleWeeks(delta) {
+        cycleWeeks += delta;
+        if (cycleWeeks < 1) cycleWeeks = 1;
+        if (cycleWeeks > 12) cycleWeeks = 12;
+        updateCycleWeeksSummary();
+    }
+
+    function updateCycleWeeksSummary() {
+        var sumEl = document.getElementById('cycleWeeksSummary');
+        if (!sumEl) return;
+
+        // 計算每週代餐 & Q寶
+        var weeklyMr = 0, weeklyQb = 0;
+        cycleSchedule.forEach(function(t) {
+            var planEl = document.getElementById(t + 'DietMeals');
+            if (!planEl) return;
+            // 讀取每個碳日的 plan data
+            for (var m = 0; m < MEAL_COUNT; m++) {
+                var mrInput = document.getElementById(t + '-d-' + m + '-0');
+                var qbInput = document.getElementById(t + '-d-' + m + '-5');
+                if (mrInput && mrInput.value === '1') weeklyMr++;
+                if (qbInput && qbInput.value === '1') weeklyQb++;
+            }
+        });
+
+        var totalMr = weeklyMr * cycleWeeks;
+        var totalQb = weeklyQb * cycleWeeks;
+
+        var html = '<div class="cycle-weeks-row">';
+        html += '<span class="cycle-weeks-label">共</span>';
+        html += '<div class="cycle-weeks-ctrl">';
+        html += '<button onclick="adjustCycleWeeks(-1)">−</button>';
+        html += '<span class="cycle-weeks-val">' + cycleWeeks + '</span>';
+        html += '<button onclick="adjustCycleWeeks(1)">+</button>';
+        html += '</div>';
+        html += '<span class="cycle-weeks-label">週</span>';
+        html += '</div>';
+
+        html += '<div class="cycle-packs-row">';
+        if (weeklyMr > 0) html += '<span class="cycle-pack-badge cycle-pack-mr">🥤 代餐 ' + weeklyMr + '包/週 × ' + cycleWeeks + '週 = <b>' + totalMr + '包</b></span>';
+        if (weeklyQb > 0) html += '<span class="cycle-pack-badge cycle-pack-qb">💊 Q寶 ' + weeklyQb + '包/週 × ' + cycleWeeks + '週 = <b>' + totalQb + '包</b></span>';
+        if (weeklyMr === 0 && weeklyQb === 0) html += '<span style="font-size:11px;color:#8B8B8B">請先展開碳日計劃以計算包數</span>';
+        html += '</div>';
+
+        sumEl.innerHTML = html;
     }
 
     function initDietPlan() {
