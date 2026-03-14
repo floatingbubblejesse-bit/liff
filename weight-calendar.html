@@ -13,10 +13,10 @@
         /* ====== Top: Day card with swipe ====== */
         .today-card{background:linear-gradient(135deg, #7B8FA1, #8B9D83);color:white;padding:34px 20px 28px;text-align:center;user-select:none;position:relative;overflow:hidden;touch-action:none}
         .today-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px;position:relative}
-        .today-nav-btn{width:36px;height:36px;border:none;border-radius:50%;background:rgba(255,255,255,0.2);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;transition:opacity 0.3s ease;position:absolute;top:50%;transform:translateY(-50%)}
+        .today-nav-btn{width:36px;height:36px;border:none;border-radius:50%;background:rgba(255,255,255,0.2);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;pointer-events:none;transition:opacity 0.3s ease;position:absolute;top:50%;transform:translateY(-50%)}
         .today-nav-btn.nav-prev{left:0}
         .today-nav-btn.nav-next{right:0}
-        .today-card.show-arrows .today-nav-btn{opacity:1}
+        .today-card.show-arrows .today-nav-btn{opacity:1;pointer-events:auto}
         .today-nav-btn:active{background:rgba(255,255,255,0.35)}
         .today-date{font-size:18px;font-weight:700}
         .today-slide-wrap{position:relative;overflow:hidden}
@@ -100,9 +100,9 @@
 <!-- ====== 日期輸入區（可滑動切換日期） ====== -->
 <div class="today-card" id="todayCard">
     <div class="today-nav">
-        <button class="today-nav-btn nav-prev" onclick="event.stopPropagation();shiftSelectedDay(-1)">◀</button>
+        <button class="today-nav-btn nav-prev" onclick="event.stopPropagation();onArrowTap(-1)">◀</button>
         <div class="today-date" id="todayDate"></div>
-        <button class="today-nav-btn nav-next" onclick="event.stopPropagation();shiftSelectedDay(1)">▶</button>
+        <button class="today-nav-btn nav-next" onclick="event.stopPropagation();onArrowTap(1)">▶</button>
     </div>
     <div class="today-slide-wrap">
         <div class="today-content" id="todayContent">
@@ -211,10 +211,11 @@
             if (swipeState.swiped) return;
             if (card.classList.contains('show-arrows')) {
                 card.classList.remove('show-arrows');
+                clearTimeout(window._arrowTimer);
             } else {
                 card.classList.add('show-arrows');
-                clearTimeout(arrowTimer);
-                arrowTimer = setTimeout(function(){ card.classList.remove('show-arrows'); }, 3000);
+                clearTimeout(window._arrowTimer);
+                window._arrowTimer = setTimeout(function(){ card.classList.remove('show-arrows'); }, 3000);
             }
         });
 
@@ -382,6 +383,15 @@
         } else {
             input.value = '';
         }
+    }
+
+    function onArrowTap(delta) {
+        shiftSelectedDay(delta);
+        // Reset arrow auto-hide timer
+        var card = document.getElementById('todayCard');
+        clearTimeout(window._arrowTimer);
+        card.classList.add('show-arrows');
+        window._arrowTimer = setTimeout(function(){ card.classList.remove('show-arrows'); }, 3000);
     }
 
     function shiftSelectedDay(delta) {
