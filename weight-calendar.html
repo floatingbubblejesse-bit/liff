@@ -302,9 +302,9 @@
         var totalDays = lastDay.getDate();
         var todayStr = formatDate(new Date());
 
-        // 收集本月所有日期（最新在上）
+        // 收集本月所有日期（舊→新，1號在上）
         var rows = [];
-        for (var d = totalDays; d >= 1; d--) {
+        for (var d = 1; d <= totalDays; d++) {
             var dateObj = new Date(currentYear, currentMonth, d);
             var dateStr = formatDate(dateObj);
             var dayType = getDayType(dateObj);
@@ -314,7 +314,7 @@
         }
 
         // 算變化：和前一天（日期更早的）有體重紀錄的比較
-        // rows 是從大到小排的，所以 "前一天" = rows 裡 index 更大且有 wt 的
+        // rows 是從小到大排的，所以 "前一天" = rows 裡 index 更小且有 wt 的
         var html = '';
         for (var i = 0; i < rows.length; i++) {
             var r = rows[i];
@@ -322,10 +322,10 @@
             var dateLabel = (r.dateObj.getMonth() + 1) + '/' + r.d + '<span class="wt-day">(' + dayName + ')</span>';
             var isEditing = editingDate === r.dateStr;
 
-            // 計算變化 — 找下一個有體重的 row（日期更早）
+            // 計算變化 — 往前找最近有體重的 row（日期更早 = index 更小）
             var diff = '';
             if (r.wt !== null) {
-                for (var j = i + 1; j < rows.length; j++) {
+                for (var j = i - 1; j >= 0; j--) {
                     if (rows[j].wt !== null) {
                         var delta = r.wt - rows[j].wt;
                         var sign = delta > 0 ? '+' : '';
@@ -391,30 +391,36 @@
     }
 
     // ====== Edit weight in row ======
+    var _editJustOpened = false; // 防止 startEdit 和 document click 在同一事件中衝突
+
     function startEdit(dateStr) {
+        _editJustOpened = true;
         editingDate = dateStr;
         renderTable();
+        setTimeout(function() { _editJustOpened = false; }, 300);
     }
 
     function cancelEdit() {
+        if (_editJustOpened) return;
         editingDate = null;
         renderTable();
     }
 
-    // 點擊表格外面取消編輯
+    // 點擊編輯區外面才取消編輯
     document.addEventListener('touchstart', function(e) {
-        if (!editingDate) return;
+        if (!editingDate || _editJustOpened) return;
         var editRow = document.querySelector('.wt-edit-row.active');
         if (editRow && !editRow.contains(e.target)) {
+            // 不取消如果點的是碳日 badge 或另一個體重欄
+            if (e.target.closest && (e.target.closest('.wt-type') || e.target.closest('.wt-weight-val'))) return;
             cancelEdit();
         }
     }, {passive: true});
     document.addEventListener('click', function(e) {
-        if (!editingDate) return;
+        if (!editingDate || _editJustOpened) return;
         var editRow = document.querySelector('.wt-edit-row.active');
         if (editRow && !editRow.contains(e.target)) {
-            // 不要在碳日 badge 點擊時取消
-            if (e.target.classList && e.target.classList.contains('wt-type')) return;
+            if (e.target.closest && (e.target.closest('.wt-type') || e.target.closest('.wt-weight-val'))) return;
             cancelEdit();
         }
     });
