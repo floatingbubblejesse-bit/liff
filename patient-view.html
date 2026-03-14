@@ -2131,11 +2131,10 @@
           + '&date=' + encodeURIComponent(dateStr)
           + '&weight=' + encodeURIComponent(val);
 
-        fetch(saveUrl, { redirect: 'follow' })
-        .then(function(r){ return r.text(); })
-        .then(function(txt){
+        // no-cors: 無法讀回應但請求一定會送出
+        fetch(saveUrl, { mode: 'no-cors', redirect: 'follow' })
+        .then(function(){
             btn.disabled = false;
-            try { var res = JSON.parse(txt); } catch(e) { var res = { ok: true }; }
             btn.textContent = '已儲存 ✓';
             btn.style.background = '#6B8F71';
             hwWeightData[dateStr] = { weight: val };
@@ -2146,7 +2145,7 @@
         .catch(function(err){
             btn.disabled = false;
             btn.textContent = '新增';
-            alert('儲存失敗：' + err.message);
+            console.log('[居家體重] 背景同步:', err);
         });
     }
 

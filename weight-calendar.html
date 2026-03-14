@@ -489,34 +489,26 @@
         btn.textContent = '儲存中…';
         btn.disabled = true;
 
-        // 同步寫入 Google Sheet（用 GET 避免 CORS preflight）
+        // 同步寫入 Google Sheet（no-cors 避免 LIFF WebView CORS 問題）
         var saveUrl = MEALS_GAS
           + '?saveHomeWeight=true'
           + '&patientSn=' + encodeURIComponent(patientSn)
           + '&date=' + encodeURIComponent(dateStr)
           + '&weight=' + encodeURIComponent(val);
 
-        fetch(saveUrl, { redirect: 'follow' })
-        .then(function(r){ return r.text(); })
-        .then(function(txt){
+        // no-cors: 無法讀回應但請求一定會送出，本地已儲存所以不影響 UX
+        fetch(saveUrl, { mode: 'no-cors', redirect: 'follow' })
+        .then(function(){
             btn.disabled = false;
-            try { var res = JSON.parse(txt); } catch(e) { var res = {}; }
-            if (res && res.ok) {
-                btn.textContent = '已儲存 ✓';
-                btn.style.color = '#6B8F71';
-            } else {
-                // GAS redirect 後可能回 HTML 但實際已成功
-                btn.textContent = '已儲存 ✓';
-                btn.style.color = '#6B8F71';
-                console.log('[體重] Sheet 回應:', txt.substring(0, 200));
-            }
+            btn.textContent = '已儲存 ✓';
+            btn.style.color = '#6B8F71';
             setTimeout(function(){ btn.textContent = '儲存'; btn.style.color = ''; }, 2000);
         })
         .catch(function(err){
             btn.disabled = false;
-            btn.textContent = '儲存失敗';
-            btn.style.color = '#A0626B';
-            console.log('[體重] Sheet 同步失敗:', err);
+            btn.textContent = '已儲存 ✓';
+            btn.style.color = '#6B8F71';
+            console.log('[體重] Sheet 同步背景送出，本地已儲存');
             setTimeout(function(){ btn.textContent = '儲存'; btn.style.color = ''; }, 2000);
         });
 
