@@ -35,10 +35,13 @@
         .today-card.show-arrows .today-type-hint{opacity:0.6}
         .today-input-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px}
         .today-label{font-size:13px;opacity:0.9}
-        .today-input-group{display:flex;align-items:center;background:rgba(255,255,255,0.95);border-radius:10px;overflow:hidden;height:40px}
-        .today-adj-btn{width:38px;height:40px;border:none;background:transparent;color:var(--text);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;opacity:0.5}
+        .today-input-group{display:flex;align-items:center;background:rgba(255,255,255,0.95);border-radius:10px;overflow:hidden;height:40px;transition:width 0.25s ease}
+        .today-input-group .today-adj-btn{width:0;overflow:hidden;padding:0;opacity:0;transition:width 0.25s ease,opacity 0.2s ease}
+        .today-input-group.active .today-adj-btn{width:38px;opacity:0.6}
+        .today-adj-btn{height:40px;border:none;background:transparent;color:var(--text);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent}
         .today-adj-btn:active{background:rgba(0,0,0,0.06);opacity:1}
-        .today-input{width:64px;padding:0;border:none;border-left:1px solid rgba(0,0,0,0.08);border-right:1px solid rgba(0,0,0,0.08);font-size:17px;font-weight:700;text-align:center;color:var(--red);outline:none;background:transparent;height:40px;-moz-appearance:textfield}
+        .today-input{width:64px;padding:0;border:none;font-size:17px;font-weight:700;text-align:center;color:var(--red);outline:none;background:transparent;height:40px;-moz-appearance:textfield}
+        .today-input-group.active .today-input{border-left:1px solid rgba(0,0,0,0.08);border-right:1px solid rgba(0,0,0,0.08)}
         .today-input::-webkit-outer-spin-button,.today-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
         .today-input::placeholder{color:#ccc;font-weight:400;font-size:13px}
         .today-unit{font-size:14px;font-weight:600;opacity:0.9}
@@ -524,6 +527,21 @@
         renderCalendar();
     }
 
+    // +/- 按鈕：點擊輸入框或按鈕時展開，點外面收起
+    (function() {
+        var grp = document.querySelector('.today-input-group');
+        var inp = document.getElementById('todayWeightInput');
+        // 點擊 input-group 內任何元素 → 展開
+        grp.addEventListener('click', function(e) {
+            grp.classList.add('active');
+            inp.focus();
+        });
+        // 延遲收起（讓 +/- 按鈕的 click 能先觸發）
+        inp.addEventListener('blur', function() {
+            setTimeout(function(){ grp.classList.remove('active'); }, 200);
+        });
+    })();
+
     function adjWeight(delta) {
         var input = document.getElementById('todayWeightInput');
         var val = parseFloat(input.value);
@@ -532,6 +550,7 @@
         if (val < 20) val = 20;
         if (val > 200) val = 200;
         input.value = val.toFixed(1);
+        input.focus(); // 按 +/- 後保持展開
     }
 
     function saveTodayWeight() {
