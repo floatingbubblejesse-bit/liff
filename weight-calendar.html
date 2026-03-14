@@ -700,7 +700,6 @@
             if (w && (minW === null || w < minW)) minW = w;
         }
 
-        document.getElementById('statCount').textContent = count;
         document.getElementById('statLatest').textContent = minW !== null ? minW.toFixed(1) : '-';
         if (first && last) {
             var diff = last - first;
