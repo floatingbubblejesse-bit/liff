@@ -715,15 +715,30 @@
     }
 
     // ====== Weight Chart ======
+    var CARB_COLORS = { high: '#A0626B', mid: '#B8926A', low: '#6B8F71', fast: '#4A4A4A', none: '#8B8B8B' };
+
     function renderChart() {
         var allKeys = Object.keys(weightData).filter(function(k){ return weightData[k].weight; }).sort();
         if (allKeys.length === 0) return;
-        var keys = allKeys.slice(-30);
+        // 只顯示排程期間的資料
+        var keys = allKeys;
+        if (scheduleStart && scheduleEnd) {
+            var sStr = formatDate(scheduleStart);
+            var eStr = formatDate(scheduleEnd);
+            keys = allKeys.filter(function(k){ return k >= sStr && k <= eStr; });
+        }
+        if (keys.length === 0) return;
         var labels = keys.map(function(k) {
             var p = k.split('-');
             return parseInt(p[1]) + '/' + parseInt(p[2]);
         });
         var values = keys.map(function(k){ return weightData[k].weight; });
+        var pointColors = keys.map(function(k) {
+            var p = k.split('-');
+            var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+            var t = getDayType(d);
+            return CARB_COLORS[t] || CARB_COLORS.none;
+        });
         var canvas = document.getElementById('weightChart');
         if (!canvas) return;
         if (chartInstance) chartInstance.destroy();
@@ -737,8 +752,10 @@
                     borderColor: '#7B8FA1',
                     backgroundColor: 'rgba(123,143,161,0.1)',
                     borderWidth: 2.5,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#7B8FA1',
+                    pointRadius: 5,
+                    pointBackgroundColor: pointColors,
+                    pointBorderColor: pointColors,
+                    pointBorderWidth: 1,
                     fill: true,
                     tension: 0.3
                 }]
