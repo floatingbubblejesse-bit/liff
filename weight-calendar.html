@@ -575,6 +575,11 @@
         var idx = CYCLE_OPTS.findIndex(function(o){ return o.key === current; });
         idx = (idx + 1) % CYCLE_OPTS.length;
         dayTypeOverrides[dateStr] = CYCLE_OPTS[idx].key;
+        saveLocalWeights();
+        // Sync: set selectedDate to this date and update top card
+        var p2 = dateStr.split('-');
+        selectedDate = new Date(parseInt(p2[0]), parseInt(p2[1])-1, parseInt(p2[2]));
+        renderTodayCard();
         renderCalendar();
     }
 
