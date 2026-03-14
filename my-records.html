@@ -56,7 +56,6 @@
 </head>
 <body>
     <div class="header">
-        <h1>📋 我的看診紀錄</h1>
         <p id="headerSub">載入中...</p>
     </div>
     <div class="content" id="mainContent">
@@ -86,7 +85,7 @@
         .then(function(profile) {
             if (!profile) return;
             lineUid = profile.userId;
-            document.getElementById('headerSub').textContent = profile.displayName + ' 的看診紀錄';
+            document.getElementById('headerSub').textContent = profile.displayName;
             loadPatientData();
         })
         .catch(function(err) {
@@ -94,7 +93,7 @@
             lineUid = params.get('uid') || '';
             patientSn = params.get('id') || '';
             if (lineUid || patientSn) {
-                document.getElementById('headerSub').textContent = '看診紀錄';
+                document.getElementById('headerSub').textContent = '';
                 if (patientSn) { loadDietPlan(patientSn); }
                 else { loadPatientData(); }
             } else {
