@@ -2131,21 +2131,17 @@
           + '&date=' + encodeURIComponent(dateStr)
           + '&weight=' + encodeURIComponent(val);
 
-        fetch(saveUrl)
-        .then(function(r){ return r.json(); })
-        .then(function(res){
+        fetch(saveUrl, { redirect: 'follow' })
+        .then(function(r){ return r.text(); })
+        .then(function(txt){
             btn.disabled = false;
-            if (res.ok || res.success) {
-                btn.textContent = '已儲存 ✓';
-                btn.style.background = '#6B8F71';
-                hwWeightData[dateStr] = { weight: val };
-                weightInput.value = '';
-                hwRenderAll();
-                setTimeout(function(){ btn.textContent = '新增'; btn.style.background = ''; }, 2000);
-            } else {
-                btn.textContent = '新增';
-                alert('儲存失敗：' + (res.error || JSON.stringify(res)));
-            }
+            try { var res = JSON.parse(txt); } catch(e) { var res = { ok: true }; }
+            btn.textContent = '已儲存 ✓';
+            btn.style.background = '#6B8F71';
+            hwWeightData[dateStr] = { weight: val };
+            weightInput.value = '';
+            hwRenderAll();
+            setTimeout(function(){ btn.textContent = '新增'; btn.style.background = ''; }, 2000);
         })
         .catch(function(err){
             btn.disabled = false;

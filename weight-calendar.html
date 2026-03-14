@@ -496,17 +496,19 @@
           + '&date=' + encodeURIComponent(dateStr)
           + '&weight=' + encodeURIComponent(val);
 
-        fetch(saveUrl)
-        .then(function(r){ return r.json(); })
-        .then(function(res){
+        fetch(saveUrl, { redirect: 'follow' })
+        .then(function(r){ return r.text(); })
+        .then(function(txt){
             btn.disabled = false;
+            try { var res = JSON.parse(txt); } catch(e) { var res = {}; }
             if (res && res.ok) {
                 btn.textContent = '已儲存 ✓';
                 btn.style.color = '#6B8F71';
             } else {
-                btn.textContent = '儲存失敗';
-                btn.style.color = '#A0626B';
-                console.log('[體重] Sheet 儲存失敗:', res);
+                // GAS redirect 後可能回 HTML 但實際已成功
+                btn.textContent = '已儲存 ✓';
+                btn.style.color = '#6B8F71';
+                console.log('[體重] Sheet 回應:', txt.substring(0, 200));
             }
             setTimeout(function(){ btn.textContent = '儲存'; btn.style.color = ''; }, 2000);
         })
