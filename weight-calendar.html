@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>居家體重紀錄｜金鶯減重</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -60,7 +60,7 @@
         .wt-weight-val.empty{color:var(--muted);font-weight:400;font-size:12px}
 
         /* ====== Inline edit input ====== */
-        .wt-edit-input{width:56px;padding:2px 0;border:none;border-bottom:2px solid var(--blue);font-size:15px;font-weight:700;text-align:center;color:var(--red);outline:none;background:transparent;-moz-appearance:textfield}
+        .wt-edit-input{width:56px;padding:2px 0;border:none;border-bottom:2px solid var(--blue);font-size:16px;font-weight:700;text-align:center;color:var(--red);outline:none;background:transparent;-moz-appearance:textfield}
         .wt-edit-input::-webkit-outer-spin-button,.wt-edit-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
         .wt-edit-input::placeholder{color:#ccc;font-weight:400;font-size:12px}
 
@@ -115,7 +115,6 @@
     <div class="stat-item" onclick="scrollToToday()" style="cursor:pointer"><div class="stat-value" style="color:var(--blue);font-size:13px">↩</div><div class="stat-label">回到今天</div></div>
     <div class="stat-item"><div class="stat-value" id="statLatest">-</div><div class="stat-label">最低體重</div></div>
     <div class="stat-item"><div class="stat-value" id="statDiff">-</div><div class="stat-label">期間變化</div></div>
-    <div class="stat-item"><div class="stat-value" id="statCount">0</div><div class="stat-label">紀錄天數</div></div>
 </div>
 
 <div class="table-scroll" id="tableScroll">
