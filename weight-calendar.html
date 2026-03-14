@@ -66,6 +66,7 @@
         .cal-weekday.sun{color:var(--red)}
         .cal-cell{background:var(--bg);border-radius:8px;padding:6px 2px;min-height:90px;display:flex;flex-direction:column;align-items:center;gap:3px;border:1px solid transparent;transition:all 0.15s}
         .cal-cell.today{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+        .cal-cell.selected{background:#E8EDE6;border-color:var(--green);box-shadow:0 0 0 2px rgba(139,157,131,0.4)}
         .cal-cell.empty{background:transparent;border:none;min-height:0}
         .cal-date{font-size:12px;font-weight:600;color:var(--text);line-height:1}
         .cal-cell.today .cal-date{color:var(--blue);font-weight:800}
@@ -386,6 +387,22 @@
         } else {
             input.value = '';
         }
+
+        // Highlight selected cell in calendar
+        highlightSelectedCell(dateStr);
+    }
+
+    function highlightSelectedCell(dateStr) {
+        // Remove previous highlight
+        var prev = document.querySelector('.cal-cell.selected');
+        if (prev) prev.classList.remove('selected');
+        // Add to matching cell
+        var cell = document.querySelector('.cal-cell[data-date="' + dateStr + '"]');
+        if (cell) {
+            cell.classList.add('selected');
+            // Scroll into view if needed
+            cell.scrollIntoView({behavior:'smooth', block:'nearest'});
+        }
     }
 
     function onArrowTap(delta) {
@@ -526,8 +543,9 @@
             var opt = CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || CYCLE_OPTS[1];
             var savedWeight = weightData[dateStr] ? weightData[dateStr].weight : '';
 
-            var cellCls = 'cal-cell' + (isToday ? ' today' : '') + (isSat ? ' sat' : '') + (isSun ? ' sun' : '');
-            html += '<div class="' + cellCls + '">';
+            var selStr = formatDate(selectedDate);
+            var cellCls = 'cal-cell' + (isToday ? ' today' : '') + (isSat ? ' sat' : '') + (isSun ? ' sun' : '') + (dateStr === selStr ? ' selected' : '');
+            html += '<div class="' + cellCls + '" data-date="' + dateStr + '">';
             html += '<div class="cal-date">' + d + '</div>';
             html += '<div class="cal-type ' + opt.cls + '" onclick="toggleDayType(\'' + dateStr + '\')">' + opt.short + '</div>';
             if (savedWeight) {
