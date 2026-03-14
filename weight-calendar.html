@@ -310,36 +310,60 @@
     }
 
     function loadData() {
-        // 只需要 dietPlan（排程、日期、週數都在這裡）
-        if (patientSn) {
-            fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn))
-                .then(function(r){ return r.json(); })
-                .then(function(data){
-                    console.log('[日曆] dietPlan 回傳:', JSON.stringify(data).substring(0, 500));
-                    if (data.schedule && data.schedule.length === 7) {
-                        cycleSchedule = data.schedule;
-                        var planDate = parseDateToYMD(data.date);
-                        if (!planDate) planDate = formatDate(new Date());
-                        visitRecords = [{
-                            date: planDate,
-                            schedule: data.schedule,
-                            weeks: data.weeks || 4
-                        }];
-                        var p = planDate.split('-');
-                        visitDate = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
-                        console.log('[日曆] 看診紀錄:', visitRecords[0]);
-                    }
-                    onDataReady();
-                }).catch(function(e){
-                    console.log('[日曆] dietPlan 錯誤:', e);
-                    onDataReady();
-                });
-        } else {
-            onDataReady();
-        }
-
-        // 從 localStorage 載入體重資料
+        // 先從 localStorage 載入（離線也能看到資料）
         loadLocalWeights();
+
+        if (!patientSn) { onDataReady(); return; }
+
+        var pending = 2; // dietPlan + homeWeight 兩個請求
+        function checkDone() { pending--; if (pending <= 0) onDataReady(); }
+
+        // 1. 載入碳水循環排程
+        fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn))
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                console.log('[日曆] dietPlan 回傳:', JSON.stringify(data).substring(0, 500));
+                if (data.schedule && data.schedule.length === 7) {
+                    cycleSchedule = data.schedule;
+                    var planDate = parseDateToYMD(data.date);
+                    if (!planDate) planDate = formatDate(new Date());
+                    visitRecords = [{
+                        date: planDate,
+                        schedule: data.schedule,
+                        weeks: data.weeks || 4
+                    }];
+                    var p = planDate.split('-');
+                    visitDate = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+                    console.log('[日曆] 看診紀錄:', visitRecords[0]);
+                }
+                checkDone();
+            }).catch(function(e){
+                console.log('[日曆] dietPlan 錯誤:', e);
+                checkDone();
+            });
+
+        // 2. 從 Sheet 載入居家體重紀錄（合併到 localStorage 資料上）
+        fetch(MEALS_GAS + '?homeWeight=' + encodeURIComponent(patientSn))
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                console.log('[日曆] homeWeight 回傳:', JSON.stringify(data).substring(0, 300));
+                if (data.records && data.records.length > 0) {
+                    for (var i = 0; i < data.records.length; i++) {
+                        var rec = data.records[i];
+                        if (rec.date && rec.weight) {
+                            // Sheet 資料覆蓋 localStorage（Sheet 是 source of truth）
+                            if (!weightData[rec.date]) weightData[rec.date] = {};
+                            weightData[rec.date].weight = parseFloat(rec.weight);
+                            if (rec.dayType) weightData[rec.date].dayType = rec.dayType;
+                        }
+                    }
+                    saveLocalWeights(); // 更新 localStorage 快取
+                }
+                checkDone();
+            }).catch(function(e){
+                console.log('[日曆] homeWeight 載入錯誤（使用本地資料）:', e);
+                checkDone();
+            });
     }
 
     function storageKey() { return 'weight_' + (patientSn || patientUid || 'default'); }
