@@ -33,7 +33,6 @@
         .wt-table tbody tr:active{background:#FDFBF7}
         .wt-table tbody tr.today-row{background:#EDF2F7}
         .wt-table tbody tr.today-row td{border-bottom-color:#D0DBE6}
-        .wt-table .month-sep td{padding:6px 8px;background:var(--bg);font-size:11px;font-weight:700;color:var(--muted);text-align:left;border-bottom:1px solid var(--border)}
         .wt-date{font-weight:600;color:var(--text);white-space:nowrap}
         .wt-date .wt-day{font-size:11px;color:var(--muted);font-weight:400}
         .wt-table tbody tr.today-row .wt-date{color:var(--blue);font-weight:800}
@@ -346,15 +345,8 @@
         }
 
         var html = '';
-        var prevMonth = -1;
         for (var i = 0; i < rows.length; i++) {
             var r = rows[i];
-
-            // 月份分隔行
-            if (r.m !== prevMonth) {
-                prevMonth = r.m;
-                html += '<tr class="month-sep"><td colspan="4">' + r.y + '年 ' + (r.m + 1) + '月</td></tr>';
-            }
 
             var dayName = DAY_NAMES[r.dateObj.getDay()];
             var dateLabel = (r.m + 1) + '/' + r.d + '<span class="wt-day">(' + dayName + ')</span>';

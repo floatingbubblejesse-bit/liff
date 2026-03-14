@@ -130,7 +130,6 @@
         html += '<div class="avatar">' + esc((cust.name || '?')[0]) + '</div>';
         html += '<div class="profile-info"><h2>' + esc(cust.name) + '</h2>';
         html += '<p>院區病歷號：' + esc(cust.sn) + '</p>';
-        if (cust.settingName) html += '<span class="badge">' + esc(cust.settingName) + '</span>';
         html += '</div></div></div>';
 
         if (latest) {
