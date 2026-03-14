@@ -38,6 +38,8 @@
         .today-input::-webkit-outer-spin-button,.today-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
         .today-input::placeholder{color:#ccc;font-weight:400;font-size:13px}
         .today-unit{font-size:14px;font-weight:600;opacity:0.9}
+        .today-adj-btn{width:36px;height:36px;border:none;border-radius:50%;background:rgba(255,255,255,0.25);color:white;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+        .today-adj-btn:active{background:rgba(255,255,255,0.4)}
         .today-save{padding:8px 24px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;background:white;color:var(--green)}
         .today-save:active{background:#f0f0f0}
         .today-save:disabled{opacity:0.5;cursor:not-allowed}
@@ -115,7 +117,9 @@
             <div class="today-type-hint" id="todayTypeHint">← 左右滑動切換日期 →</div>
             <div class="today-input-row">
                 <span class="today-label">請輸入今早體重：</span>
+                <button class="today-adj-btn" onclick="adjWeight(-0.1)">−</button>
                 <input class="today-input" id="todayWeightInput" type="text" inputmode="decimal" pattern="[0-9.]*" placeholder="--.-">
+                <button class="today-adj-btn" onclick="adjWeight(0.1)">+</button>
                 <span class="today-unit">kg</span>
                 <button class="today-save" id="todaySaveBtn" onclick="saveTodayWeight()">儲存</button>
             </div>
@@ -458,6 +462,16 @@
         saveLocalWeights();
         renderTodayCard();
         renderCalendar();
+    }
+
+    function adjWeight(delta) {
+        var input = document.getElementById('todayWeightInput');
+        var val = parseFloat(input.value);
+        if (isNaN(val) || val <= 0) val = 50.0;
+        val = Math.round((val + delta) * 10) / 10;
+        if (val < 20) val = 20;
+        if (val > 200) val = 200;
+        input.value = val.toFixed(1);
     }
 
     function saveTodayWeight() {
