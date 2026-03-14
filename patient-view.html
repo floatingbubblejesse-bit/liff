@@ -1836,11 +1836,15 @@
             html += '</div></div>';
         }
 
-        // 各碳日餐食（排序：中高低斷）
+        // 各碳日餐食（排序：中高低斷）— 只顯示排程中實際存在的碳日類型
         var dayPlans = rec.dayPlans || {};
         var dayOrder = ['mid','high','low','fast'];
         var dayEmojis = {high:'🔴', low:'🟢', mid:'🟡', fast:'⚪'};
-        var sortedDpKeys = dayOrder.filter(function(k){ return dayPlans[k]; });
+        var scheduleSet = {};
+        if (schedule.length > 0) {
+            for (var si = 0; si < schedule.length; si++) { scheduleSet[schedule[si]] = true; }
+        }
+        var sortedDpKeys = dayOrder.filter(function(k){ return dayPlans[k] && (schedule.length === 0 || scheduleSet[k]); });
         sortedDpKeys.forEach(function(p) {
             var dp = dayPlans[p];
             var dotColor = dayColors[p] || '#888';
