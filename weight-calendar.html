@@ -486,9 +486,37 @@
         saveLocalWeights();
 
         var btn = document.getElementById('todaySaveBtn');
-        btn.textContent = '已儲存 ✓';
-        btn.style.color = '#6B8F71';
-        setTimeout(function(){ btn.textContent = '儲存'; btn.style.color = ''; }, 2000);
+        btn.textContent = '儲存中…';
+        btn.disabled = true;
+
+        // 同步寫入 Google Sheet（用 GET 避免 CORS preflight）
+        var saveUrl = MEALS_GAS
+          + '?saveHomeWeight=true'
+          + '&patientSn=' + encodeURIComponent(patientSn)
+          + '&date=' + encodeURIComponent(dateStr)
+          + '&weight=' + encodeURIComponent(val);
+
+        fetch(saveUrl)
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            btn.disabled = false;
+            if (res && res.ok) {
+                btn.textContent = '已儲存 ✓';
+                btn.style.color = '#6B8F71';
+            } else {
+                btn.textContent = '儲存失敗';
+                btn.style.color = '#A0626B';
+                console.log('[體重] Sheet 儲存失敗:', res);
+            }
+            setTimeout(function(){ btn.textContent = '儲存'; btn.style.color = ''; }, 2000);
+        })
+        .catch(function(err){
+            btn.disabled = false;
+            btn.textContent = '儲存失敗';
+            btn.style.color = '#A0626B';
+            console.log('[體重] Sheet 同步失敗:', err);
+            setTimeout(function(){ btn.textContent = '儲存'; btn.style.color = ''; }, 2000);
+        });
 
         renderCalendar();
         renderChart();
