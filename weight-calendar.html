@@ -30,7 +30,8 @@
         .today-type-badge.t-low{background:rgba(212,237,218,0.9);color:#6B8F71}
         .today-type-badge.t-fast{background:rgba(226,227,229,0.9);color:#4A4A4A}
         .today-type-badge.t-none{background:rgba(255,255,255,0.25);color:rgba(255,255,255,0.7)}
-        .today-type-hint{font-size:10px;opacity:0.6;margin-top:4px}
+        .today-type-hint{font-size:10px;opacity:0;margin-top:4px;transition:opacity 0.3s}
+        .today-card.show-arrows .today-type-hint{opacity:0.6}
         .today-input-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
         .today-label{font-size:13px;opacity:0.9}
         .today-input{width:80px;padding:8px 6px;border:none;border-radius:8px;font-size:16px;font-weight:700;text-align:center;color:var(--red);outline:none;background:rgba(255,255,255,0.95)}
