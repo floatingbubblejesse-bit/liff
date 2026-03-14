@@ -9,7 +9,7 @@
     <style>
         :root { --blue:#7B8FA1; --blue-light:#EDE8E0; --green:#8B9D83; --green-light:#E8EDE6; --red:#A0626B; --orange:#C4A882; --brown:#B8926A; --bg:#F5F3EF; --card:#FDFBF7; --text:#4A4A4A; --muted:#8B8B8B; --border:#E8E4DC; }
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:20px}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
 
         /* ====== Header ====== */
         .page-header{background:linear-gradient(135deg,#7B8FA1,#6B7F91);color:white;padding:18px 20px;text-align:center}
@@ -25,6 +25,9 @@
         .stat-item{flex:1;text-align:center;background:var(--bg);border-radius:8px;padding:8px 4px}
         .stat-value{font-size:15px;font-weight:700;color:var(--red)}
         .stat-label{font-size:10px;color:var(--muted);margin-top:2px}
+
+        /* ====== Scroll container ====== */
+        .table-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
 
         /* ====== Table ====== */
         .wt-table{width:100%;border-collapse:collapse;background:white}
@@ -65,7 +68,7 @@
         .wt-row-save.visible{display:inline-block}
 
         /* ====== Chart section ====== */
-        .section{margin:10px;background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.07);overflow:hidden}
+        .section{flex-shrink:0;margin:10px;background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.07);overflow:hidden}
         .section-header{display:flex;align-items:center;padding:14px 16px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;gap:8px}
         .section-header:active{background:#FDFBF7}
         .section-icon{font-size:18px}
@@ -98,10 +101,12 @@
     <div class="stat-item"><div class="stat-value" id="statCount">0</div><div class="stat-label">紀錄天數</div></div>
 </div>
 
+<div class="table-scroll" id="tableScroll">
 <table class="wt-table">
     <thead><tr><th>日期</th><th>體重</th><th>碳日</th><th></th></tr></thead>
     <tbody id="wtBody"></tbody>
 </table>
+</div>
 
 <!-- ====== 體重趨勢圖（收折） ====== -->
 <div class="section open" id="chartSection">
@@ -257,6 +262,24 @@
         renderScheduleBar();
         renderTable();
         renderChart();
+        initInfiniteScroll();
+    }
+
+    // ====== Infinite scroll ======
+    function initInfiniteScroll() {
+        var scrollEl = document.getElementById('tableScroll');
+        if (!scrollEl) return;
+        scrollEl.addEventListener('scroll', function() {
+            if (_expanding) return;
+            // 接近頂部：往上擴展
+            if (scrollEl.scrollTop < 300) {
+                expandTop();
+            }
+            // 接近底部：往下擴展
+            if (scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight < 300) {
+                expandBottom();
+            }
+        }, {passive: true});
     }
 
     // ====== Schedule info bar ======
@@ -301,35 +324,52 @@
         return schedule[schIdx] || 'mid';
     }
 
-    // ====== Calculate display range ======
+    // ====== Calculate display range (infinite scroll) ======
+    var rangeStartDate = null;
+    var rangeEndDate = null;
+    var EXPAND_MONTHS = 3;
+    var _expanding = false;
+
     function getDisplayRange() {
+        if (rangeStartDate && rangeEndDate) return { start: rangeStartDate, end: rangeEndDate };
+
         var today = new Date();
-        var rangeStart, rangeEnd;
+        var anchor = scheduleStart || today;
+        var endAnchor = scheduleEnd || today;
 
-        if (scheduleStart && scheduleEnd) {
-            // 從排程開始月的1號 到 排程結束月的最後一天
-            rangeStart = new Date(scheduleStart.getFullYear(), scheduleStart.getMonth(), 1);
-            rangeEnd = new Date(scheduleEnd.getFullYear(), scheduleEnd.getMonth() + 1, 0);
-            // 確保包含今天
-            if (today > rangeEnd) {
-                rangeEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-            }
-            if (today < rangeStart) {
-                rangeStart = new Date(today.getFullYear(), today.getMonth(), 1);
-            }
-        } else {
-            // 沒有排程：顯示本月
-            rangeStart = new Date(today.getFullYear(), today.getMonth(), 1);
-            rangeEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        }
+        // 初始範圍：錨點前 3 個月 ~ 結束錨點後 3 個月
+        rangeStartDate = new Date(anchor.getFullYear(), anchor.getMonth() - EXPAND_MONTHS, 1);
+        rangeEndDate = new Date(endAnchor.getFullYear(), endAnchor.getMonth() + EXPAND_MONTHS + 1, 0);
 
-        return { start: rangeStart, end: rangeEnd };
+        return { start: rangeStartDate, end: rangeEndDate };
+    }
+
+    function expandTop() {
+        if (_expanding) return;
+        _expanding = true;
+        rangeStartDate = new Date(rangeStartDate.getFullYear(), rangeStartDate.getMonth() - EXPAND_MONTHS, 1);
+        var scrollEl = document.getElementById('tableScroll');
+        var oldHeight = scrollEl.scrollHeight;
+        var oldScroll = scrollEl.scrollTop;
+        renderTable(true);
+        var newHeight = scrollEl.scrollHeight;
+        scrollEl.scrollTop = oldScroll + (newHeight - oldHeight);
+        _expanding = false;
+    }
+
+    function expandBottom() {
+        if (_expanding) return;
+        _expanding = true;
+        rangeEndDate = new Date(rangeEndDate.getFullYear(), rangeEndDate.getMonth() + EXPAND_MONTHS + 1, 0);
+        renderTable(true);
+        _expanding = false;
     }
 
     // ====== Render Table ======
-    function renderTable() {
+    function renderTable(skipScroll) {
         var range = getDisplayRange();
         var todayStr = formatDate(new Date());
+        var schStartStr = scheduleStart ? formatDate(scheduleStart) : '';
 
         // 收集所有日期
         var rows = [];
@@ -353,8 +393,11 @@
             var isEditing = editingDate === r.dateStr;
             var isDirty = !!dirtyRows[r.dateStr];
 
-            var trCls = r.isToday ? ' class="today-row"' : '';
-            html += '<tr' + trCls + '>';
+            var trCls = r.isToday ? 'today-row' : '';
+            var trId = '';
+            if (schStartStr && r.dateStr === schStartStr) trId = ' id="scheduleStartRow"';
+
+            html += '<tr' + (trCls ? ' class="' + trCls + '"' : '') + trId + '>';
             html += '<td><div class="wt-date">' + dateLabel + '</div></td>';
 
             // 體重欄
@@ -397,12 +440,15 @@
 
         updateStats();
 
-        // 頁面剛載入時滾動到今天
-        if (!window._scrolledToToday) {
-            window._scrolledToToday = true;
+        // 首次載入：滾動到排程第一天（或今天）
+        if (!skipScroll && !window._scrolledInit) {
+            window._scrolledInit = true;
             setTimeout(function() {
-                var todayRow = document.querySelector('.today-row');
-                if (todayRow) todayRow.scrollIntoView({behavior:'smooth', block:'center'});
+                var scrollEl = document.getElementById('tableScroll');
+                var target = document.getElementById('scheduleStartRow') || document.querySelector('.today-row');
+                if (target && scrollEl) {
+                    scrollEl.scrollTop = target.offsetTop - scrollEl.offsetTop;
+                }
             }, 100);
         }
     }
