@@ -249,7 +249,7 @@
                 <div class="card-title">🥩 蛋白質攝取建議</div>
                 <div style="display:flex;align-items:center;gap:16px">
                     <div>
-                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">目前攝取量（系統計算）</div>
+                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">目前攝取量（體重＋40）</div>
                         <div style="font-size:28px;font-weight:700;color:#7B8FA1" id="currentProtein">— g</div>
                     </div>
                     <div style="font-size:24px;color:#ccc">→</div>
@@ -1410,6 +1410,10 @@
     }
 
     function loadAllDietPlans() {
+        // 先用預設值立刻渲染，讓頁面不留白
+        PLAN_TYPES.forEach(function(p) { generateDietPlan(p); });
+
+        // 再從 API 載入已儲存的資料覆蓋
         fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn))
             .then(function(r) { return r.json(); })
             .then(function(data) {
@@ -1435,8 +1439,7 @@
                 });
             })
             .catch(function() {
-                renderCycleSchedule();
-                PLAN_TYPES.forEach(function(p) { generateDietPlan(p); });
+                // 已經有預設渲染，不需再做
             });
     }
 
@@ -1528,6 +1531,8 @@
         var val = parseInt(document.getElementById('proteinInput').value) || 0;
         if (val <= 0) return;
         dietPlanInitialized = true;
+        // 先用預設排程立刻渲染，不等 API
+        renderCycleSchedule();
         loadAllDietPlans();
     }
 
