@@ -256,7 +256,9 @@
                     <div style="flex:1">
                         <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">醫師建議攝取量</div>
                         <div style="display:flex;align-items:center;gap:6px">
-                            <input type="number" id="proteinInput" step="1" min="1" max="200" style="flex:1;max-width:160px;font-size:28px;font-weight:700;color:#8B9D83;border:2px solid #E8E4DC;border-radius:10px;padding:10px 14px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.style.borderColor='#8B9D83';this.style.boxShadow='0 0 0 3px rgba(139,157,131,0.15)'" onblur="this.style.borderColor='#E8E4DC';this.style.boxShadow='none'">
+                            <button onclick="adjustProtein(-1)" style="width:36px;height:36px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:20px;font-weight:700;color:#8B9D83;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">−</button>
+                            <input type="text" inputmode="numeric" id="proteinInput" style="width:80px;font-size:28px;font-weight:700;color:#8B9D83;border:2px solid #E8E4DC;border-radius:10px;padding:10px 8px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.style.borderColor='#8B9D83';this.style.boxShadow='0 0 0 3px rgba(139,157,131,0.15)'" onblur="this.style.borderColor='#E8E4DC';this.style.boxShadow='none'">
+                            <button onclick="adjustProtein(1)" style="width:36px;height:36px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:20px;font-weight:700;color:#8B9D83;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">+</button>
                             <span style="font-size:16px;color:#8B8B8B;font-weight:600">g</span>
                             <button id="saveProteinBtn" onclick="saveProtein()" style="padding:8px 16px;border-radius:8px;border:none;background:#8B9D83;color:white;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(139,157,131,0.3);white-space:nowrap">更新</button>
                         </div>
@@ -903,6 +905,13 @@
             }
         }
         return NaN;
+    }
+
+    function adjustProtein(delta) {
+        var input = document.getElementById('proteinInput');
+        var val = parseInt(input.value, 10) || 0;
+        val = Math.max(1, Math.min(200, val + delta));
+        input.value = val;
     }
 
     function saveProtein() {
