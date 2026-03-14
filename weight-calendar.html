@@ -527,7 +527,7 @@
         renderCalendar();
     }
 
-    // +/- 按鈕：點擊輸入框或按鈕時展開，點外面收起
+    // +/- 按鈕：點擊 group 內展開，點 group 外才收起（不用 blur）
     (function() {
         var grp = document.querySelector('.today-input-group');
         var inp = document.getElementById('todayWeightInput');
@@ -536,16 +536,27 @@
             grp.classList.add('active');
             inp.focus();
         });
-        // 延遲收起（讓 +/- 按鈕的 click 能先觸發）
-        inp.addEventListener('blur', function() {
-            setTimeout(function(){ grp.classList.remove('active'); }, 200);
+        // 點擊 group 外面才收起
+        document.addEventListener('touchstart', function(e) {
+            if (!grp.contains(e.target)) {
+                grp.classList.remove('active');
+            }
+        }, {passive: true});
+        document.addEventListener('click', function(e) {
+            if (!grp.contains(e.target)) {
+                grp.classList.remove('active');
+            }
         });
     })();
 
     function adjWeight(delta) {
         var input = document.getElementById('todayWeightInput');
         var val = parseFloat(input.value);
-        if (isNaN(val) || val <= 0) val = 50.0;
+        if (isNaN(val) || val <= 0) {
+            // 找前一天有紀錄的體重作為起始值
+            var keys = Object.keys(weightData).sort();
+            val = (keys.length > 0) ? (weightData[keys[keys.length - 1]].weight || 50.0) : 50.0;
+        }
         val = Math.round((val + delta) * 10) / 10;
         if (val < 20) val = 20;
         if (val > 200) val = 200;
