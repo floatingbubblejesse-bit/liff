@@ -495,7 +495,7 @@
     // ====== Edit / Dismiss 系統 ======
     var _actionTime = 0;       // 最近一次操作時間戳（防止開啟瞬間被外部點擊關掉）
     var _idleTimer = null;
-    var IDLE_TIMEOUT = 3000;
+    var IDLE_TIMEOUT = 8000;
     var GUARD_MS = 400;
 
     function clearIdleTimer() {
@@ -556,7 +556,17 @@
         setTimeout(function() {
             var inp = document.getElementById('editInput_' + dateStr);
             if (inp) {
-                inp.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                var scrollEl = document.getElementById('tableScroll');
+                if (scrollEl) {
+                    var inpRect = inp.getBoundingClientRect();
+                    var containerRect = scrollEl.getBoundingClientRect();
+                    // 把輸入格放在容器上方 1/3 處（不要跳太高）
+                    var targetY = containerRect.top + containerRect.height * 0.3;
+                    var diff = inpRect.top - targetY;
+                    if (Math.abs(diff) > 10) {
+                        scrollEl.scrollTop += diff;
+                    }
+                }
             }
         }, 350);
     }
