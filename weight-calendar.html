@@ -36,25 +36,22 @@
         /* ====== Table ====== */
         .wt-table{width:100%;border-collapse:collapse;background:white}
         .wt-table thead th{position:sticky;top:0;background:#F8F6F2;font-size:12px;font-weight:700;color:var(--muted);padding:10px 8px;text-align:center;border-bottom:2px solid var(--border);z-index:2}
-        .wt-table tbody td{padding:10px 6px;text-align:center;border-bottom:1px solid #F0EDE6;font-size:13px;vertical-align:middle}
+        .wt-table tbody td{padding:5px 3px;text-align:center;border-bottom:1px solid #F0EDE6;font-size:13px;vertical-align:middle}
+        .wt-table th:last-child,.wt-table td:last-child{width:1px;white-space:nowrap;padding:5px 6px 5px 0}
         .wt-table tbody tr:active{background:#FDFBF7}
         .wt-table tbody tr.today-row{background:#EDF2F7}
         .wt-table tbody tr.today-row td{border-bottom-color:#D0DBE6}
         .wt-date{font-weight:600;color:var(--text);white-space:nowrap}
         .wt-date .wt-day{font-size:11px;color:var(--muted);font-weight:400}
         .wt-table tbody tr.today-row .wt-date{color:var(--blue);font-weight:800}
-        .wt-weight-cell{position:relative;min-width:110px}
-        .wt-weight-val{font-size:15px;font-weight:700;color:var(--red);cursor:pointer;-webkit-tap-highlight-color:transparent;min-height:24px;display:flex;align-items:center;justify-content:center;gap:2px}
+        .wt-weight-cell{position:relative}
+        .wt-weight-val{font-size:15px;font-weight:700;color:var(--red);cursor:pointer;-webkit-tap-highlight-color:transparent;min-height:22px;display:flex;align-items:center;justify-content:center}
         .wt-weight-val.empty{color:var(--muted);font-weight:400;font-size:12px}
 
-        /* ====== Inline edit row (merged with weight display) ====== */
-        .wt-edit-row{display:none;align-items:center;justify-content:center;gap:6px}
-        .wt-edit-row.active{display:flex}
-        .wt-edit-input{width:52px;padding:2px 0;border:none;border-bottom:2px solid var(--blue);font-size:15px;font-weight:700;text-align:center;color:var(--red);outline:none;background:transparent;-moz-appearance:textfield}
+        /* ====== Inline edit input ====== */
+        .wt-edit-input{width:56px;padding:2px 0;border:none;border-bottom:2px solid var(--blue);font-size:15px;font-weight:700;text-align:center;color:var(--red);outline:none;background:transparent;-moz-appearance:textfield}
         .wt-edit-input::-webkit-outer-spin-button,.wt-edit-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
         .wt-edit-input::placeholder{color:#ccc;font-weight:400;font-size:12px}
-        .wt-adj-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:50%;background:white;color:var(--text);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
-        .wt-adj-btn:active{background:var(--bg)}
 
         /* ====== Carb day badge ====== */
         .wt-type{display:inline-flex;align-items:center;justify-content:center;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform 0.15s;user-select:none}
@@ -66,7 +63,7 @@
         .wt-type.t-none{background:var(--bg);color:var(--muted)}
 
         /* ====== Row save button ====== */
-        .wt-row-save{display:none;padding:2px 8px;border:1px solid var(--green);border-radius:6px;background:white;color:var(--green);font-size:11px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap;margin-left:2px}
+        .wt-row-save{display:none;padding:2px 8px;border:1px solid var(--green);border-radius:6px;background:white;color:var(--green);font-size:11px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap}
         .wt-row-save:active{background:var(--green-light)}
         .wt-row-save.visible{display:inline-block}
 
@@ -108,7 +105,7 @@
 
 <div class="table-scroll" id="tableScroll">
 <table class="wt-table">
-    <thead><tr><th>日期</th><th>體重</th><th>碳日</th></tr></thead>
+    <thead><tr><th>日期</th><th>體重</th><th>碳日</th><th></th></tr></thead>
     <tbody id="wtBody"></tbody>
 </table>
 </div>
@@ -419,18 +416,10 @@
             html += '<tr' + (trCls ? ' class="' + trCls + '"' : '') + trId + '>';
             html += '<td><div class="wt-date">' + dateLabel + '</div></td>';
 
-            // 體重欄（含加減號與儲存鈕）
+            // 體重欄
             html += '<td class="wt-weight-cell">';
             if (isEditing) {
-                html += '<div class="wt-edit-row active">';
-                html += '<button class="wt-adj-btn" onclick="adjWeightRow(\'' + r.dateStr + '\',-0.1)">−</button>';
                 html += '<input class="wt-edit-input" id="editInput_' + r.dateStr + '" type="text" inputmode="decimal" pattern="[0-9.]*" placeholder="--.-" value="' + (r.wt !== null ? r.wt.toFixed(1) : '') + '">';
-                html += '<button class="wt-adj-btn" onclick="adjWeightRow(\'' + r.dateStr + '\',0.1)">+</button>';
-                html += '<button class="wt-row-save visible" id="saveBtn_' + r.dateStr + '" onclick="saveRow(\'' + r.dateStr + '\')">儲存</button>';
-                html += '</div>';
-            } else if (isDirty) {
-                html += '<div class="wt-weight-val" onclick="startEdit(\'' + r.dateStr + '\')">' + (r.wt !== null ? r.wt.toFixed(1) : '-') + '</div>';
-                html += '<button class="wt-row-save visible" id="saveBtn_' + r.dateStr + '" onclick="saveRow(\'' + r.dateStr + '\')">儲存</button>';
             } else {
                 if (r.wt !== null) {
                     html += '<div class="wt-weight-val" onclick="startEdit(\'' + r.dateStr + '\')">' + r.wt.toFixed(1) + '</div>';
@@ -442,6 +431,10 @@
 
             // 碳日
             html += '<td><span class="wt-type ' + r.opt.cls + '" onclick="cycleDayType(\'' + r.dateStr + '\')">' + r.opt.short + '</span></td>';
+
+            // 儲存鈕（碳日右邊，點擊才顯示）
+            var saveCls = (isEditing || isDirty) ? 'wt-row-save visible' : 'wt-row-save';
+            html += '<td><button class="' + saveCls + '" id="saveBtn_' + r.dateStr + '" onclick="saveRow(\'' + r.dateStr + '\')">儲存</button></td>';
             html += '</tr>';
         }
 
