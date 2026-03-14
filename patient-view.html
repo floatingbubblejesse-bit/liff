@@ -1412,29 +1412,55 @@
         var proteinVal = document.getElementById('proteinInput').value;
         var lineMsg = buildDietLineMessage();
 
-        // 一次送出全部：4碳日 + 排程 + 蛋白質 + LINE推播
-        var payload = {
-            patientSn: patientSn,
-            proteinRec: parseInt(proteinVal) || 0,
-            mid:  getDietPlanData('mid'),
-            high: getDietPlanData('high'),
-            low:  getDietPlanData('low'),
-            fast: getDietPlanData('fast'),
-            schedule: cycleSchedule,
-            weeks: cycleWeeks,
-            lineUid: patientLineUid,
-            lineFlexMessage: lineMsg
-        };
+        var midData  = getDietPlanData('mid');
+        var highData = getDietPlanData('high');
+        var lowData  = getDietPlanData('low');
+        var fastData = getDietPlanData('fast');
 
-        fetch(N8N + '/save-diet-plan', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-        .then(function(r) {
-            var ct = r.headers.get('content-type') || '';
-            if (ct.indexOf('json') !== -1) return r.json();
-            return r.text().then(function(t) {
-                try { return JSON.parse(t); } catch(e) { return { ok: r.ok, raw: t }; }
+        // Step 1: 先呼叫 GAS 儲存飲食計畫（含日期覆寫規則）
+        var gasUrl = MEALS_GAS
+            + '?saveDietPlan=true'
+            + '&patientSn='  + encodeURIComponent(patientSn)
+            + '&proteinRec=' + encodeURIComponent(parseInt(proteinVal) || 0)
+            + '&mid='        + encodeURIComponent(JSON.stringify(midData))
+            + '&high='       + encodeURIComponent(JSON.stringify(highData))
+            + '&low='        + encodeURIComponent(JSON.stringify(lowData))
+            + '&fast='       + encodeURIComponent(JSON.stringify(fastData))
+            + '&schedule='   + encodeURIComponent(JSON.stringify(cycleSchedule))
+            + '&weeks='      + encodeURIComponent(cycleWeeks);
+
+        fetch(gasUrl)
+        .then(function(r) { return r.json(); })
+        .then(function(gasRes) {
+            if (gasRes.error) {
+                throw new Error('Sheet 儲存失敗：' + gasRes.error);
+            }
+
+            // Step 2: GAS 儲存成功 → 呼叫 N8N 發送 LINE 推播
+            var n8nPayload = {
+                patientSn: patientSn,
+                proteinRec: parseInt(proteinVal) || 0,
+                mid:  midData,
+                high: highData,
+                low:  lowData,
+                fast: fastData,
+                schedule: cycleSchedule,
+                weeks: cycleWeeks,
+                lineUid: patientLineUid,
+                lineFlexMessage: lineMsg,
+                skipSheetSave: true  // 告知 N8N 不需要再寫 Sheet
+            };
+
+            return fetch(N8N + '/save-diet-plan', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(n8nPayload)
+            })
+            .then(function(r2) {
+                var ct = r2.headers.get('content-type') || '';
+                if (ct.indexOf('json') !== -1) return r2.json();
+                return r2.text().then(function(t) {
+                    try { return JSON.parse(t); } catch(e) { return { ok: r2.ok, raw: t }; }
+                });
             });
         })
         .then(function(res) {
@@ -1445,7 +1471,7 @@
                 var pBtn = document.getElementById('saveProteinBtn');
                 if (pBtn) { pBtn.textContent = '已同步'; pBtn.style.background = '#6B8F71'; setTimeout(function(){ pBtn.textContent = '更新'; pBtn.style.background = '#8B9D83'; }, 2500); }
                 setTimeout(function() { btn.textContent = '儲存並發送給客戶'; btn.style.background = ''; }, 2500);
-            } else { btn.textContent = '儲存並發送給客戶'; alert('儲存失敗：' + (res.error || JSON.stringify(res))); }
+            } else { btn.textContent = '儲存並發送給客戶'; alert('LINE 推播失敗：' + (res.error || JSON.stringify(res))); }
         })
         .catch(function(err) { btn.disabled = false; btn.textContent = '儲存並發送給客戶'; alert('儲存失敗：' + err.message); });
     }
