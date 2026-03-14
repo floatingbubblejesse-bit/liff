@@ -1601,6 +1601,15 @@
         renderHistoryCards(el, [record]);
     }
 
+    // 當 DOM 尚未渲染飲食計畫時，用公式算出各碳日代餐 & Q寶包數
+    function calcPacksForType(p, protein) {
+        var packs = protein <= 110 ? 2 : 3;
+        if (p === 'fast') return { mr: 6, qb: 2 };
+        if (p === 'low') return { mr: Math.min(packs + 1, 3), qb: 1 };
+        // mid, high 代餐包數相同
+        return { mr: packs, qb: (p === 'high' ? 0 : 0) };
+    }
+
     function buildCurrentRecord(date, protein) {
         var packs = protein <= 110 ? 2 : 3;
         // 取得排程中用到的碳日類型
@@ -1610,38 +1619,46 @@
         var dayPlans = {};
         var DAY_ORDER = ['mid','high','low','fast'];
         usedTypes.sort(function(a,b){ return DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b); });
+        // 檢查 DOM 是否有飲食計畫資料
+        var domReady = !!document.getElementById('mid-d-0-0');
         usedTypes.forEach(function(p) {
-            var plan = getDietPlanData(p);
             var meals = [];
-            for (var m = 0; m < MEAL_COUNT; m++) {
-                var row = plan[m];
-                var allDash = row.every(function(v){ return v === '-' || v === '0' || v === 0 || v === ''; });
-                if (allDash) continue;
-                var parts = [];
-                var seps = [];
-                for (var f = 0; f < DIET_COLS.length; f++) {
-                    var val = row[f];
-                    if (val === '-' || val === '0' || val === 0 || val === '') continue;
-                    var col = DIET_COLS[f];
-                    var unit = col.unit.replace(/[()]/g, '');
-                    var sep = col.sep || '→';
-                    if (parts.length > 0) seps.push(sep);
-                    if (col.type === 'number') { parts.push(col.label + val + unit); }
-                    else if (val === '1') { parts.push(col.label + (unit ? '1'+unit : '')); }
-                    else { parts.push(col.label + val); }
-                }
-                var itemStr = '';
-                for (var pi = 0; pi < parts.length; pi++) {
-                    if (pi > 0) itemStr += ' ' + seps[pi-1] + ' ';
-                    itemStr += parts[pi];
-                }
-                meals.push({ name: MEAL_NAMES[m], icon: MEAL_ICONS[m], items: itemStr });
-            }
-            // 計算該碳日代餐 & Q寶
             var mr = 0, qb = 0;
-            for (var m2 = 0; m2 < MEAL_COUNT; m2++) {
-                if (plan[m2][0] === '1') mr++;
-                if (plan[m2][5] === '1') qb++;
+            if (domReady) {
+                var plan = getDietPlanData(p);
+                for (var m = 0; m < MEAL_COUNT; m++) {
+                    var row = plan[m];
+                    var allDash = row.every(function(v){ return v === '-' || v === '0' || v === 0 || v === ''; });
+                    if (allDash) continue;
+                    var parts = [];
+                    var seps = [];
+                    for (var f = 0; f < DIET_COLS.length; f++) {
+                        var val = row[f];
+                        if (val === '-' || val === '0' || val === 0 || val === '') continue;
+                        var col = DIET_COLS[f];
+                        var unit = col.unit.replace(/[()]/g, '');
+                        var sep = col.sep || '→';
+                        if (parts.length > 0) seps.push(sep);
+                        if (col.type === 'number') { parts.push(col.label + val + unit); }
+                        else if (val === '1') { parts.push(col.label + (unit ? '1'+unit : '')); }
+                        else { parts.push(col.label + val); }
+                    }
+                    var itemStr = '';
+                    for (var pi = 0; pi < parts.length; pi++) {
+                        if (pi > 0) itemStr += ' ' + seps[pi-1] + ' ';
+                        itemStr += parts[pi];
+                    }
+                    meals.push({ name: MEAL_NAMES[m], icon: MEAL_ICONS[m], items: itemStr });
+                }
+                for (var m2 = 0; m2 < MEAL_COUNT; m2++) {
+                    if (plan[m2][0] === '1') mr++;
+                    if (plan[m2][5] === '1') qb++;
+                }
+            } else {
+                // DOM 尚未渲染，用公式計算包數
+                var calc = calcPacksForType(p, protein);
+                mr = calc.mr;
+                qb = calc.qb;
             }
             dayPlans[p] = { meals: meals, mr: mr, qb: qb };
         });
