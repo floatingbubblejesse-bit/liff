@@ -278,14 +278,17 @@
         <div id="errorDiv" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0"></div>
         <div id="tab-body" class="tab-pane" style="display:none"></div>
         <div id="tab-weight" class="tab-pane" style="display:none">
+            <div id="hwScheduleBar" style="text-align:center;font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;display:none"></div>
             <div class="hw-stats-row">
                 <div class="hw-stat-item" onclick="hwToggleMinMax()"><div class="hw-stat-value" id="hwStatLeft">-</div><div class="hw-stat-label" id="hwStatLeftLabel">最低體重</div></div>
                 <div class="hw-stat-item" onclick="hwCycleWeekStat()"><div class="hw-stat-value" id="hwStatMid">-</div><div class="hw-stat-label" id="hwStatMidLabel">平均一週</div></div>
                 <div class="hw-stat-item" onclick="hwToggleDiffMode()"><div class="hw-stat-value" id="hwStatRight">-</div><div class="hw-stat-label" id="hwStatRightLabel">期間變化</div></div>
             </div>
             <div class="card">
-                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleCal()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle" id="hwCalArrow">▼</span>📅 日曆</span><button onclick="hwScrollToToday()" id="hwTodayBtn" style="font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-light);border:1px solid var(--border);border-radius:14px;padding:3px 10px 3px 7px;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>今天</button></div>
-                <div id="hwCalWrap" class="hw-scroll-wrap"></div>
+                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleTable()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle" id="hwTableArrow">▼</span>📋 體重紀錄表</span></div>
+                <div id="hwTableBody" class="hw-chart-body">
+                    <div class="table-wrap" id="hwTableWrap"><div class="no-data">載入中…</div></div>
+                </div>
             </div>
             <div class="card">
                 <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleChart()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle" id="hwChartArrow">▼</span>📈 體重趨勢</span></div>
@@ -298,10 +301,8 @@
                 </div>
             </div>
             <div class="card">
-                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleTable()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle" id="hwTableArrow">▼</span>📋 體重紀錄表</span></div>
-                <div id="hwTableBody" class="hw-chart-body">
-                    <div class="table-wrap" id="hwTableWrap"><div class="no-data">載入中…</div></div>
-                </div>
+                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleCal()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle" id="hwCalArrow">▼</span>📅 日曆</span><button onclick="hwScrollToToday()" id="hwTodayBtn" style="font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-light);border:1px solid var(--border);border-radius:14px;padding:3px 10px 3px 7px;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>今天</button></div>
+                <div id="hwCalWrap" class="hw-scroll-wrap"></div>
             </div>
         </div>
         <div id="tab-meals" class="tab-pane" style="display:none"></div>
@@ -2261,6 +2262,20 @@
             scheduleEnd = new Date(scheduleStart.getFullYear(), scheduleStart.getMonth(), scheduleStart.getDate() + weeks * 7 - 1);
         }
 
+        // 排程資訊列
+        var schBar = document.getElementById('hwScheduleBar');
+        if (schBar) {
+            if (scheduleStart && scheduleEnd) {
+                var sL = (scheduleStart.getMonth()+1) + '/' + scheduleStart.getDate() + '(' + HW_DAY_NAMES[scheduleStart.getDay()] + ')';
+                var eL = (scheduleEnd.getMonth()+1) + '/' + scheduleEnd.getDate() + '(' + HW_DAY_NAMES[scheduleEnd.getDay()] + ')';
+                var wks = hwVisitRecords.length > 0 ? (hwVisitRecords[hwVisitRecords.length-1].weeks || 4) : 4;
+                schBar.innerHTML = '最新排程期間　<span style="color:var(--blue);font-weight:700">' + sL + ' ~ ' + eL + '</span>　' + wks + ' 週';
+                schBar.style.display = 'block';
+            } else {
+                schBar.style.display = 'none';
+            }
+        }
+
         var rangeKeys = allKeys;
         if (scheduleStart && scheduleEnd) {
             var sStr = hwFormatDate(scheduleStart);
@@ -2544,6 +2559,46 @@
                 }
             }
         }, { passive: true });
+
+        // ── 滑鼠滾輪縮放 ──
+        wrap.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            var delta = e.deltaY > 0 ? -0.15 : 0.15;
+            var newZoom = _hwChartZoom * (1 + delta);
+            var oldZoom = _hwChartZoom;
+            hwApplyChartZoom(newZoom);
+            // 以滑鼠位置為中心縮放
+            var wrapRect = wrap.getBoundingClientRect();
+            var mouseX = e.clientX - wrapRect.left;
+            var relX = mouseX + wrap.scrollLeft;
+            var scale = _hwChartZoom / oldZoom;
+            wrap.scrollLeft = relX * scale - mouseX;
+        }, { passive: false });
+
+        // ── 滑鼠拖拉平移 ──
+        var dragging = false;
+        var dragStartX = 0;
+        var dragStartScroll = 0;
+        wrap.style.cursor = 'grab';
+
+        wrap.addEventListener('mousedown', function(e) {
+            if (_hwChartZoom <= 1) return;
+            dragging = true;
+            dragStartX = e.clientX;
+            dragStartScroll = wrap.scrollLeft;
+            wrap.style.cursor = 'grabbing';
+            e.preventDefault();
+        });
+        document.addEventListener('mousemove', function(e) {
+            if (!dragging) return;
+            wrap.scrollLeft = dragStartScroll - (e.clientX - dragStartX);
+        });
+        document.addEventListener('mouseup', function() {
+            if (dragging) {
+                dragging = false;
+                wrap.style.cursor = _hwChartZoom > 1 ? 'grab' : 'default';
+            }
+        });
     }
 
     function hwRenderTable() {
