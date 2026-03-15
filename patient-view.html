@@ -2165,11 +2165,12 @@
         var wrap = document.getElementById('hwCalWrap');
         var todayEl = document.getElementById('hwD' + hwFormatDate(new Date()));
         if (wrap && todayEl) {
-            // 展開（如果收合中）
             if (_hwCalCollapsed) hwToggleCal();
             setTimeout(function() {
-                wrap.scrollTop = todayEl.offsetTop - wrap.offsetTop - wrap.clientHeight / 2 + todayEl.clientHeight / 2;
-            }, 60);
+                var elRect = todayEl.getBoundingClientRect();
+                var wrapRect = wrap.getBoundingClientRect();
+                wrap.scrollTop += elRect.top - wrapRect.top - wrap.clientHeight / 2 + todayEl.clientHeight / 2;
+            }, 80);
         }
     }
 
@@ -2681,7 +2682,9 @@
             var todayRow = document.getElementById('hwTR' + todayStr);
             if (todayRow && scroll) {
                 setTimeout(function() {
-                    scroll.scrollTop = todayRow.offsetTop - scroll.offsetTop - scroll.clientHeight / 2 + todayRow.clientHeight / 2;
+                    var elRect = todayRow.getBoundingClientRect();
+                    var scRect = scroll.getBoundingClientRect();
+                    scroll.scrollTop += elRect.top - scRect.top - scroll.clientHeight / 2 + todayRow.clientHeight / 2;
                 }, 80);
             }
             // 綁定無限滾動
@@ -2737,8 +2740,10 @@
         if (scroll && todayRow) {
             if (_hwTableCollapsed) hwToggleTable();
             setTimeout(function() {
-                scroll.scrollTop = todayRow.offsetTop - scroll.offsetTop - scroll.clientHeight / 2 + todayRow.clientHeight / 2;
-            }, 60);
+                var elRect = todayRow.getBoundingClientRect();
+                var scRect = scroll.getBoundingClientRect();
+                scroll.scrollTop += elRect.top - scRect.top - scroll.clientHeight / 2 + todayRow.clientHeight / 2;
+            }, 80);
         }
     }
 
