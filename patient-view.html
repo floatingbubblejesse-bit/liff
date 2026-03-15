@@ -986,14 +986,7 @@
         btn.disabled = true;
         btn.style.opacity = '0.6';
         btn.textContent = '更新中…';
-        fetch(N8N + '/save-protein', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                patientSn: patientSn,
-                proteinRecommendation: val
-            })
-        })
+        fetch(MEALS_GAS + '?saveProtein=' + encodeURIComponent(patientSn) + '&value=' + encodeURIComponent(val))
         .then(function(r){ return r.json(); })
         .then(function(res){
             btn.disabled = false;
