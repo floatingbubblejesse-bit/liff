@@ -92,9 +92,10 @@
         .chart-bottom-title{flex:1;font-size:14px;font-weight:700;color:var(--text)}
         .chart-bottom-arrow{font-size:11px;color:var(--muted);transition:transform 0.25s ease}
         .chart-bottom.open .chart-bottom-arrow{transform:rotate(180deg)}
-        .chart-bottom-body{display:none;border-top:1px solid var(--border);padding:10px}
+        .chart-bottom-body{display:none;border-top:1px solid var(--border);padding:0}
         .chart-bottom.open .chart-bottom-body{display:block}
-        .chart-wrap{height:200px;position:relative}
+        .chart-wrap{height:220px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x pinch-zoom}
+        .chart-inner{position:relative;height:100%;min-width:100%}
 
         /* ====== Loading ====== */
         .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:40vh;gap:14px}
@@ -134,7 +135,7 @@
         <span class="chart-bottom-arrow">▼</span>
     </div>
     <div class="chart-bottom-body">
-        <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
+        <div class="chart-wrap" id="chartWrap"><div class="chart-inner" id="chartInner"><canvas id="weightChart"></canvas></div></div>
     </div>
 </div>
 
@@ -764,8 +765,13 @@
     // ====== Chart ======
     var CARB_COLORS = { high:'#A0626B', mid:'#F5D98A', low:'#6B8F71', fast:'#9B9B9B', none:'#8B8B8B' };
     var chartInstance = null;
-
+    var _chartKeys = [];
+    var _chartValues = [];
+    var _chartColors = [];
+    var _chartZoom = 1;
+    var _chartBaseW = 0;
     var _chartRendered = false;
+
     function toggleChart() {
         var el = document.getElementById('chartSection');
         if (!el) return;
@@ -774,6 +780,89 @@
             _chartRendered = true;
             renderChart();
         }
+    }
+
+    function getChartLabels() {
+        var inner = document.getElementById('chartInner');
+        var w = inner ? inner.offsetWidth : 300;
+        var n = _chartKeys.length || 1;
+        var pxPer = w / n;
+        return _chartKeys.map(function(k) {
+            var p = k.split('-');
+            var dateStr = parseInt(p[1]) + '/' + parseInt(p[2]);
+            if (pxPer >= 50) {
+                var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+                return dateStr + '(' + DAY_NAMES[d.getDay()] + ')';
+            }
+            return dateStr;
+        });
+    }
+
+    function buildChart() {
+        var canvas = document.getElementById('weightChart');
+        if (!canvas || _chartKeys.length === 0) return;
+        if (chartInstance) chartInstance.destroy();
+
+        var labels = getChartLabels();
+        var inner = document.getElementById('chartInner');
+        var pxPer = inner ? inner.offsetWidth / _chartKeys.length : 30;
+        var ptR = Math.max(3, Math.min(8, _chartZoom * 3));
+        var bw = Math.max(1.5, Math.min(3, _chartZoom * 2));
+
+        chartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '體重 (kg)',
+                    data: _chartValues,
+                    borderColor: '#7B8FA1',
+                    backgroundColor: 'rgba(123,143,161,0.1)',
+                    borderWidth: bw,
+                    pointRadius: ptR,
+                    pointBackgroundColor: _chartColors,
+                    pointBorderColor: _chartColors,
+                    pointBorderWidth: 1,
+                    fill: true,
+                    tension: 0.35
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                layout: { padding: { bottom: 6, left: 4, right: 4 } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: function(items) {
+                                var idx = items[0].dataIndex;
+                                var k = _chartKeys[idx];
+                                var p = k.split('-');
+                                var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+                                return parseInt(p[1]) + '/' + parseInt(p[2]) + '(' + DAY_NAMES[d.getDay()] + ')';
+                            },
+                            label: function(ctx) { return ctx.parsed.y + ' kg'; }
+                        }
+                    }
+                },
+                scales: {
+                    x: { ticks: { font: { size: Math.max(9, Math.min(12, pxPer / 5)) }, color: '#8B8B8B', maxRotation: 45, autoSkip: false }, grid: { display: false } },
+                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B' }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                }
+            }
+        });
+    }
+
+    function applyChartZoom(newZoom) {
+        var wrap = document.getElementById('chartWrap');
+        var inner = document.getElementById('chartInner');
+        if (!wrap || !inner) return;
+        _chartZoom = Math.max(1, Math.min(8, newZoom));
+        var w = Math.round(_chartBaseW * _chartZoom);
+        inner.style.width = w + 'px';
+        buildChart();
     }
 
     function renderChart() {
@@ -787,65 +876,80 @@
         }
         if (keys.length === 0) return;
 
-        var values = keys.map(function(k){ return weightData[k].weight; });
-        var colors = keys.map(function(k) {
+        _chartKeys = keys;
+        _chartValues = keys.map(function(k){ return weightData[k].weight; });
+        _chartColors = keys.map(function(k) {
             var p = k.split('-');
             var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
             return CARB_COLORS[getDayType(d)] || CARB_COLORS.none;
         });
-        var labels = keys.map(function(k) {
-            var p = k.split('-');
-            return parseInt(p[1]) + '/' + parseInt(p[2]);
-        });
 
-        var canvas = document.getElementById('weightChart');
-        if (!canvas) return;
-        if (chartInstance) chartInstance.destroy();
+        var wrap = document.getElementById('chartWrap');
+        var inner = document.getElementById('chartInner');
+        if (!wrap || !inner) return;
+        _chartBaseW = wrap.offsetWidth;
+        _chartZoom = 1;
+        inner.style.width = _chartBaseW + 'px';
+        buildChart();
+        initChartPinch();
+    }
 
-        chartInstance = new Chart(canvas.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: '體重 (kg)',
-                    data: values,
-                    borderColor: '#7B8FA1',
-                    backgroundColor: 'rgba(123,143,161,0.1)',
-                    borderWidth: 2,
-                    pointRadius: 4,
-                    pointBackgroundColor: colors,
-                    pointBorderColor: colors,
-                    pointBorderWidth: 1,
-                    fill: true,
-                    tension: 0.35
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: false,
-                layout: { padding: { bottom: 10, left: 4, right: 4 } },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            title: function(items) {
-                                var idx = items[0].dataIndex;
-                                var k = keys[idx];
-                                var p = k.split('-');
-                                var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
-                                return parseInt(p[1]) + '/' + parseInt(p[2]) + '(' + DAY_NAMES[d.getDay()] + ')';
-                            },
-                            label: function(ctx) { return ctx.parsed.y + ' kg'; }
-                        }
-                    }
-                },
-                scales: {
-                    x: { ticks: { font: { size: 10 }, color: '#8B8B8B', maxRotation: 45 }, grid: { display: false } },
-                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B' }, grid: { color: 'rgba(0,0,0,0.05)' } }
+    // ====== Pinch-to-zoom (horizontal only, silky smooth) ======
+    var _pinchInited = false;
+    function initChartPinch() {
+        if (_pinchInited) return;
+        _pinchInited = true;
+        var wrap = document.getElementById('chartWrap');
+        if (!wrap) return;
+        var startDist = 0;
+        var startZoom = 1;
+        var startScrollL = 0;
+        var startMidX = 0;
+
+        function dist(e) {
+            var t = e.touches;
+            if (t.length < 2) return 0;
+            var dx = t[0].clientX - t[1].clientX;
+            var dy = t[0].clientY - t[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        wrap.addEventListener('touchstart', function(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                startDist = dist(e);
+                startZoom = _chartZoom;
+                startScrollL = wrap.scrollLeft;
+                startMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            }
+        }, { passive: false });
+
+        wrap.addEventListener('touchmove', function(e) {
+            if (e.touches.length === 2 && startDist > 0) {
+                e.preventDefault();
+                var d = dist(e);
+                var rawRatio = d / startDist;
+                var damped = 1 + (rawRatio - 1) * 0.3;
+                var newZoom = Math.max(1, Math.min(8, startZoom * damped));
+                applyChartZoom(newZoom);
+                var scale = newZoom / startZoom;
+                var wrapRect = wrap.getBoundingClientRect();
+                var relMidX = startMidX - wrapRect.left + startScrollL;
+                wrap.scrollLeft = relMidX * scale - (startMidX - wrapRect.left);
+            }
+        }, { passive: false });
+
+        wrap.addEventListener('touchend', function(e) {
+            if (e.touches.length < 2) {
+                startDist = 0;
+                if (_chartZoom < 1.05) {
+                    _chartZoom = 1;
+                    var inner = document.getElementById('chartInner');
+                    if (inner) inner.style.width = _chartBaseW + 'px';
+                    buildChart();
                 }
             }
-        });
+        }, { passive: true });
     }
 
     // ====== Scroll to today ======
