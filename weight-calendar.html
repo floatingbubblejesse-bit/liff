@@ -275,16 +275,15 @@
     }
 
     // ====== Infinite scroll ======
+    var _scrollReady = false;
     function initInfiniteScroll() {
+        // 延遲 1 秒才啟動，避免初始 scrollTop=0 觸發 expandTop 把 header 推走
+        setTimeout(function() { _scrollReady = true; }, 1000);
         window.addEventListener('scroll', function() {
-            if (_expanding) return;
+            if (!_scrollReady || _expanding) return;
             var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             var scrollHeight = document.documentElement.scrollHeight;
             var clientHeight = window.innerHeight;
-            // 接近頂部：往上擴展
-            if (scrollTop < 300) {
-                expandTop();
-            }
             // 接近底部：往下擴展
             if (scrollHeight - scrollTop - clientHeight < 300) {
                 expandBottom();
