@@ -2603,49 +2603,39 @@
         });
     }
 
-    var _hwTableFirstRender = true;
+    // ── 體重紀錄表（萬年曆式，由舊到新，無限滾動） ──
+    var _hwTblStartMonth = -6;
+    var _hwTblEndMonth = 2;
+    var _hwTblFirstRender = true;
+    var _hwTblBusy = false;
+    var _hwTblScrollInited = false;
 
-    function hwRenderTable() {
-        var wrap = document.getElementById('hwTableWrap');
-        var scroll = document.getElementById('hwTableScroll');
-        if (!wrap) return;
-
-        // 產生日期範圍：排程期間前後各延伸，或依資料範圍
-        var today = new Date();
-        var todayStr = hwFormatDate(today);
-        var allDataKeys = Object.keys(hwWeightData).filter(function(k){ return hwWeightData[k].weight; }).sort();
-
-        // 起點：最早資料或今天 - 2 個月（取較早者）
-        var rangeStartD = new Date(today.getFullYear(), today.getMonth() - 2, today.getDate());
-        if (allDataKeys.length > 0) {
-            var fp = allDataKeys[0].split('-');
-            var firstData = new Date(parseInt(fp[0]), parseInt(fp[1]) - 1, parseInt(fp[2]));
-            if (firstData < rangeStartD) rangeStartD = firstData;
-        }
-        // 終點：最晚資料或今天 + 1 個月（取較晚者）
-        var rangeEndD = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
-        if (allDataKeys.length > 0) {
-            var lp = allDataKeys[allDataKeys.length - 1].split('-');
-            var lastData = new Date(parseInt(lp[0]), parseInt(lp[1]) - 1, parseInt(lp[2]));
-            if (lastData > rangeEndD) rangeEndD = lastData;
-        }
-
-        // 建表：從最新到最舊
-        var html = '<table><thead><tr><th>日期</th><th>體重</th><th>碳日</th><th>變化</th></tr></thead><tbody>';
-        var cursor = new Date(rangeEndD.getTime());
+    // 產生一段日期的 <tr> HTML（dateA→dateB，由舊到新）
+    function hwBuildTableRows(dateA, dateB) {
+        var todayStr = hwFormatDate(new Date());
+        var html = '';
+        var cursor = new Date(dateA.getTime());
+        // 找前一天有體重的作為 prevWeight（用於算變化）
+        var prev = new Date(dateA.getTime());
+        prev.setDate(prev.getDate() - 1);
         var prevWeight = null;
-        while (cursor >= rangeStartD) {
+        for (var pi = 0; pi < 60; pi++) {
+            var pk = hwFormatDate(prev);
+            if (hwWeightData[pk] && hwWeightData[pk].weight) { prevWeight = hwWeightData[pk].weight; break; }
+            prev.setDate(prev.getDate() - 1);
+        }
+
+        while (cursor <= dateB) {
             var dateStr = hwFormatDate(cursor);
             var isToday = dateStr === todayStr;
-            var dateObj = new Date(cursor.getTime());
-            var dayName = HW_DAY_NAMES[dateObj.getDay()];
+            var dayName = HW_DAY_NAMES[cursor.getDay()];
             var parts = dateStr.split('-');
             var dateLabel = parseInt(parts[1]) + '/' + parseInt(parts[2]) + '(' + dayName + ')';
 
             var savedData = hwWeightData[dateStr];
             var wt = savedData ? savedData.weight : null;
             var savedDayType = savedData ? savedData.dayType : '';
-            var dayType = savedDayType ? savedDayType : hwGetDayType(dateObj);
+            var dayType = savedDayType ? savedDayType : hwGetDayType(cursor);
             var opt = HW_CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || HW_CYCLE_OPTS[4];
 
             var diff = '';
@@ -2665,20 +2655,79 @@
             html += '<td><span class="hw-cal-type ' + opt.cls + '" style="display:inline-flex;width:auto;padding:2px 8px">' + opt.label + '</span></td>';
             html += '<td>' + diff + '</td></tr>';
 
-            cursor.setDate(cursor.getDate() - 1);
+            cursor.setDate(cursor.getDate() + 1);
         }
-        html += '</tbody></table>';
+        return html;
+    }
+
+    function hwRenderTable() {
+        var wrap = document.getElementById('hwTableWrap');
+        var scroll = document.getElementById('hwTableScroll');
+        if (!wrap) return;
+        var prevScrollTop = scroll ? scroll.scrollTop : 0;
+        var isFirst = _hwTblFirstRender;
+
+        var today = new Date();
+        var todayStr = hwFormatDate(today);
+        var rangeStart = new Date(today.getFullYear(), today.getMonth() + _hwTblStartMonth, 1);
+        var rangeEnd = new Date(today.getFullYear(), today.getMonth() + _hwTblEndMonth + 1, 0);
+
+        var html = '<table id="hwTblTable"><thead><tr><th>日期</th><th>體重</th><th>碳日</th><th>變化</th></tr></thead>';
+        html += '<tbody id="hwTblBody">' + hwBuildTableRows(rangeStart, rangeEnd) + '</tbody></table>';
         wrap.innerHTML = html;
 
-        // 首次渲染捲到今天
-        if (_hwTableFirstRender && scroll) {
-            _hwTableFirstRender = false;
+        if (isFirst) {
+            _hwTblFirstRender = false;
             var todayRow = document.getElementById('hwTR' + todayStr);
-            if (todayRow) {
+            if (todayRow && scroll) {
                 setTimeout(function() {
                     scroll.scrollTop = todayRow.offsetTop - scroll.offsetTop - scroll.clientHeight / 2 + todayRow.clientHeight / 2;
                 }, 80);
             }
+            // 綁定無限滾動
+            if (scroll && !_hwTblScrollInited) {
+                _hwTblScrollInited = true;
+                scroll.addEventListener('scroll', hwOnTableScroll);
+            }
+        } else if (scroll) {
+            scroll.scrollTop = prevScrollTop;
+        }
+    }
+
+    // ── 體重紀錄表無限滾動 ──
+    function hwOnTableScroll() {
+        if (_hwTblBusy) return;
+        var scroll = document.getElementById('hwTableScroll');
+        var tbody = document.getElementById('hwTblBody');
+        if (!scroll || !tbody) return;
+        var threshold = 150;
+
+        // 滑到頂部 → 往前加載 6 個月
+        if (scroll.scrollTop < threshold) {
+            _hwTblBusy = true;
+            var oldH = scroll.scrollHeight;
+            var oldS = scroll.scrollTop;
+            var today = new Date();
+            var prevStart = _hwTblStartMonth;
+            _hwTblStartMonth -= 6;
+            var newStart = new Date(today.getFullYear(), today.getMonth() + _hwTblStartMonth, 1);
+            var newEnd = new Date(today.getFullYear(), today.getMonth() + prevStart, 0);
+            var rows = hwBuildTableRows(newStart, newEnd);
+            tbody.insertAdjacentHTML('afterbegin', rows);
+            scroll.scrollTop = oldS + (scroll.scrollHeight - oldH);
+            _hwTblBusy = false;
+        }
+
+        // 滑到底部 → 往後加載 6 個月
+        if (scroll.scrollTop + scroll.clientHeight > scroll.scrollHeight - threshold) {
+            _hwTblBusy = true;
+            var today2 = new Date();
+            var prevEnd = _hwTblEndMonth;
+            _hwTblEndMonth += 6;
+            var newStart2 = new Date(today2.getFullYear(), today2.getMonth() + prevEnd + 1, 1);
+            var newEnd2 = new Date(today2.getFullYear(), today2.getMonth() + _hwTblEndMonth + 1, 0);
+            tbody.insertAdjacentHTML('beforeend', hwBuildTableRows(newStart2, newEnd2));
+            _hwTblBusy = false;
         }
     }
 
