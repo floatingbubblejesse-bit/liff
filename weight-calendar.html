@@ -659,7 +659,7 @@
 
     // ====== Stats ======
     var _weekStats = [];
-    var _weekStatIndex = 0;
+    var _weekStatIndex = -1;
     var _showMaxWeight = false;
     var _showHistoryDiff = false;
     var _statMinW = null;
@@ -807,7 +807,7 @@
         for (var si = 0; si < _weekStats.length; si++) {
             if (_weekStats[si].label === '平均一週') { avgIdx = si; break; }
         }
-        if (_weekStatIndex >= _weekStats.length) _weekStatIndex = avgIdx >= 0 ? avgIdx : 0;
+        if (_weekStatIndex < 0 || _weekStatIndex >= _weekStats.length) _weekStatIndex = avgIdx >= 0 ? avgIdx : 0;
         showWeekStat();
 
         // 期間變化：排程期間首筆 vs 末筆
