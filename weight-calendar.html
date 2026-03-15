@@ -904,7 +904,7 @@
 
         // 橫向放大倍率高（日期多），縱向低（體重變化小）
         var zoomX = _chartZoom;
-        var zoomY = 1 + (_chartZoom - 1) * 0.3;
+        var zoomY = 1 + (_chartZoom - 1) * 0.1;
         var w = Math.round(_chartBaseW * zoomX);
         var h = Math.round(_chartBaseH * zoomY);
         inner.style.width = w + 'px';
