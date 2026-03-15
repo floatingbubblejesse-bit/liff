@@ -120,6 +120,13 @@
 </div>
 
 
+<div class="table-scroll" id="tableScroll">
+<table class="wt-table">
+    <thead><tr><th>日期 <span class="scroll-today-btn" onclick="scrollToToday()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span></th><th>體重</th><th>碳日</th><th></th></tr></thead>
+    <tbody id="wtBody"></tbody>
+</table>
+</div>
+
 <div class="chart-section open" id="chartSection">
     <div class="chart-section-header" onclick="toggleChart()">
         <span style="font-size:18px">📈</span>
@@ -129,13 +136,6 @@
     <div class="chart-section-body">
         <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
     </div>
-</div>
-
-<div class="table-scroll" id="tableScroll">
-<table class="wt-table">
-    <thead><tr><th>日期 <span class="scroll-today-btn" onclick="scrollToToday()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span></th><th>體重</th><th>碳日</th><th></th></tr></thead>
-    <tbody id="wtBody"></tbody>
-</table>
 </div>
 
 <div id="loadingOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px">
