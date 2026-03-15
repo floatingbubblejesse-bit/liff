@@ -63,19 +63,18 @@
         .send-success{display:none;background:#E8EDE6;color:#6B8F71;padding:12px;border-radius:10px;text-align:center;font-size:13px;font-weight:600;margin-top:8px}
 
         /* ====== 居家體重 tab ====== */
-        .hw-month-nav{display:flex;align-items:center;justify-content:center;gap:14px;padding:8px 0 6px}
-        .hw-month-nav button{width:32px;height:32px;border:1px solid var(--border);border-radius:50%;background:white;font-size:14px;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center}
-        .hw-month-nav button:active{background:var(--bg)}
-        .hw-month-title{font-size:15px;font-weight:700;min-width:100px;text-align:center}
+        .hw-scroll-wrap{max-height:52vh;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative}
+        .hw-cal-weekday-bar{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;position:sticky;top:0;z-index:2;background:white;padding-bottom:2px}
         .hw-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
         .hw-cal-weekday{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0}
         .hw-cal-weekday.sat{color:var(--blue)}.hw-cal-weekday.sun{color:var(--red)}
-        .hw-cal-cell{background:var(--bg);border-radius:8px;padding:5px 2px;min-height:56px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-        .hw-cal-cell.empty{background:transparent;min-height:0}
-        .hw-cal-cell.today{border:1px solid var(--blue);box-shadow:0 0 0 1px var(--blue)}
+        .hw-cal-cell{background:var(--bg);border-radius:8px;padding:4px 2px;min-height:52px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+        .hw-cal-cell.today{border:2px solid var(--blue);box-shadow:0 0 0 1px var(--blue)}
         .hw-cal-date{font-size:12px;font-weight:600;color:var(--text);line-height:1}
         .hw-cal-cell.today .hw-cal-date{color:var(--blue);font-weight:800}
         .hw-cal-cell.sat .hw-cal-date{color:var(--blue)}.hw-cal-cell.sun .hw-cal-date{color:var(--red)}
+        .hw-cal-month-label{font-size:9px;font-weight:800;color:var(--blue);line-height:1;margin-bottom:1px}
+        .hw-cal-year-label{font-size:8px;font-weight:800;color:var(--red);line-height:1}
         .hw-cal-type{width:28px;height:20px;border-radius:4px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
         .hw-cal-type.t-high{background:#F8D7DA;color:#A0626B}.hw-cal-type.t-mid{background:#FFF3CD;color:#B8926A}
         .hw-cal-type.t-low{background:#D4EDDA;color:#6B8F71}.hw-cal-type.t-fast{background:#E2E3E5;color:#4A4A4A}
@@ -273,13 +272,8 @@
         <div id="tab-body" class="tab-pane" style="display:none"></div>
         <div id="tab-weight" class="tab-pane" style="display:none">
             <div class="card">
-                <div class="card-title">📅 月曆紀錄</div>
-                <div class="hw-month-nav">
-                    <button onclick="hwChangeMonth(-1)">◀</button>
-                    <div class="hw-month-title" id="hwMonthTitle"></div>
-                    <button onclick="hwChangeMonth(1)">▶</button>
-                </div>
-                <div id="hwCalWrap"></div>
+                <div class="card-title">📅 日曆</div>
+                <div id="hwCalWrap" class="hw-scroll-wrap"></div>
             </div>
             <div class="card">
                 <div class="card-title">📈 體重趨勢</div>
@@ -1883,7 +1877,6 @@
     var hwWeightData = {};   // { 'YYYY-MM-DD': { weight: 55.1 } }
     var hwLoaded = false;
     var hwLoading = false;
-    var hwYear, hwMonth;
     var hwChartInstance = null;
     var HW_CYCLE_OPTS = [
         {key:'high', label:'高', cls:'t-high'},
@@ -1894,10 +1887,7 @@
     ];
 
     (function hwInit() {
-        var now = new Date();
-        hwYear = now.getFullYear();
-        hwMonth = now.getMonth();
-        document.getElementById('hwNewDate').value = hwFormatDate(now);
+        document.getElementById('hwNewDate').value = hwFormatDate(new Date());
     })();
 
     function hwFormatDate(d) {
@@ -2008,62 +1998,85 @@
 
     function hwRenderCalendar() {
         var wrap = document.getElementById('hwCalWrap');
-        var titleEl = document.getElementById('hwMonthTitle');
-        if (!wrap || !titleEl) return;
-        titleEl.textContent = hwYear + '年 ' + (hwMonth + 1) + '月';
+        if (!wrap) return;
+        var prevScroll = wrap.scrollTop;
+        var isFirst = !wrap.querySelector('.hw-cal-grid');
 
-        var firstDay = new Date(hwYear, hwMonth, 1);
-        var lastDay = new Date(hwYear, hwMonth + 1, 0);
-        var totalDays = lastDay.getDate();
-        var startDow = firstDay.getDay();
-        var startOffset = (startDow === 0) ? 6 : startDow - 1;
         var today = new Date();
         var todayStr = hwFormatDate(today);
 
-        var html = '<div class="hw-cal-grid">';
-        var weekdays = ['一','二','三','四','五','六','日'];
-        var weekCls = ['','','','','','sat','sun'];
+        // 範圍：往前 12 個月，往後 2 個月
+        var rangeStart = new Date(today.getFullYear(), today.getMonth() - 12, 1);
+        var rangeEnd = new Date(today.getFullYear(), today.getMonth() + 3, 0);
+
+        // 找到 rangeStart 當週或之前的星期六（第一欄）
+        var dow = rangeStart.getDay();
+        var daysBack = (dow + 1) % 7;
+        var calStart = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate() - daysBack);
+
+        // 找到 rangeEnd 當週或之後的星期五（最後一欄）
+        dow = rangeEnd.getDay();
+        var daysForward = (5 - dow + 7) % 7;
+        var calEnd = new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), rangeEnd.getDate() + daysForward);
+
+        // 星期列（sticky）：六日一二三四五
+        var weekdays = ['六','日','一','二','三','四','五'];
+        var weekCls = ['sat','sun','','','','',''];
+        var headerHtml = '<div class="hw-cal-weekday-bar">';
         for (var w = 0; w < 7; w++) {
-            html += '<div class="hw-cal-weekday ' + weekCls[w] + '">' + weekdays[w] + '</div>';
+            headerHtml += '<div class="hw-cal-weekday ' + weekCls[w] + '">' + weekdays[w] + '</div>';
         }
-        for (var e = 0; e < startOffset; e++) {
-            html += '<div class="hw-cal-cell empty"></div>';
-        }
-        for (var d = 1; d <= totalDays; d++) {
-            var dateObj = new Date(hwYear, hwMonth, d);
-            var dateStr = hwFormatDate(dateObj);
+        headerHtml += '</div>';
+
+        // 連續日期格（無空格）
+        var gridHtml = '<div class="hw-cal-grid">';
+        var cursor = new Date(calStart.getTime());
+        while (cursor <= calEnd) {
+            var dateStr = hwFormatDate(cursor);
             var isToday = dateStr === todayStr;
-            var dow = dateObj.getDay();
-            var isSat = dow === 6, isSun = dow === 0;
+            var curDow = cursor.getDay();
+            var isSat = curDow === 6, isSun = curDow === 0;
+            var dayOfMonth = cursor.getDate();
+            var curMonth = cursor.getMonth();
+            var isFirstOfMonth = dayOfMonth === 1;
+            var isFirstOfYear = isFirstOfMonth && curMonth === 0;
+
             var savedData = hwWeightData[dateStr];
             var savedWeight = savedData ? savedData.weight : '';
-            // 優先使用實際紀錄的碳日，沒有則用排程推算
-            var dayType = (savedData && savedData.dayType) ? savedData.dayType : hwGetDayType(dateObj);
+            var dayType = (savedData && savedData.dayType) ? savedData.dayType : hwGetDayType(cursor);
             var opt = HW_CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || HW_CYCLE_OPTS[4];
 
             var cellCls = 'hw-cal-cell' + (isToday ? ' today' : '') + (isSat ? ' sat' : '') + (isSun ? ' sun' : '');
-            html += '<div class="' + cellCls + '">';
-            html += '<div class="hw-cal-date">' + d + '</div>';
-            html += '<div class="hw-cal-type ' + opt.cls + '">' + opt.label + '</div>';
-            if (savedWeight) {
-                html += '<div class="hw-cal-wt">' + savedWeight + '</div>';
+            gridHtml += '<div class="' + cellCls + '" id="hwD' + dateStr + '">';
+            if (isFirstOfYear) {
+                gridHtml += '<div class="hw-cal-year-label">' + cursor.getFullYear() + '</div>';
             }
-            html += '</div>';
+            if (isFirstOfMonth) {
+                gridHtml += '<div class="hw-cal-month-label">' + (curMonth + 1) + '月</div>';
+            }
+            gridHtml += '<div class="hw-cal-date">' + dayOfMonth + '</div>';
+            gridHtml += '<div class="hw-cal-type ' + opt.cls + '">' + opt.label + '</div>';
+            if (savedWeight) {
+                gridHtml += '<div class="hw-cal-wt">' + savedWeight + '</div>';
+            }
+            gridHtml += '</div>';
+            cursor.setDate(cursor.getDate() + 1);
         }
-        var totalCells = startOffset + totalDays;
-        var trailing = (7 - (totalCells % 7)) % 7;
-        for (var t = 0; t < trailing; t++) {
-            html += '<div class="hw-cal-cell empty"></div>';
-        }
-        html += '</div>';
-        wrap.innerHTML = html;
-    }
+        gridHtml += '</div>';
 
-    function hwChangeMonth(delta) {
-        hwMonth += delta;
-        if (hwMonth > 11) { hwMonth = 0; hwYear++; }
-        if (hwMonth < 0) { hwMonth = 11; hwYear--; }
-        hwRenderCalendar();
+        wrap.innerHTML = headerHtml + gridHtml;
+
+        if (isFirst) {
+            // 首次渲染：捲到今天
+            var todayEl = document.getElementById('hwD' + todayStr);
+            if (todayEl) {
+                setTimeout(function() {
+                    wrap.scrollTop = todayEl.offsetTop - wrap.offsetTop - wrap.clientHeight / 2 + todayEl.clientHeight / 2;
+                }, 60);
+            }
+        } else {
+            wrap.scrollTop = prevScroll;
+        }
     }
 
     function hwRenderChart() {
