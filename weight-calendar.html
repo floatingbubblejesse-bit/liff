@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>居家體重紀錄｜金鶯減重</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         :root { --blue:#7B8FA1; --blue-light:#EDE8E0; --green:#8B9D83; --green-light:#E8EDE6; --red:#A0626B; --orange:#C4A882; --brown:#B8926A; --bg:#F5F3EF; --card:#FDFBF7; --text:#4A4A4A; --muted:#8B8B8B; --border:#E8E4DC; }
         *{box-sizing:border-box;margin:0;padding:0}
@@ -84,6 +85,17 @@
         .wt-row-save.visible{display:inline-block}
 
 
+        /* ====== Chart ====== */
+        .chart-section{margin:10px;background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.07);overflow:hidden}
+        .chart-section-header{display:flex;align-items:center;padding:14px 16px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;gap:8px}
+        .chart-section-header:active{background:#FDFBF7}
+        .chart-section-title{flex:1;font-size:14px;font-weight:700;color:var(--text)}
+        .chart-section-arrow{font-size:11px;color:var(--muted);transition:transform 0.25s ease}
+        .chart-section.open .chart-section-arrow{transform:rotate(180deg)}
+        .chart-section-body{display:none;border-top:1px solid var(--border);padding:10px}
+        .chart-section.open .chart-section-body{display:block}
+        .chart-wrap{height:180px;position:relative}
+
         /* ====== Loading ====== */
         .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:40vh;gap:14px}
         .spinner{width:40px;height:40px;border:4px solid #E8E4DC;border-top-color:var(--blue);border-radius:50%;animation:spin .9s linear infinite}
@@ -107,6 +119,17 @@
     <div class="stat-item"><div class="stat-value" id="statDiff">-</div><div class="stat-label">期間變化</div></div>
 </div>
 
+
+<div class="chart-section open" id="chartSection">
+    <div class="chart-section-header" onclick="toggleChart()">
+        <span style="font-size:18px">📈</span>
+        <span class="chart-section-title">體重趨勢</span>
+        <span class="chart-section-arrow">▼</span>
+    </div>
+    <div class="chart-section-body">
+        <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
+    </div>
+</div>
 
 <div class="table-scroll" id="tableScroll">
 <table class="wt-table">
@@ -271,6 +294,7 @@
         }
         renderScheduleBar();
         renderTable();
+        renderChart();
         initInfiniteScroll();
     }
 
@@ -736,6 +760,87 @@
             document.getElementById('statDiff').textContent = '-';
             document.getElementById('statDiff').style.color = '';
         }
+    }
+
+    // ====== Chart ======
+    var CARB_COLORS = { high:'#A0626B', mid:'#F5D98A', low:'#6B8F71', fast:'#9B9B9B', none:'#8B8B8B' };
+    var chartInstance = null;
+
+    function toggleChart() {
+        var el = document.getElementById('chartSection');
+        if (el) el.classList.toggle('open');
+    }
+
+    function renderChart() {
+        var allKeys = Object.keys(weightData).filter(function(k){ return weightData[k].weight; }).sort();
+        if (allKeys.length === 0) return;
+        var keys = allKeys;
+        if (scheduleStart && scheduleEnd) {
+            var sStr = formatDate(scheduleStart);
+            var eStr = formatDate(scheduleEnd);
+            keys = allKeys.filter(function(k){ return k >= sStr && k <= eStr; });
+        }
+        if (keys.length === 0) return;
+
+        var values = keys.map(function(k){ return weightData[k].weight; });
+        var colors = keys.map(function(k) {
+            var p = k.split('-');
+            var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+            return CARB_COLORS[getDayType(d)] || CARB_COLORS.none;
+        });
+        var labels = keys.map(function(k) {
+            var p = k.split('-');
+            return parseInt(p[1]) + '/' + parseInt(p[2]);
+        });
+
+        var canvas = document.getElementById('weightChart');
+        if (!canvas) return;
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '體重 (kg)',
+                    data: values,
+                    borderColor: '#7B8FA1',
+                    backgroundColor: 'rgba(123,143,161,0.1)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: colors,
+                    pointBorderColor: colors,
+                    pointBorderWidth: 1,
+                    fill: true,
+                    tension: 0.35
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                layout: { padding: { bottom: 10, left: 4, right: 4 } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: function(items) {
+                                var idx = items[0].dataIndex;
+                                var k = keys[idx];
+                                var p = k.split('-');
+                                var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+                                return parseInt(p[1]) + '/' + parseInt(p[2]) + '(' + DAY_NAMES[d.getDay()] + ')';
+                            },
+                            label: function(ctx) { return ctx.parsed.y + ' kg'; }
+                        }
+                    }
+                },
+                scales: {
+                    x: { ticks: { font: { size: 10 }, color: '#8B8B8B', maxRotation: 45 }, grid: { display: false } },
+                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B' }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                }
+            }
+        });
     }
 
     // ====== Scroll to today ======
