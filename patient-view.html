@@ -293,8 +293,8 @@
                 </div>
             </div>
             <div class="card">
-                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleChart()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle" id="hwChartArrow">▼</span>📈 體重趨勢</span></div>
-                <div id="hwChartBody" class="hw-chart-body">
+                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleChart()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle collapsed" id="hwChartArrow">▼</span>📈 體重趨勢</span></div>
+                <div id="hwChartBody" class="hw-chart-body collapsed">
                     <div id="hwChartWrap" class="hw-chart-wrap">
                         <div id="hwChartInner" class="hw-chart-inner">
                             <canvas id="hwWeightChart"></canvas>
@@ -303,8 +303,8 @@
                 </div>
             </div>
             <div class="card">
-                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleCal()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle" id="hwCalArrow">▼</span>📅 日曆</span><button onclick="hwScrollToToday()" id="hwTodayBtn" style="font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-light);border:1px solid var(--border);border-radius:14px;padding:3px 10px 3px 7px;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>今天</button></div>
-                <div id="hwCalWrap" class="hw-scroll-wrap"></div>
+                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleCal()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle collapsed" id="hwCalArrow">▼</span>📅 日曆</span><button onclick="hwScrollToToday()" id="hwTodayBtn" style="display:none;font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-light);border:1px solid var(--border);border-radius:14px;padding:3px 10px 3px 7px;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>今天</button></div>
+                <div id="hwCalWrap" class="hw-scroll-wrap collapsed"></div>
             </div>
         </div>
         <div id="tab-meals" class="tab-pane" style="display:none"></div>
@@ -2017,7 +2017,7 @@
     // ── 萬年曆狀態 ──
     var _hwCalStartMonth = -6;   // 起始偏移（相對於今天月份）
     var _hwCalEndMonth = 3;      // 結束偏移
-    var _hwCalCollapsed = false;
+    var _hwCalCollapsed = true;
     var _hwCalBusy = false;
 
     function hwToggleCal() {
@@ -2381,7 +2381,7 @@
     var _hwChartZoom = 1;
     var _hwChartBaseW = 0;
     var _hwChartMaxZoom = 8;
-    var _hwChartCollapsed = false;
+    var _hwChartCollapsed = true;
     var _hwChartPinchInited = false;
 
     function hwToggleChart() {
@@ -2614,55 +2614,63 @@
     // 產生一段日期的 <tr> HTML（dateA→dateB，由舊到新）
     function hwBuildTableRows(dateA, dateB) {
         var todayStr = hwFormatDate(new Date());
-        var html = '';
         var cursor = new Date(dateA.getTime());
-        // 找前一天有體重的作為 prevWeight（用於算變化）
-        var prev = new Date(dateA.getTime());
-        prev.setDate(prev.getDate() - 1);
-        var prevWeight = null;
-        for (var pi = 0; pi < 60; pi++) {
-            var pk = hwFormatDate(prev);
-            if (hwWeightData[pk] && hwWeightData[pk].weight) { prevWeight = hwWeightData[pk].weight; break; }
-            prev.setDate(prev.getDate() - 1);
-        }
-
-        var _lastYear = null;
+        // 第一段：收集所有列資料
+        var rows = [];
         while (cursor <= dateB) {
             var dateStr = hwFormatDate(cursor);
-            var curYear = cursor.getFullYear();
-            if (_lastYear !== null && curYear !== _lastYear) {
-                html += '<tr><td colspan="4" style="text-align:center;font-weight:800;font-size:15px;color:var(--red);background:var(--blue-light);padding:8px 0;letter-spacing:2px">' + curYear + ' 年</td></tr>';
-            }
-            _lastYear = curYear;
-            var isToday = dateStr === todayStr;
-            var dayName = HW_DAY_NAMES[cursor.getDay()];
-            var parts = dateStr.split('-');
-            var dateLabel = parseInt(parts[1]) + '/' + parseInt(parts[2]) + '(' + dayName + ')';
-
             var savedData = hwWeightData[dateStr];
             var wt = savedData ? savedData.weight : null;
             var savedDayType = savedData ? savedData.dayType : '';
             var dayType = savedDayType ? savedDayType : hwGetDayType(cursor);
             var opt = HW_CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || HW_CYCLE_OPTS[4];
-
-            var diff = '';
-            if (wt && prevWeight) {
-                var d = wt - prevWeight;
-                var sign = d > 0 ? '+' : '';
-                var cls = d < 0 ? 'diff-good' : d > 0 ? 'diff-warn' : 'diff-same';
-                diff = '<span class="' + cls + '">' + sign + d.toFixed(1) + '</span>';
-            }
-            if (wt) prevWeight = wt;
-
-            var trStyle = isToday ? ' style="background:rgba(123,143,161,0.08)"' : '';
-            var dateStyle = isToday ? 'font-weight:800;color:var(--blue)' : '';
-            html += '<tr' + trStyle + ' id="hwTR' + dateStr + '">';
-            html += '<td class="date-col" style="' + dateStyle + '">' + esc(dateLabel) + '</td>';
-            html += '<td style="font-weight:700">' + (wt ? wt.toFixed(1) : '<span style="color:#ccc">-</span>') + '</td>';
-            html += '<td><span class="hw-cal-type ' + opt.cls + '" style="display:inline-flex;width:auto;padding:2px 8px">' + opt.label + '</span></td>';
-            html += '<td>' + diff + '</td></tr>';
-
+            rows.push({
+                dateStr: dateStr,
+                year: cursor.getFullYear(),
+                isToday: dateStr === todayStr,
+                dayName: HW_DAY_NAMES[cursor.getDay()],
+                month: cursor.getMonth() + 1,
+                day: cursor.getDate(),
+                wt: wt,
+                opt: opt
+            });
             cursor.setDate(cursor.getDate() + 1);
+        }
+        // 第二段：計算變化（diff 放在前一天：當天體重 vs 下一個有體重的日期）
+        var ri, ni;
+        for (ri = 0; ri < rows.length; ri++) {
+            rows[ri].diff = '';
+            if (!rows[ri].wt) continue;
+            // 往後找下一個有體重的列
+            for (ni = ri + 1; ni < rows.length; ni++) {
+                if (rows[ni].wt) {
+                    var d = rows[ni].wt - rows[ri].wt;
+                    var sign = d > 0 ? '+' : '';
+                    var cls = d < 0 ? 'diff-good' : d > 0 ? 'diff-warn' : 'diff-same';
+                    rows[ri].diff = '<span class="' + cls + '">' + sign + d.toFixed(1) + '</span>';
+                    break;
+                }
+            }
+        }
+        // 也嘗試算 dateA 之前的最後一筆體重，讓第一筆有體重的列之前那列也能顯示 diff
+        // （不需要，因為 diff 放在有體重的列上，第一筆之前沒有體重就沒有 diff）
+        // 第三段：組合 HTML
+        var html = '';
+        var _lastYear = null;
+        for (ri = 0; ri < rows.length; ri++) {
+            var r = rows[ri];
+            if (_lastYear !== null && r.year !== _lastYear) {
+                html += '<tr><td colspan="4" style="text-align:center;font-weight:800;font-size:15px;color:var(--red);background:var(--blue-light);padding:8px 0;letter-spacing:2px">' + r.year + ' 年</td></tr>';
+            }
+            _lastYear = r.year;
+            var dateLabel = r.month + '/' + r.day + '(' + r.dayName + ')';
+            var trStyle = r.isToday ? ' style="background:rgba(123,143,161,0.08)"' : '';
+            var dateStyle = r.isToday ? 'font-weight:800;color:var(--blue)' : '';
+            html += '<tr' + trStyle + ' id="hwTR' + r.dateStr + '">';
+            html += '<td class="date-col" style="' + dateStyle + '">' + esc(dateLabel) + '</td>';
+            html += '<td style="font-weight:700">' + (r.wt ? r.wt.toFixed(1) : '<span style="color:#ccc">-</span>') + '</td>';
+            html += '<td><span class="hw-cal-type ' + r.opt.cls + '" style="display:inline-flex;width:auto;padding:2px 8px">' + r.opt.label + '</span></td>';
+            html += '<td>' + r.diff + '</td></tr>';
         }
         return html;
     }
