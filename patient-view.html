@@ -66,6 +66,13 @@
         .send-btn:disabled{background:#90a4ae;cursor:not-allowed}
         .send-success{display:none;background:#E8EDE6;color:#6B8F71;padding:12px;border-radius:10px;text-align:center;font-size:13px;font-weight:600;margin-top:8px}
 
+        /* ====== 居家體重 stats row ====== */
+        .hw-stats-row{display:flex;gap:6px;margin-bottom:14px}
+        .hw-stat-item{flex:1;text-align:center;background:white;border-radius:10px;padding:10px 4px;box-shadow:0 1px 4px rgba(0,0,0,0.07);cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+        .hw-stat-item:active{background:#FDFBF7}
+        .hw-stat-value{font-size:17px;font-weight:700;color:var(--red)}
+        .hw-stat-label{font-size:10px;color:var(--muted);margin-top:2px}
+
         /* ====== 居家體重 tab ====== */
         .hw-cal-toggle{font-size:13px;color:var(--muted);cursor:pointer;transition:transform 0.3s;display:inline-block;-webkit-tap-highlight-color:transparent}
         .hw-cal-toggle.collapsed{transform:rotate(-90deg)}
@@ -87,13 +94,6 @@
         .hw-cal-type.t-low{background:#D4EDDA;color:#6B8F71}.hw-cal-type.t-fast{background:#E2E3E5;color:#4A4A4A}
         .hw-cal-type.t-none{background:var(--bg);color:var(--muted)}
         .hw-cal-wt{font-size:10px;font-weight:700;color:var(--red)}
-        .hw-add-row{display:flex;gap:6px;align-items:center;margin-bottom:10px}
-        .hw-add-input{padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;flex:1;-moz-appearance:textfield}
-        .hw-add-input::-webkit-outer-spin-button,.hw-add-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-        .hw-add-input:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(123,143,161,0.15)}
-        .hw-add-btn{padding:8px 16px;background:var(--blue);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
-        .hw-add-btn:active{background:#6B7F91}
-        .hw-add-btn:disabled{background:#90a4ae;cursor:not-allowed}
 
         /* ====== 餐食記錄 inline styles (from patient.html) ====== */
         .meal-protein-card{background:linear-gradient(135deg,#7B8FA1,#8B9D83);border-radius:12px;padding:14px;color:white}
@@ -278,6 +278,11 @@
         <div id="errorDiv" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0"></div>
         <div id="tab-body" class="tab-pane" style="display:none"></div>
         <div id="tab-weight" class="tab-pane" style="display:none">
+            <div class="hw-stats-row">
+                <div class="hw-stat-item" onclick="hwToggleMinMax()"><div class="hw-stat-value" id="hwStatLeft">-</div><div class="hw-stat-label" id="hwStatLeftLabel">最低體重</div></div>
+                <div class="hw-stat-item" onclick="hwCycleWeekStat()"><div class="hw-stat-value" id="hwStatMid">-</div><div class="hw-stat-label" id="hwStatMidLabel">平均一週</div></div>
+                <div class="hw-stat-item" onclick="hwToggleDiffMode()"><div class="hw-stat-value" id="hwStatRight">-</div><div class="hw-stat-label" id="hwStatRightLabel">期間變化</div></div>
+            </div>
             <div class="card">
                 <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleCal()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle" id="hwCalArrow">▼</span>📅 日曆</span><button onclick="hwScrollToToday()" id="hwTodayBtn" style="font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-light);border:1px solid var(--border);border-radius:14px;padding:3px 10px 3px 7px;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>今天</button></div>
                 <div id="hwCalWrap" class="hw-scroll-wrap"></div>
@@ -293,13 +298,10 @@
                 </div>
             </div>
             <div class="card">
-                <div class="card-title">📋 體重紀錄表</div>
-                <div class="hw-add-row">
-                    <input type="text" inputmode="decimal" pattern="[0-9.]*" id="hwNewWeight" placeholder="體重 kg" class="hw-add-input">
-                    <input type="date" id="hwNewDate" class="hw-add-input" style="width:130px">
-                    <button class="hw-add-btn" onclick="hwAddWeight()">新增</button>
+                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleTable()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle" id="hwTableArrow">▼</span>📋 體重紀錄表</span></div>
+                <div id="hwTableBody" class="hw-chart-body">
+                    <div class="table-wrap" id="hwTableWrap"><div class="no-data">載入中…</div></div>
                 </div>
-                <div class="table-wrap" id="hwTableWrap"><div class="no-data">載入中…</div></div>
             </div>
         </div>
         <div id="tab-meals" class="tab-pane" style="display:none"></div>
@@ -1900,7 +1902,6 @@
     ];
 
     (function hwInit() {
-        document.getElementById('hwNewDate').value = hwFormatDate(new Date());
     })();
 
     function hwFormatDate(d) {
@@ -1938,6 +1939,7 @@
 
     function hwRenderAll() {
         hwRenderCalendar();
+        hwUpdateStats();
         hwRenderChart();
         hwRenderTable();
     }
@@ -1984,7 +1986,7 @@
                         schedule: data.schedule,
                         weeks: data.weeks || 4
                     }];
-                    if (hwLoaded) hwRenderCalendar();
+                    if (hwLoaded) { hwRenderCalendar(); hwUpdateStats(); }
                 }
             })
             .catch(function(){});
@@ -2165,6 +2167,190 @@
             setTimeout(function() {
                 wrap.scrollTop = todayEl.offsetTop - wrap.offsetTop - wrap.clientHeight / 2 + todayEl.clientHeight / 2;
             }, 60);
+        }
+    }
+
+    // ── 統計格（三格點選） ──
+    var _hwShowMaxWeight = false;
+    var _hwShowHistoryDiff = false;
+    var _hwWeekStatIndex = -1;
+    var _hwWeekStats = [];
+    var _hwStatMinW = null;
+    var _hwStatMaxW = null;
+    var _hwPeriodDiff = null;
+    var _hwHistoryDiff = null;
+    var _hwTableCollapsed = false;
+
+    function hwToggleTable() {
+        _hwTableCollapsed = !_hwTableCollapsed;
+        var body = document.getElementById('hwTableBody');
+        var arrow = document.getElementById('hwTableArrow');
+        if (body) body.classList.toggle('collapsed', _hwTableCollapsed);
+        if (arrow) arrow.classList.toggle('collapsed', _hwTableCollapsed);
+    }
+
+    function hwToggleMinMax() {
+        _hwShowMaxWeight = !_hwShowMaxWeight;
+        var el = document.getElementById('hwStatLeft');
+        var lbl = document.getElementById('hwStatLeftLabel');
+        if (_hwShowMaxWeight) {
+            lbl.textContent = '最高體重';
+            el.textContent = _hwStatMaxW !== null ? _hwStatMaxW.toFixed(1) : '-';
+        } else {
+            lbl.textContent = '最低體重';
+            el.textContent = _hwStatMinW !== null ? _hwStatMinW.toFixed(1) : '-';
+        }
+    }
+
+    function hwToggleDiffMode() {
+        _hwShowHistoryDiff = !_hwShowHistoryDiff;
+        var el = document.getElementById('hwStatRight');
+        var lbl = document.getElementById('hwStatRightLabel');
+        var diff = _hwShowHistoryDiff ? _hwHistoryDiff : _hwPeriodDiff;
+        lbl.textContent = _hwShowHistoryDiff ? '歷史變化' : '期間變化';
+        if (diff !== null) {
+            var sign = diff > 0 ? '+' : '';
+            el.textContent = sign + diff.toFixed(1);
+            el.style.color = diff < 0 ? '#6B8F71' : diff > 0 ? '#A0626B' : '#8B8B8B';
+        } else {
+            el.textContent = '-';
+            el.style.color = '';
+        }
+    }
+
+    function hwShowWeekStat() {
+        var el = document.getElementById('hwStatMid');
+        var lbl = document.getElementById('hwStatMidLabel');
+        if (_hwWeekStats.length === 0) {
+            el.textContent = '-';
+            lbl.textContent = '平均一週';
+            return;
+        }
+        var item = _hwWeekStats[_hwWeekStatIndex];
+        lbl.textContent = item.label;
+        if (item.diff !== null) {
+            var sign = item.diff > 0 ? '+' : '';
+            el.textContent = sign + item.diff.toFixed(1);
+            el.style.color = item.diff < 0 ? '#6B8F71' : item.diff > 0 ? '#A0626B' : '#8B8B8B';
+        } else {
+            el.textContent = '-';
+            el.style.color = '';
+        }
+    }
+
+    function hwCycleWeekStat() {
+        if (_hwWeekStats.length === 0) return;
+        _hwWeekStatIndex = (_hwWeekStatIndex + 1) % _hwWeekStats.length;
+        hwShowWeekStat();
+    }
+
+    function hwUpdateStats() {
+        var allKeys = Object.keys(hwWeightData).filter(function(k) {
+            return hwWeightData[k].weight;
+        }).sort();
+
+        // 計算排程起止日
+        var scheduleStart = null;
+        var scheduleEnd = null;
+        if (hwVisitRecords.length > 0) {
+            var vr = hwVisitRecords[hwVisitRecords.length - 1];
+            var vParts = vr.date.split('-');
+            var vDate = new Date(parseInt(vParts[0]), parseInt(vParts[1]) - 1, parseInt(vParts[2]));
+            scheduleStart = new Date(vDate.getFullYear(), vDate.getMonth(), vDate.getDate() + 1);
+            var weeks = vr.weeks || 4;
+            scheduleEnd = new Date(scheduleStart.getFullYear(), scheduleStart.getMonth(), scheduleStart.getDate() + weeks * 7 - 1);
+        }
+
+        var rangeKeys = allKeys;
+        if (scheduleStart && scheduleEnd) {
+            var sStr = hwFormatDate(scheduleStart);
+            var eStr = hwFormatDate(scheduleEnd);
+            rangeKeys = allKeys.filter(function(k) { return k >= sStr && k <= eStr; });
+        }
+
+        var count = rangeKeys.length;
+        var first = count > 0 ? hwWeightData[rangeKeys[0]].weight : null;
+        var last = count > 0 ? hwWeightData[rangeKeys[rangeKeys.length - 1]].weight : null;
+        var minW = null, maxW = null;
+        for (var mi = 0; mi < allKeys.length; mi++) {
+            var w = hwWeightData[allKeys[mi]].weight;
+            if (w) {
+                if (minW === null || w < minW) minW = w;
+                if (maxW === null || w > maxW) maxW = w;
+            }
+        }
+        _hwStatMinW = minW;
+        _hwStatMaxW = maxW;
+
+        // 歷史變化
+        if (allKeys.length >= 2) {
+            var hFirst = hwWeightData[allKeys[0]].weight;
+            var hLast = hwWeightData[allKeys[allKeys.length - 1]].weight;
+            _hwHistoryDiff = (hFirst && hLast) ? hLast - hFirst : null;
+        } else {
+            _hwHistoryDiff = null;
+        }
+
+        // 左格：最低/最高
+        var elL = document.getElementById('hwStatLeft');
+        if (_hwShowMaxWeight) {
+            elL.textContent = maxW !== null ? maxW.toFixed(1) : '-';
+        } else {
+            elL.textContent = minW !== null ? minW.toFixed(1) : '-';
+        }
+
+        // 週變化
+        _hwWeekStats = [];
+        if (scheduleStart && rangeKeys.length > 0) {
+            var ws = new Date(scheduleStart.getTime());
+            var weekNum = 1;
+            while (true) {
+                var we = new Date(ws.getTime());
+                we.setDate(we.getDate() + 6);
+                var wsStr = hwFormatDate(ws);
+                var weStr = hwFormatDate(we);
+                var wk = rangeKeys.filter(function(k) { return k >= wsStr && k <= weStr; });
+                if (wk.length >= 2) {
+                    var wf = hwWeightData[wk[0]].weight;
+                    var wl = hwWeightData[wk[wk.length - 1]].weight;
+                    _hwWeekStats.push({ label: '第' + weekNum + '週', diff: wl - wf });
+                } else if (wk.length === 1) {
+                    _hwWeekStats.push({ label: '第' + weekNum + '週', diff: null });
+                }
+                ws = new Date(ws.getTime());
+                ws.setDate(ws.getDate() + 7);
+                weekNum++;
+                if (hwFormatDate(ws) > hwFormatDate(scheduleEnd)) break;
+                if (weekNum > 52) break;
+            }
+        }
+        // 平均一週
+        if (first && last && rangeKeys.length >= 2) {
+            var d0 = rangeKeys[0].split('-');
+            var d1 = rangeKeys[rangeKeys.length - 1].split('-');
+            var daySpan = Math.round((new Date(parseInt(d1[0]), parseInt(d1[1]) - 1, parseInt(d1[2])) - new Date(parseInt(d0[0]), parseInt(d0[1]) - 1, parseInt(d0[2]))) / 86400000);
+            if (daySpan > 0) {
+                _hwWeekStats.push({ label: '平均一週', diff: (last - first) / daySpan * 7 });
+            }
+        }
+        var avgIdx = -1;
+        for (var si = 0; si < _hwWeekStats.length; si++) {
+            if (_hwWeekStats[si].label === '平均一週') { avgIdx = si; break; }
+        }
+        if (_hwWeekStatIndex < 0 || _hwWeekStatIndex >= _hwWeekStats.length) _hwWeekStatIndex = avgIdx >= 0 ? avgIdx : 0;
+        hwShowWeekStat();
+
+        // 右格：期間/歷史變化
+        _hwPeriodDiff = (first && last) ? last - first : null;
+        var activeDiff = _hwShowHistoryDiff ? _hwHistoryDiff : _hwPeriodDiff;
+        var elR = document.getElementById('hwStatRight');
+        if (activeDiff !== null) {
+            var sign = activeDiff > 0 ? '+' : '';
+            elR.textContent = sign + activeDiff.toFixed(1);
+            elR.style.color = activeDiff < 0 ? '#6B8F71' : activeDiff > 0 ? '#A0626B' : '#8B8B8B';
+        } else {
+            elR.textContent = '-';
+            elR.style.color = '';
         }
     }
 
@@ -2393,49 +2579,6 @@
         }
         html += '</tbody></table>';
         wrap.innerHTML = html;
-    }
-
-    function hwAddWeight() {
-        var weightInput = document.getElementById('hwNewWeight');
-        var dateInput = document.getElementById('hwNewDate');
-        var val = parseFloat(weightInput.value);
-        var dateStr = dateInput.value;
-        if (isNaN(val) || val <= 0) { alert('請輸入有效的體重'); return; }
-        if (!dateStr) { alert('請選擇日期'); return; }
-
-        var btn = document.querySelector('.hw-add-btn');
-        btn.disabled = true;
-        btn.textContent = '儲存中…';
-
-        // 計算該日碳日類型
-        var dtParts = dateStr.split('-');
-        var dtObj = new Date(parseInt(dtParts[0]), parseInt(dtParts[1])-1, parseInt(dtParts[2]));
-        var dayType = hwGetDayType(dtObj);
-
-        // 寫入 MEALS_GAS（用 GET 避免 CORS preflight）
-        var saveUrl = MEALS_GAS
-          + '?saveHomeWeight=true'
-          + '&patientSn=' + encodeURIComponent(patientSn)
-          + '&date=' + encodeURIComponent(dateStr)
-          + '&weight=' + encodeURIComponent(val)
-          + '&dayType=' + encodeURIComponent(dayType);
-
-        // no-cors: 無法讀回應但請求一定會送出
-        fetch(saveUrl, { mode: 'no-cors', redirect: 'follow' })
-        .then(function(){
-            btn.disabled = false;
-            btn.textContent = '已儲存 ✓';
-            btn.style.background = '#6B8F71';
-            hwWeightData[dateStr] = { weight: val, dayType: dayType };
-            weightInput.value = '';
-            hwRenderAll();
-            setTimeout(function(){ btn.textContent = '新增'; btn.style.background = ''; }, 2000);
-        })
-        .catch(function(err){
-            btn.disabled = false;
-            btn.textContent = '新增';
-            console.log('[居家體重] 背景同步:', err);
-        });
     }
 
     function showError(msg){
