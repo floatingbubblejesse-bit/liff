@@ -86,35 +86,51 @@
     var lineUid = '';
     var patientSn = '';
 
-    // ====== LIFF init ======
-    liff.init({ liffId: LIFF_ID })
-        .then(function() {
-            if (!liff.isLoggedIn()) { liff.login(); return; }
+    // 先檢查 URL 參數，有的話直接跳過 LIFF init 加速載入
+    var _urlParams = new URLSearchParams(window.location.search);
+    var _urlId = _urlParams.get('id') || '';
+    var _urlUid = _urlParams.get('uid') || '';
+
+    if (_urlId) {
+        // 有院區病歷號 → 直接載入，不等 LIFF
+        patientSn = _urlId;
+        loadDietPlan(patientSn);
+        // LIFF init 背景執行（取頭像用）
+        liff.init({ liffId: LIFF_ID }).then(function() {
+            if (!liff.isLoggedIn()) return;
             return liff.getProfile();
-        })
-        .then(function(profile) {
+        }).then(function(profile) {
             if (!profile) return;
             lineUid = profile.userId;
             document.getElementById('headerSub').textContent = profile.displayName;
             if (profile.pictureUrl) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + profile.pictureUrl + '" alt="">'; }
-            // 同步 LINE 名稱到客戶清單（背景執行）
-            if (profile.displayName) {
-                fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(lineUid) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){});
-            }
-            loadPatientData();
-        })
-        .catch(function(err) {
-            var params = new URLSearchParams(window.location.search);
-            lineUid = params.get('uid') || '';
-            patientSn = params.get('id') || '';
-            if (lineUid || patientSn) {
-                document.getElementById('headerSub').textContent = '';
-                if (patientSn) { loadDietPlan(patientSn); }
-                else { loadPatientData(); }
-            } else {
-                showError('無法取得使用者資料：' + err.message);
-            }
-        });
+            if (profile.displayName) { fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(lineUid) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){}); }
+        }).catch(function(){});
+    } else {
+        // 沒有 URL 參數 → 走 LIFF init 流程
+        liff.init({ liffId: LIFF_ID })
+            .then(function() {
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                return liff.getProfile();
+            })
+            .then(function(profile) {
+                if (!profile) return;
+                lineUid = profile.userId;
+                document.getElementById('headerSub').textContent = profile.displayName;
+                if (profile.pictureUrl) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + profile.pictureUrl + '" alt="">'; }
+                if (profile.displayName) { fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(lineUid) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){}); }
+                loadPatientData();
+            })
+            .catch(function(err) {
+                if (_urlUid) {
+                    lineUid = _urlUid;
+                    document.getElementById('headerSub').textContent = '';
+                    loadPatientData();
+                } else {
+                    showError('無法取得使用者資料：' + err.message);
+                }
+            });
+    }
 
     // ====== Step 1: Get patient SN from LINE userId ======
     function loadPatientData() {
