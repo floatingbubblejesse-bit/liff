@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>居家體重紀錄｜金鶯減重</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         :root { --blue:#7B8FA1; --blue-light:#EDE8E0; --green:#8B9D83; --green-light:#E8EDE6; --red:#A0626B; --orange:#C4A882; --brown:#B8926A; --bg:#F5F3EF; --card:#FDFBF7; --text:#4A4A4A; --muted:#8B8B8B; --border:#E8E4DC; }
         *{box-sizing:border-box;margin:0;padding:0}
@@ -84,23 +83,6 @@
         .wt-row-save:active{background:var(--green-light)}
         .wt-row-save.visible{display:inline-block}
 
-        /* ====== Chart section ====== */
-        .section{flex-shrink:0;margin:10px;background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.07);overflow:hidden}
-        .section-header{display:flex;align-items:center;padding:14px 16px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;gap:8px}
-        .section-header:active{background:#FDFBF7}
-        .section-icon{font-size:18px}
-        .section-title{flex:1;font-size:14px;font-weight:700;color:var(--text)}
-        .section-arrow{font-size:11px;color:var(--muted);transition:transform 0.25s ease}
-        .section.open .section-arrow{transform:rotate(180deg)}
-        .section-body{display:none;border-top:1px solid var(--border);padding:10px}
-        .section.open .section-body{display:block}
-        .chart-scroll{overflow:visible;height:50vh}
-        .chart-scroll.zoomed{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;width:100vw;height:50vh;z-index:500;background:rgba(255,255,255,0.97);touch-action:pan-x}
-        .chart-scroll.zoomed .chart-inner{margin:0}
-        .chart-inner{position:relative;min-width:100%;min-height:100%}
-        .chart-zoom-hint{display:none;position:fixed;top:12px;right:12px;z-index:501;background:var(--blue);color:#fff;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-        .chart-scroll.zoomed~.chart-zoom-hint,.chart-scroll.zoomed+.chart-zoom-hint{display:none}
-        .chart-zoom-close{display:none;position:fixed;top:12px;right:12px;z-index:501;background:rgba(0,0,0,0.5);color:#fff;border-radius:50%;width:32px;height:32px;text-align:center;line-height:32px;font-size:18px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 
         /* ====== Loading ====== */
         .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:40vh;gap:14px}
@@ -125,18 +107,6 @@
     <div class="stat-item"><div class="stat-value" id="statDiff">-</div><div class="stat-label">期間變化</div></div>
 </div>
 
-<!-- ====== 體重趨勢圖（收折） ====== -->
-<div class="section open" id="chartSection">
-    <div class="section-header" onclick="toggleSection('chartSection')">
-        <span class="section-icon">📈</span>
-        <span class="section-title">體重趨勢</span>
-        <span class="section-arrow">▼</span>
-    </div>
-    <div class="section-body">
-        <div class="chart-scroll" id="chartScroll"><div class="chart-inner" id="chartInner"><canvas id="weightChart"></canvas></div></div>
-        <div class="chart-zoom-close" id="chartZoomClose" onclick="resetChartZoom()">✕</div>
-    </div>
-</div>
 
 <div class="table-scroll" id="tableScroll">
 <table class="wt-table">
@@ -174,7 +144,6 @@
     var weightData = {};
     var dayTypeOverrides = {};
     var visitRecords = [];
-    var chartInstance = null;
     var editingDate = null;
     var dirtyRows = {};
 
@@ -302,9 +271,8 @@
         }
         renderScheduleBar();
         renderTable();
-        renderChart();
         initInfiniteScroll();
-        // 等 infinite scroll 的 expandTop 穩定後再滾到今天
+        // 等 infinite scroll 穩定後再滾到今天
         setTimeout(function() {
             var target = document.querySelector('.today-row') || document.getElementById('scheduleStartRow');
             if (target) {
@@ -647,7 +615,6 @@
             delete dirtyRows[dateStr];
             setTimeout(function(){
                 dismissAll();
-                renderChart();
             }, 800);
         })
         .catch(function(){
@@ -657,7 +624,6 @@
             delete dirtyRows[dateStr];
             setTimeout(function(){
                 dismissAll();
-                renderChart();
             }, 800);
         });
     }
@@ -783,252 +749,11 @@
         }
     }
 
-    // ====== Section Toggle ======
-    function toggleSection(id) {
-        var el = document.getElementById(id);
-        if (el) el.classList.toggle('open');
-    }
-
-    // ====== Weight Chart ======
-    var CARB_COLORS = { high: '#A0626B', mid: '#F5D98A', low: '#6B8F71', fast: '#9B9B9B', none: '#8B8B8B' };
-
-    var _chartKeys = [];
-    var _chartValues = [];
-    var _chartColors = [];
-    var _chartZoom = 1;
-    var _chartBaseW = 0;
-    var _chartBaseH = Math.round(window.innerHeight * 0.5);
-
-    function getChartLabels() {
-        var inner = document.getElementById('chartInner');
-        var w = inner ? inner.offsetWidth : 300;
-        var n = _chartKeys.length || 1;
-        var pxPer = w / n;
-        return _chartKeys.map(function(k) {
-            var p = k.split('-');
-            var dateStr = parseInt(p[1]) + '/' + parseInt(p[2]);
-            if (pxPer >= 55) {
-                var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
-                return dateStr + '(' + DAY_NAMES[d.getDay()] + ')';
-            } else if (pxPer >= 28) {
-                return dateStr;
-            }
-            return '';
-        });
-    }
-
-    function buildChart() {
-        var canvas = document.getElementById('weightChart');
-        if (!canvas || _chartKeys.length === 0) return;
-        if (chartInstance) chartInstance.destroy();
-
-        var labels = getChartLabels();
-        var n = _chartKeys.length;
-        var inner = document.getElementById('chartInner');
-        var pxPer = inner ? inner.offsetWidth / n : 30;
-        var fontSize = Math.max(9, Math.min(13, Math.round(pxPer / 5)));
-
-        chartInstance = new Chart(canvas.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: '體重 (kg)',
-                    data: _chartValues,
-                    borderColor: '#7B8FA1',
-                    backgroundColor: 'rgba(123,143,161,0.1)',
-                    borderWidth: Math.max(2, Math.min(4, _chartZoom * 2.5)),
-                    pointRadius: Math.max(4, Math.min(10, _chartZoom * 5)),
-                    pointBackgroundColor: _chartColors,
-                    pointBorderColor: _chartColors,
-                    pointBorderWidth: 1,
-                    fill: true,
-                    tension: 0.35,
-                    cubicInterpolationMode: 'monotone'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: false,
-                layout: { padding: { bottom: 10, left: 4, right: 4 } },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        titleFont: { size: Math.max(11, fontSize) },
-                        bodyFont: { size: Math.max(11, fontSize) },
-                        callbacks: {
-                            title: function(items) {
-                                var idx = items[0].dataIndex;
-                                var k = _chartKeys[idx];
-                                var p = k.split('-');
-                                var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
-                                return parseInt(p[1]) + '/' + parseInt(p[2]) + '(' + DAY_NAMES[d.getDay()] + ')';
-                            },
-                            label: function(ctx) { return ctx.parsed.y + ' kg'; }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        ticks: {
-                            font: { size: fontSize },
-                            color: '#8B8B8B',
-                            maxRotation: 45,
-                            autoSkip: false
-                        },
-                        grid: { display: false }
-                    },
-                    y: {
-                        ticks: { font: { size: fontSize }, color: '#8B8B8B' },
-                        grid: { color: 'rgba(0,0,0,0.05)' }
-                    }
-                }
-            }
-        });
-    }
-
-    var _pinchInited = false;
-
-    function applyChartZoom(newZoom) {
-        var scroll = document.getElementById('chartScroll');
-        var inner = document.getElementById('chartInner');
-        var closeBtn = document.getElementById('chartZoomClose');
-        if (!inner || !scroll) return;
-
-        var oldZoom = _chartZoom;
-        _chartZoom = Math.max(1, Math.min(8, newZoom));
-
-        // 只放大橫向（日期多），縱向完全不放大（體重變化小）
-        var zoomX = _chartZoom;
-        var w = Math.round(_chartBaseW * zoomX);
-        var h = _chartBaseH;
-        inner.style.width = w + 'px';
-        inner.style.height = h + 'px';
-
-        if (_chartZoom > 1.05 && !scroll.classList.contains('zoomed')) {
-            scroll.classList.add('zoomed');
-            if (closeBtn) closeBtn.style.display = 'block';
-        } else if (_chartZoom <= 1.05 && scroll.classList.contains('zoomed')) {
-            scroll.classList.remove('zoomed');
-            if (closeBtn) closeBtn.style.display = 'none';
-        }
-
-        buildChart();
-    }
-
-    function resetChartZoom() {
-        _chartZoom = 1;
-        var scroll = document.getElementById('chartScroll');
-        var inner = document.getElementById('chartInner');
-        var closeBtn = document.getElementById('chartZoomClose');
-        if (scroll) { scroll.classList.remove('zoomed'); scroll.scrollLeft = 0; scroll.scrollTop = 0; }
-        if (inner) { inner.style.width = _chartBaseW + 'px'; inner.style.height = _chartBaseH + 'px'; }
-        if (closeBtn) closeBtn.style.display = 'none';
-        document.body.style.overflow = '';
-        buildChart();
-    }
-
-    function initChartPinch() {
-        if (_pinchInited) return;
-        _pinchInited = true;
-        var scroll = document.getElementById('chartScroll');
-        if (!scroll) return;
-        var startDist = 0;
-        var startZoom = 1;
-        var startScrollL = 0;
-        var startScrollT = 0;
-        var startMidX = 0;
-        var startMidY = 0;
-
-        function getTouchDist(e) {
-            var t = e.touches;
-            if (t.length < 2) return 0;
-            var dx = t[0].clientX - t[1].clientX;
-            var dy = t[0].clientY - t[1].clientY;
-            return Math.sqrt(dx * dx + dy * dy);
-        }
-
-        scroll.addEventListener('touchstart', function(e) {
-            if (e.touches.length === 2) {
-                e.preventDefault();
-                startDist = getTouchDist(e);
-                startZoom = _chartZoom;
-                startScrollL = scroll.scrollLeft;
-                startScrollT = scroll.scrollTop;
-                startMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                startMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-            }
-        }, { passive: false });
-
-        scroll.addEventListener('touchmove', function(e) {
-            if (e.touches.length === 2 && startDist > 0) {
-                e.preventDefault();
-                var dist = getTouchDist(e);
-                var rawRatio = dist / startDist;
-                var damped = 1 + (rawRatio - 1) * 0.2;
-                var newZoom = Math.max(1, Math.min(8, startZoom * damped));
-                applyChartZoom(newZoom);
-                var scale = newZoom / startZoom;
-                scroll.scrollLeft = (startScrollL + startMidX) * scale - startMidX;
-                scroll.scrollTop = (startScrollT + startMidY) * scale - startMidY;
-            }
-        }, { passive: false });
-
-        scroll.addEventListener('touchend', function(e) {
-            if (e.touches.length < 2) {
-                startDist = 0;
-                if (_chartZoom < 1.05) resetChartZoom();
-            }
-        }, { passive: true });
-    }
-
-    function renderChart() {
-        var allKeys = Object.keys(weightData).filter(function(k){ return weightData[k].weight; }).sort();
-        if (allKeys.length === 0) return;
-        var keys = allKeys;
-        if (scheduleStart && scheduleEnd) {
-            var sStr = formatDate(scheduleStart);
-            var eStr = formatDate(scheduleEnd);
-            keys = allKeys.filter(function(k){ return k >= sStr && k <= eStr; });
-        }
-        if (keys.length === 0) return;
-
-        _chartKeys = keys;
-        _chartValues = keys.map(function(k){ return weightData[k].weight; });
-        _chartColors = keys.map(function(k) {
-            var p = k.split('-');
-            var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
-            var t = getDayType(d);
-            return CARB_COLORS[t] || CARB_COLORS.none;
-        });
-
-        var scroll = document.getElementById('chartScroll');
-        var inner = document.getElementById('chartInner');
-        if (!scroll || !inner) return;
-
-        _chartBaseW = window.innerWidth;
-        _chartBaseH = 200;
-        _chartZoom = 1;
-        inner.style.width = _chartBaseW + 'px';
-        inner.style.height = _chartBaseH + 'px';
-        scroll.scrollLeft = 0;
-        scroll.scrollTop = 0;
-        scroll.classList.remove('zoomed');
-        document.getElementById('chartZoomClose').style.display = 'none';
-        document.body.style.overflow = '';
-
-        buildChart();
-        initChartPinch();
-    }
-
     // ====== Scroll to today ======
     function scrollToToday() {
         var target = document.querySelector('.today-row');
         if (target) {
-            var rowH = target.offsetHeight || 44;
-            var rect = target.getBoundingClientRect();
-            window.scrollBy(0, rect.top - rowH * 3);
+            target.scrollIntoView({ block: 'center' });
         }
     }
 
