@@ -52,7 +52,7 @@
         .wt-table tbody tr:active{background:#FDFBF7}
         .wt-table tbody tr.today-row{background:#EDF2F7}
         .wt-table tbody tr.today-row td{border-bottom-color:#D0DBE6}
-        .scroll-today-btn{display:inline-block;color:var(--blue);font-size:14px;cursor:pointer;margin-left:6px;-webkit-tap-highlight-color:transparent;vertical-align:middle}
+        .scroll-today-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;cursor:pointer;margin-left:14px;-webkit-tap-highlight-color:transparent;vertical-align:middle;line-height:1}
         .scroll-today-btn:active{opacity:0.5}
         .wt-date{font-weight:600;color:var(--text);white-space:nowrap}
         .wt-date .wt-day{font-size:11px;color:var(--muted);font-weight:400}
@@ -753,7 +753,8 @@
         if (keys.length === 0) return;
         var labels = keys.map(function(k) {
             var p = k.split('-');
-            return parseInt(p[1]) + '/' + parseInt(p[2]);
+            var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+            return parseInt(p[1]) + '/' + parseInt(p[2]) + '(' + DAY_NAMES[d.getDay()] + ')';
         });
         var values = keys.map(function(k){ return weightData[k].weight; });
         var pointColors = keys.map(function(k) {
