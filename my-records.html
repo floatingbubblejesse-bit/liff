@@ -81,7 +81,21 @@
     try { fetch(GAS_URL + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
     try { fetch(MEALS_GAS + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
 
-    // (Diet column definitions removed — dietHistory API formats meals server-side)
+    // ====== Cache-first（localStorage 快取）======
+    var MR_CACHE_KEY = 'mr_cache';
+    var MR_CACHE_TTL = 1800000; // 30 分鐘
+    function mrSaveCache(key, data) {
+        try { localStorage.setItem(MR_CACHE_KEY, JSON.stringify({ key: key, ts: Date.now(), data: data })); } catch(e) {}
+    }
+    function mrLoadCache(key) {
+        try {
+            var raw = localStorage.getItem(MR_CACHE_KEY);
+            if (!raw) return null;
+            var c = JSON.parse(raw);
+            if (c.key !== key || Date.now() - c.ts > MR_CACHE_TTL) return null;
+            return c.data;
+        } catch(e) { return null; }
+    }
 
     var lineUid = '';
     var patientSn = '';
@@ -152,22 +166,33 @@
 
     // ====== Step 2: Get diet history from MEALS_GAS (includes dayPlans with meals) ======
     function loadDietPlan(sn) {
+        // cache-first：先顯示快取，再背景更新
+        var cached = mrLoadCache(sn);
+        if (cached && cached.length > 0) {
+            document.getElementById('loadingDiv').style.display = 'none';
+            var cachedRecords = cached.slice().reverse();
+            renderCards(cachedRecords);
+        }
         fetch(MEALS_GAS + '?dietHistory=' + encodeURIComponent(sn))
             .then(function(r) { return r.json(); })
             .then(function(result) {
                 document.getElementById('loadingDiv').style.display = 'none';
                 var records = result.records || [];
-                if (records.length === 0) {
+                mrSaveCache(sn, records);
+                if (records.length === 0 && !cached) {
                     document.getElementById('mainContent').innerHTML = '<div class="no-data">尚無看診紀錄<br><span style="font-size:12px;color:#bbb">看診後醫師儲存飲食計劃，紀錄會自動出現在這裡</span></div>';
                     return;
                 }
-                // 最新的排在最前面
-                records.reverse();
-                renderCards(records);
+                if (records.length > 0) {
+                    records.reverse();
+                    renderCards(records);
+                }
             })
             .catch(function(err) {
-                document.getElementById('loadingDiv').style.display = 'none';
-                showError('載入飲食計劃失敗：' + err.message);
+                if (!cached) {
+                    document.getElementById('loadingDiv').style.display = 'none';
+                    showError('載入飲食計劃失敗：' + err.message);
+                }
             });
     }
 

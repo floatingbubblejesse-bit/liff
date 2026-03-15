@@ -399,6 +399,22 @@
     // 預熱兩個 GAS（並行，不等結果）
     try { fetch(GAS_URL + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
     try { fetch(MEALS_GAS + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
+
+    // ====== Cache-first（localStorage 快取）======
+    var PV_CACHE_TTL = 1800000; // 30 分鐘
+    function pvSaveCache(cacheKey, subKey, data) {
+        try { localStorage.setItem(cacheKey, JSON.stringify({ key: subKey, ts: Date.now(), data: data })); } catch(e) {}
+    }
+    function pvLoadCache(cacheKey, subKey) {
+        try {
+            var raw = localStorage.getItem(cacheKey);
+            if (!raw) return null;
+            var c = JSON.parse(raw);
+            if (c.key !== subKey || Date.now() - c.ts > PV_CACHE_TTL) return null;
+            return c.data;
+        } catch(e) { return null; }
+    }
+
     var MEALS_WH = N8N + '/patient-meals';
     var NOTE_WH = N8N + '/doctor-note';
     var PRESETS = [
@@ -455,34 +471,40 @@
         document.getElementById('presetsGrid').innerHTML = html;
     }
 
+    function _applyBodyData(data) {
+        allData=data;
+        patientName=getDisplayName(data.customer)||patientSn;
+        var gasUid=findLineUid(data.customer);
+        if(gasUid) patientLineUid=gasUid;
+        document.getElementById('headerName').textContent=patientName;
+        document.getElementById('headerSub').textContent=patientSn+' 體組成資料';
+        renderBodyTab(data);
+        var cust = data.customer || {};
+        var mArr = data.measurements || [];
+        if (mArr.length > 0) {
+            var latest = mArr[mArr.length - 1];
+            if (!cust['體重'] && latest['體重']) cust['體重'] = latest['體重'];
+            if (!cust.weight && latest['體重']) cust.weight = latest['體重'];
+        }
+        fillProteinField(cust);
+        document.getElementById('loadingDiv').style.display='none';
+        switchTab(initTab);
+    }
+
     function loadBodyData() {
+        // cache-first：先顯示快取，再背景更新
+        var cached = pvLoadCache('pv_body', patientSn);
+        if (cached) {
+            _applyBodyData(cached);
+        }
         fetch(GAS_URL + '?id=' + encodeURIComponent(patientSn))
             .then(function(r){return r.json();})
             .then(function(data){
-                if (data.error){showError(data.error);return;}
-                allData=data;
-                patientName=getDisplayName(data.customer)||patientSn;
-                var gasUid=findLineUid(data.customer);
-                if(gasUid) patientLineUid=gasUid;
-                document.getElementById('headerName').textContent=patientName;
-                document.getElementById('headerSub').textContent=patientSn+' 體組成資料';
-                renderBodyTab(data);
-                var cust = data.customer || {};
-                // 從最新測量紀錄補上體重（舊版 API 相容）
-                var mArr = data.measurements || [];
-                if (mArr.length > 0) {
-                    var latest = mArr[mArr.length - 1];
-                    if (!cust['體重'] && latest['體重']) cust['體重'] = latest['體重'];
-                    if (!cust.weight && latest['體重']) cust.weight = latest['體重'];
-                }
-                // 身體組成 API 現在也回傳 I 欄，直接用
-                fillProteinField(cust);
-                console.log('[蛋白質] loadBodyData customer:', JSON.stringify({w:cust.weight, h:cust.recommendedProtein, i:cust.doctorRecommendedProtein}));
-                document.getElementById('loadingDiv').style.display='none';
-                // 恢復到重新整理前的 tab
-                switchTab(initTab);
+                if (data.error){ if (!cached) showError(data.error); return; }
+                pvSaveCache('pv_body', patientSn, data);
+                _applyBodyData(data);
             })
-            .catch(function(err){showError('資料載入失敗：'+err.message);});
+            .catch(function(err){ if (!cached) showError('資料載入失敗：'+err.message); });
     }
 
     var TAB_NAMES = ['body','weight','meals','note','history'];
@@ -607,16 +629,23 @@
 
     // ====== LINE UID 預取（改用 GAS patientId 直接查，不走 n8n）======
     function prefetchLineUid() {
+        // cache-first：先用快取的餐食資料
+        var cachedMeals = pvLoadCache('pv_meals', patientSn);
+        if (cachedMeals && !mealsLoaded) {
+            mealsData = cachedMeals;
+            mealsLoaded = true;
+            if (activeTab === 'meals') renderMealsTab();
+            fillProteinFromMeals();
+        }
         fetch(MEALS_GAS + '?patientId=' + encodeURIComponent(patientSn))
             .then(function(r){return r.json();})
             .then(function(data){
-                // GAS 回傳 lineUid，快取起來
                 var uid = data.lineUid || '';
                 if (uid && !patientLineUid) {
                     patientLineUid = uid;
                     cacheUidInUrl(uid);
                 }
-                // 餐食資料已經在這次回傳中了，直接用
+                pvSaveCache('pv_meals', patientSn, data);
                 mealsData = data;
                 mealsLoaded = true;
                 mealsLoading = false;
@@ -625,7 +654,7 @@
             })
             .catch(function(err){
                 mealsLoading = false;
-                if (activeTab === 'meals') {
+                if (!cachedMeals && activeTab === 'meals') {
                     document.getElementById('tab-meals').innerHTML = '<div class="no-data">餐食資料載入失敗：' + esc(err.message) + '</div>';
                 }
             });
@@ -643,9 +672,19 @@
     function prefetchMealData(uid) {
         if (mealsLoaded || mealsLoading) return;
         mealsLoading = true;
+        // cache-first：先用快取渲染
+        var cachedMeals = pvLoadCache('pv_meals', patientSn);
+        if (cachedMeals) {
+            mealsData = cachedMeals;
+            mealsLoaded = true;
+            mealsLoading = false;
+            if (activeTab === 'meals') renderMealsTab();
+            fillProteinFromMeals();
+        }
         fetch(MEALS_GAS + '?userId=' + encodeURIComponent(uid))
             .then(function(r){ return r.json(); })
             .then(function(data){
+                pvSaveCache('pv_meals', patientSn, data);
                 mealsData = data;
                 mealsLoaded = true;
                 mealsLoading = false;
@@ -1667,13 +1706,19 @@
     // 預取看診紀錄（頁面載入時立即呼叫）
     function _prefetchDietHistory() {
         if (dietHistoryCache || _histPrefetchPromise) return;
+        // cache-first：先用快取渲染
+        var cached = pvLoadCache('pv_hist', patientSn);
+        if (cached && cached.length > 0) {
+            dietHistoryCache = cached;
+            if (activeTab === 'history') renderHistoryCards(document.getElementById('historyContent'), cached);
+        }
         _histPrefetchPromise = fetch(MEALS_GAS + '?dietHistory=' + encodeURIComponent(patientSn))
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 var records = data.records || [];
                 if (records.length > 0) {
+                    pvSaveCache('pv_hist', patientSn, records);
                     dietHistoryCache = records;
-                    // 如果使用者已經在看 history tab，立即渲染
                     if (activeTab === 'history') renderHistoryCards(document.getElementById('historyContent'), records);
                 }
             })
@@ -1938,20 +1983,31 @@
 
     // 預取居家體重（頁面載入時立即呼叫，不等使用者切 tab）
     var _hwPrefetchPromise = null;
+    function _hwApplyRecords(records) {
+        records.forEach(function(rec) {
+            if (rec.date && rec.weight) {
+                hwWeightData[rec.date] = { weight: parseFloat(rec.weight), dayType: rec.dayType || '' };
+            }
+        });
+    }
     function _prefetchHomeWeight() {
         if (hwLoaded || hwLoading || _hwPrefetchPromise) return;
+        // cache-first：先用快取渲染
+        var cached = pvLoadCache('pv_hw', patientSn);
+        if (cached && cached.length > 0) {
+            _hwApplyRecords(cached);
+            hwLoaded = true;
+            if (activeTab === 'weight') hwRenderAll();
+        }
         _hwPrefetchPromise = fetch(MEALS_GAS + '?homeWeight=' + encodeURIComponent(patientSn))
             .then(function(r){ return r.json(); })
             .then(function(data){
                 hwLoaded = true;
                 if (data && data.records) {
-                    data.records.forEach(function(rec) {
-                        if (rec.date && rec.weight) {
-                            hwWeightData[rec.date] = { weight: parseFloat(rec.weight), dayType: rec.dayType || '' };
-                        }
-                    });
+                    pvSaveCache('pv_hw', patientSn, data.records);
+                    hwWeightData = {}; // 清空再填入最新
+                    _hwApplyRecords(data.records);
                 }
-                // 如果使用者已經在看 weight tab，立即渲染
                 if (activeTab === 'weight') hwRenderAll();
             })
             .catch(function(e){ hwLoaded = true; console.log('[居家體重] 預取失敗:', e); });
@@ -2029,17 +2085,25 @@
 
     // 載入排程資料（供日曆碳日標示用）
     function hwLoadSchedule() {
+        // cache-first
+        var cached = pvLoadCache('pv_sch', patientSn);
+        if (cached && cached.schedule) {
+            hwVisitRecords = [cached];
+            if (hwLoaded) { hwRenderCalendar(); hwUpdateStats(); }
+        }
         fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn))
             .then(function(r){ return r.json(); })
             .then(function(data){
                 if (data.schedule && data.schedule.length === 7) {
                     var planDate = hwParseDateToYMD(data.date);
                     if (!planDate) planDate = hwFormatDate(new Date());
-                    hwVisitRecords = [{
+                    var record = {
                         date: planDate,
                         schedule: data.schedule,
                         weeks: data.weeks || 4
-                    }];
+                    };
+                    pvSaveCache('pv_sch', patientSn, record);
+                    hwVisitRecords = [record];
                     if (hwLoaded) { hwRenderCalendar(); hwUpdateStats(); }
                 }
             })

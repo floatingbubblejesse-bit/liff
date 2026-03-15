@@ -107,18 +107,41 @@
     try { fetch(API_URL + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
     try { fetch(MEALS_GAS + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
 
+    // ====== Cache-first（localStorage 快取）======
+    var DOC_CACHE_KEY = 'doc_cache';
+    var DOC_CACHE_TTL = 1800000; // 30 分鐘
+    function docSaveCache(data) {
+        try { localStorage.setItem(DOC_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: data })); } catch(e) {}
+    }
+    function docLoadCache() {
+        try {
+            var raw = localStorage.getItem(DOC_CACHE_KEY);
+            if (!raw) return null;
+            var c = JSON.parse(raw);
+            if (Date.now() - c.ts > DOC_CACHE_TTL) return null;
+            return c.data;
+        } catch(e) { return null; }
+    }
+
     function loadData() {
-        document.getElementById('loading').style.display = 'flex';
-        document.getElementById('main').style.display = 'none';
+        var cached = docLoadCache();
+        if (cached) {
+            allPatients = cached.patients || [];
+            renderAll(cached);
+        } else {
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('main').style.display = 'none';
+        }
         document.getElementById('error').style.display = 'none';
         fetch(API_URL + '?all=true')
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                if (data.error) { showError(data.error); return; }
+                if (data.error) { if (!cached) showError(data.error); return; }
+                docSaveCache(data);
                 allPatients = data.patients || [];
                 renderAll(data);
             })
-            .catch(function(err) { showError('資料載入失敗：' + (err.message || err)); });
+            .catch(function(err) { if (!cached) showError('資料載入失敗：' + (err.message || err)); });
     }
 
     function showError(msg) {
