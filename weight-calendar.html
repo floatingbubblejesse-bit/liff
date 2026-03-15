@@ -94,8 +94,13 @@
         .section.open .section-arrow{transform:rotate(180deg)}
         .section-body{display:none;border-top:1px solid var(--border);padding:10px}
         .section.open .section-body{display:block}
-        .chart-scroll{position:relative;overflow:auto;-webkit-overflow-scrolling:touch;height:200px;touch-action:pan-x pan-y}
+        .chart-scroll{overflow:visible;height:200px}
+        .chart-scroll.zoomed{overflow:auto;-webkit-overflow-scrolling:touch;position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;z-index:500;background:rgba(255,255,255,0.97);touch-action:pan-x pan-y}
+        .chart-scroll.zoomed .chart-inner{margin:0}
         .chart-inner{position:relative;min-width:100%;min-height:100%}
+        .chart-zoom-hint{display:none;position:fixed;top:12px;right:12px;z-index:501;background:var(--blue);color:#fff;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+        .chart-scroll.zoomed~.chart-zoom-hint,.chart-scroll.zoomed+.chart-zoom-hint{display:none}
+        .chart-zoom-close{display:none;position:fixed;top:12px;right:12px;z-index:501;background:rgba(0,0,0,0.5);color:#fff;border-radius:50%;width:32px;height:32px;text-align:center;line-height:32px;font-size:18px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 
         /* ====== Loading ====== */
         .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:40vh;gap:14px}
@@ -136,6 +141,7 @@
     </div>
     <div class="section-body">
         <div class="chart-scroll" id="chartScroll"><div class="chart-inner" id="chartInner"><canvas id="weightChart"></canvas></div></div>
+        <div class="chart-zoom-close" id="chartZoomClose" onclick="resetChartZoom()">✕</div>
     </div>
 </div>
 
@@ -884,20 +890,58 @@
         });
     }
 
+    var _pinchInited = false;
+
     function applyChartZoom(newZoom) {
-        _chartZoom = Math.max(1, Math.min(5, newZoom));
+        var scroll = document.getElementById('chartScroll');
         var inner = document.getElementById('chartInner');
-        if (!inner) return;
-        inner.style.width = Math.round(_chartBaseW * _chartZoom) + 'px';
-        inner.style.height = Math.round(_chartBaseH * _chartZoom) + 'px';
+        var closeBtn = document.getElementById('chartZoomClose');
+        if (!inner || !scroll) return;
+
+        var oldZoom = _chartZoom;
+        _chartZoom = Math.max(1, Math.min(5, newZoom));
+
+        var w = Math.round(_chartBaseW * _chartZoom);
+        var h = Math.round(_chartBaseH * _chartZoom);
+        inner.style.width = w + 'px';
+        inner.style.height = h + 'px';
+
+        if (_chartZoom > 1.05 && !scroll.classList.contains('zoomed')) {
+            scroll.classList.add('zoomed');
+            if (closeBtn) closeBtn.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        } else if (_chartZoom <= 1.05 && scroll.classList.contains('zoomed')) {
+            scroll.classList.remove('zoomed');
+            if (closeBtn) closeBtn.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        buildChart();
+    }
+
+    function resetChartZoom() {
+        _chartZoom = 1;
+        var scroll = document.getElementById('chartScroll');
+        var inner = document.getElementById('chartInner');
+        var closeBtn = document.getElementById('chartZoomClose');
+        if (scroll) { scroll.classList.remove('zoomed'); scroll.scrollLeft = 0; scroll.scrollTop = 0; }
+        if (inner) { inner.style.width = _chartBaseW + 'px'; inner.style.height = _chartBaseH + 'px'; }
+        if (closeBtn) closeBtn.style.display = 'none';
+        document.body.style.overflow = '';
         buildChart();
     }
 
     function initChartPinch() {
+        if (_pinchInited) return;
+        _pinchInited = true;
         var scroll = document.getElementById('chartScroll');
         if (!scroll) return;
         var startDist = 0;
         var startZoom = 1;
+        var startScrollL = 0;
+        var startScrollT = 0;
+        var startMidX = 0;
+        var startMidY = 0;
 
         function getTouchDist(e) {
             var t = e.touches;
@@ -912,6 +956,10 @@
                 e.preventDefault();
                 startDist = getTouchDist(e);
                 startZoom = _chartZoom;
+                startScrollL = scroll.scrollLeft;
+                startScrollT = scroll.scrollTop;
+                startMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                startMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
             }
         }, { passive: false });
 
@@ -920,12 +968,19 @@
                 e.preventDefault();
                 var dist = getTouchDist(e);
                 var ratio = dist / startDist;
-                applyChartZoom(startZoom * ratio);
+                var newZoom = Math.max(1, Math.min(5, startZoom * ratio));
+                applyChartZoom(newZoom);
+                var scale = newZoom / startZoom;
+                scroll.scrollLeft = (startScrollL + startMidX) * scale - startMidX;
+                scroll.scrollTop = (startScrollT + startMidY) * scale - startMidY;
             }
         }, { passive: false });
 
-        scroll.addEventListener('touchend', function() {
-            startDist = 0;
+        scroll.addEventListener('touchend', function(e) {
+            if (e.touches.length < 2) {
+                startDist = 0;
+                if (_chartZoom < 1.05) resetChartZoom();
+            }
         }, { passive: true });
     }
 
@@ -953,13 +1008,16 @@
         var inner = document.getElementById('chartInner');
         if (!scroll || !inner) return;
 
-        _chartBaseW = scroll.offsetWidth;
-        _chartBaseH = _chartBaseH || 200;
+        _chartBaseW = window.innerWidth;
+        _chartBaseH = 200;
         _chartZoom = 1;
         inner.style.width = _chartBaseW + 'px';
         inner.style.height = _chartBaseH + 'px';
         scroll.scrollLeft = 0;
         scroll.scrollTop = 0;
+        scroll.classList.remove('zoomed');
+        document.getElementById('chartZoomClose').style.display = 'none';
+        document.body.style.overflow = '';
 
         buildChart();
         initChartPinch();
