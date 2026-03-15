@@ -94,6 +94,10 @@
             lineUid = profile.userId;
             document.getElementById('headerSub').textContent = profile.displayName;
             if (profile.pictureUrl) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + profile.pictureUrl + '" alt="">'; }
+            // 同步 LINE 名稱到客戶清單（背景執行）
+            if (profile.displayName) {
+                fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(lineUid) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){});
+            }
             loadPatientData();
         })
         .catch(function(err) {

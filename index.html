@@ -123,6 +123,10 @@
                 if (!profile || !profile.userId) return;
                 document.getElementById('headerName').textContent = profile.displayName || '';
                 if (profile.pictureUrl) { document.getElementById('headerAvatarWrap').innerHTML = '<img class="header-avatar" src="' + profile.pictureUrl + '" alt="">'; }
+                // 同步 LINE 名稱到客戶清單（背景執行）
+                if (profile.displayName) {
+                    fetch('https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec?setLineName=' + encodeURIComponent(profile.userId) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){});
+                }
                 fetchData('uid', profile.userId);
             })
             .catch(function(err) { showError('LIFF 初始化失敗：' + (err.message || err) + ' 請在 LINE 中開啟：https://liff.line.me/' + LIFF_ID); });

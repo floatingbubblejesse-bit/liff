@@ -454,6 +454,10 @@
             if (!userId) { showError('請在 LINE App 中開啟此頁面'); return; }
             if (pictureUrl) { document.getElementById('avatar-wrap').innerHTML = `<img class="avatar" src="${pictureUrl}" alt="avatar">`; }
             document.getElementById('patient-name').textContent = displayName || '您好';
+            // 同步 LINE 名稱到客戶清單（背景執行，不影響載入）
+            if (userId && displayName && displayName !== '患者') {
+                fetch(API_URL + '?setLineName=' + encodeURIComponent(userId) + '&dName=' + encodeURIComponent(displayName)).catch(function(){});
+            }
             document.getElementById('main').style.display = 'block';
             const loadingEl = document.getElementById('loading');
 

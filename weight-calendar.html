@@ -196,6 +196,10 @@
                 if (result.patientSn) {
                     patientSn = result.patientSn;
                 }
+                // 同步 LINE 名稱到客戶清單（背景執行，不影響載入）
+                if (patientSn && patientName) {
+                    fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(patientSn) + '&dName=' + encodeURIComponent(patientName)).catch(function(){});
+                }
                 loadData();
             }).catch(function(err) {
                 loadData();
