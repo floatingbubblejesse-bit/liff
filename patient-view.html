@@ -63,7 +63,10 @@
         .send-success{display:none;background:#E8EDE6;color:#6B8F71;padding:12px;border-radius:10px;text-align:center;font-size:13px;font-weight:600;margin-top:8px}
 
         /* ====== 居家體重 tab ====== */
-        .hw-scroll-wrap{max-height:52vh;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative}
+        .hw-cal-toggle{font-size:13px;color:var(--muted);cursor:pointer;transition:transform 0.3s;display:inline-block;-webkit-tap-highlight-color:transparent}
+        .hw-cal-toggle.collapsed{transform:rotate(-90deg)}
+        .hw-scroll-wrap{overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;transition:max-height 0.35s ease,opacity 0.25s ease;max-height:52vh;opacity:1}
+        .hw-scroll-wrap.collapsed{max-height:0;opacity:0;overflow:hidden}
         .hw-cal-weekday-bar{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;position:sticky;top:0;z-index:2;background:white;padding-bottom:2px}
         .hw-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
         .hw-cal-weekday{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0}
@@ -272,7 +275,7 @@
         <div id="tab-body" class="tab-pane" style="display:none"></div>
         <div id="tab-weight" class="tab-pane" style="display:none">
             <div class="card">
-                <div class="card-title" style="justify-content:space-between">📅 日曆<span onclick="hwScrollToToday()" style="font-size:11px;font-weight:600;color:var(--blue);cursor:pointer;display:flex;align-items:center;gap:3px;-webkit-tap-highlight-color:transparent">📍 今天</span></div>
+                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleCal()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle" id="hwCalArrow">▼</span>📅 日曆</span><span onclick="hwScrollToToday()" id="hwTodayBtn" style="font-size:11px;font-weight:600;color:var(--blue);cursor:pointer;display:flex;align-items:center;gap:3px;-webkit-tap-highlight-color:transparent">📍 今天</span></div>
                 <div id="hwCalWrap" class="hw-scroll-wrap"></div>
             </div>
             <div class="card">
@@ -1996,42 +1999,28 @@
         origLoadHomeWeight();
     };
 
-    function hwRenderCalendar() {
+    // ── 萬年曆狀態 ──
+    var _hwCalStartMonth = -6;   // 起始偏移（相對於今天月份）
+    var _hwCalEndMonth = 3;      // 結束偏移
+    var _hwCalCollapsed = false;
+    var _hwCalBusy = false;
+
+    function hwToggleCal() {
+        _hwCalCollapsed = !_hwCalCollapsed;
         var wrap = document.getElementById('hwCalWrap');
-        if (!wrap) return;
-        var prevScroll = wrap.scrollTop;
-        var isFirst = !wrap.querySelector('.hw-cal-grid');
+        var arrow = document.getElementById('hwCalArrow');
+        var todayBtn = document.getElementById('hwTodayBtn');
+        if (wrap) wrap.classList.toggle('collapsed', _hwCalCollapsed);
+        if (arrow) arrow.classList.toggle('collapsed', _hwCalCollapsed);
+        if (todayBtn) todayBtn.style.display = _hwCalCollapsed ? 'none' : '';
+    }
 
-        var today = new Date();
-        var todayStr = hwFormatDate(today);
-
-        // 範圍：往前 12 個月，往後 2 個月
-        var rangeStart = new Date(today.getFullYear(), today.getMonth() - 12, 1);
-        var rangeEnd = new Date(today.getFullYear(), today.getMonth() + 3, 0);
-
-        // 找到 rangeStart 當週或之前的星期六（第一欄）
-        var dow = rangeStart.getDay();
-        var daysBack = (dow + 1) % 7;
-        var calStart = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate() - daysBack);
-
-        // 找到 rangeEnd 當週或之後的星期五（最後一欄）
-        dow = rangeEnd.getDay();
-        var daysForward = (5 - dow + 7) % 7;
-        var calEnd = new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), rangeEnd.getDate() + daysForward);
-
-        // 星期列（sticky）：六日一二三四五
-        var weekdays = ['六','日','一','二','三','四','五'];
-        var weekCls = ['sat','sun','','','','',''];
-        var headerHtml = '<div class="hw-cal-weekday-bar">';
-        for (var w = 0; w < 7; w++) {
-            headerHtml += '<div class="hw-cal-weekday ' + weekCls[w] + '">' + weekdays[w] + '</div>';
-        }
-        headerHtml += '</div>';
-
-        // 連續日期格（無空格）
-        var gridHtml = '<div class="hw-cal-grid">';
-        var cursor = new Date(calStart.getTime());
-        while (cursor <= calEnd) {
+    // 產生日期格 HTML（從 dateA 到 dateB，含首尾）
+    function hwBuildCells(dateA, dateB) {
+        var todayStr = hwFormatDate(new Date());
+        var html = '';
+        var cursor = new Date(dateA.getTime());
+        while (cursor <= dateB) {
             var dateStr = hwFormatDate(cursor);
             var isToday = dateStr === todayStr;
             var curDow = cursor.getDay();
@@ -2047,35 +2036,113 @@
             var opt = HW_CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || HW_CYCLE_OPTS[4];
 
             var cellCls = 'hw-cal-cell' + (isToday ? ' today' : '') + (isSat ? ' sat' : '') + (isSun ? ' sun' : '');
-            gridHtml += '<div class="' + cellCls + '" id="hwD' + dateStr + '">';
+            html += '<div class="' + cellCls + '" id="hwD' + dateStr + '">';
             if (isFirstOfYear) {
-                gridHtml += '<div class="hw-cal-year-label">' + cursor.getFullYear() + '</div>';
+                html += '<div class="hw-cal-year-label">' + cursor.getFullYear() + '</div>';
             }
             if (isFirstOfMonth) {
-                gridHtml += '<div class="hw-cal-month-label">' + (curMonth + 1) + '月</div>';
+                html += '<div class="hw-cal-month-label">' + (curMonth + 1) + '月</div>';
             }
-            gridHtml += '<div class="hw-cal-date">' + dayOfMonth + '</div>';
-            gridHtml += '<div class="hw-cal-type ' + opt.cls + '">' + opt.label + '</div>';
+            html += '<div class="hw-cal-date">' + dayOfMonth + '</div>';
+            html += '<div class="hw-cal-type ' + opt.cls + '">' + opt.label + '</div>';
             if (savedWeight) {
-                gridHtml += '<div class="hw-cal-wt">' + savedWeight + '</div>';
+                html += '<div class="hw-cal-wt">' + savedWeight + '</div>';
             }
-            gridHtml += '</div>';
+            html += '</div>';
             cursor.setDate(cursor.getDate() + 1);
         }
-        gridHtml += '</div>';
+        return html;
+    }
 
+    // 找到某日期當週或之前的星期六
+    function hwPrevSat(d) {
+        var daysBack = (d.getDay() + 1) % 7;
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate() - daysBack);
+    }
+    // 找到某日期當週或之後的星期五
+    function hwNextFri(d) {
+        var daysForward = (5 - d.getDay() + 7) % 7;
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate() + daysForward);
+    }
+
+    function hwRenderCalendar() {
+        var wrap = document.getElementById('hwCalWrap');
+        if (!wrap) return;
+        var prevScroll = wrap.scrollTop;
+        var isFirst = !wrap.querySelector('.hw-cal-grid');
+
+        var today = new Date();
+
+        var rangeStart = new Date(today.getFullYear(), today.getMonth() + _hwCalStartMonth, 1);
+        var rangeEnd = new Date(today.getFullYear(), today.getMonth() + _hwCalEndMonth + 1, 0);
+        var calStart = hwPrevSat(rangeStart);
+        var calEnd = hwNextFri(rangeEnd);
+
+        // 星期列（sticky）：六日一二三四五
+        var weekdays = ['六','日','一','二','三','四','五'];
+        var weekCls = ['sat','sun','','','','',''];
+        var headerHtml = '<div class="hw-cal-weekday-bar">';
+        for (var w = 0; w < 7; w++) {
+            headerHtml += '<div class="hw-cal-weekday ' + weekCls[w] + '">' + weekdays[w] + '</div>';
+        }
+        headerHtml += '</div>';
+
+        var gridHtml = '<div class="hw-cal-grid" id="hwCalGrid">' + hwBuildCells(calStart, calEnd) + '</div>';
         wrap.innerHTML = headerHtml + gridHtml;
 
         if (isFirst) {
-            // 首次渲染：捲到今天
-            var todayEl = document.getElementById('hwD' + todayStr);
-            if (todayEl) {
-                setTimeout(function() {
-                    wrap.scrollTop = todayEl.offsetTop - wrap.offsetTop - wrap.clientHeight / 2 + todayEl.clientHeight / 2;
-                }, 60);
-            }
+            hwScrollToToday();
+            // 綁定無限滾動
+            wrap.addEventListener('scroll', hwOnScroll);
         } else {
             wrap.scrollTop = prevScroll;
+        }
+    }
+
+    // ── 無限滾動 ──
+    function hwOnScroll() {
+        if (_hwCalBusy) return;
+        var wrap = document.getElementById('hwCalWrap');
+        if (!wrap) return;
+        var threshold = 200;
+
+        // 滑到頂部 → 往前加載 6 個月
+        if (wrap.scrollTop < threshold) {
+            _hwCalBusy = true;
+            var oldH = wrap.scrollHeight;
+            var oldS = wrap.scrollTop;
+            var today = new Date();
+            var prevStartMonth = _hwCalStartMonth;
+            _hwCalStartMonth -= 6;
+            var newStart = new Date(today.getFullYear(), today.getMonth() + _hwCalStartMonth, 1);
+            var newEnd = new Date(today.getFullYear(), today.getMonth() + prevStartMonth, 0);
+            var calStart = hwPrevSat(newStart);
+            var calEnd = hwNextFri(newEnd);
+            var grid = document.getElementById('hwCalGrid');
+            if (grid) {
+                var html = hwBuildCells(calStart, calEnd);
+                grid.insertAdjacentHTML('afterbegin', html);
+                // 維持視覺位置
+                wrap.scrollTop = oldS + (wrap.scrollHeight - oldH);
+            }
+            _hwCalBusy = false;
+        }
+
+        // 滑到底部 → 往後加載 6 個月
+        if (wrap.scrollTop + wrap.clientHeight > wrap.scrollHeight - threshold) {
+            _hwCalBusy = true;
+            var today2 = new Date();
+            var prevEndMonth = _hwCalEndMonth;
+            _hwCalEndMonth += 6;
+            var newStart2 = new Date(today2.getFullYear(), today2.getMonth() + prevEndMonth + 1, 1);
+            var newEnd2 = new Date(today2.getFullYear(), today2.getMonth() + _hwCalEndMonth + 1, 0);
+            var calStart2 = hwPrevSat(newStart2);
+            var calEnd2 = hwNextFri(newEnd2);
+            var grid2 = document.getElementById('hwCalGrid');
+            if (grid2) {
+                grid2.insertAdjacentHTML('beforeend', hwBuildCells(calStart2, calEnd2));
+            }
+            _hwCalBusy = false;
         }
     }
 
@@ -2083,7 +2150,11 @@
         var wrap = document.getElementById('hwCalWrap');
         var todayEl = document.getElementById('hwD' + hwFormatDate(new Date()));
         if (wrap && todayEl) {
-            wrap.scrollTop = todayEl.offsetTop - wrap.offsetTop - wrap.clientHeight / 2 + todayEl.clientHeight / 2;
+            // 展開（如果收合中）
+            if (_hwCalCollapsed) hwToggleCal();
+            setTimeout(function() {
+                wrap.scrollTop = todayEl.offsetTop - wrap.offsetTop - wrap.clientHeight / 2 + todayEl.clientHeight / 2;
+            }, 60);
         }
     }
 
