@@ -272,15 +272,6 @@
         renderScheduleBar();
         renderTable();
         initInfiniteScroll();
-        // 等 infinite scroll 穩定後再滾到今天
-        setTimeout(function() {
-            var target = document.querySelector('.today-row') || document.getElementById('scheduleStartRow');
-            if (target) {
-                var rowH = target.offsetHeight || 44;
-                var rect = target.getBoundingClientRect();
-                window.scrollBy(0, rect.top - rowH * 3);
-            }
-        }, 500);
     }
 
     // ====== Infinite scroll ======
@@ -353,11 +344,10 @@
         if (rangeStartDate && rangeEndDate) return { start: rangeStartDate, end: rangeEndDate };
 
         var today = new Date();
-        var anchor = scheduleStart || today;
         var endAnchor = scheduleEnd || today;
 
-        // 初始範圍：錨點前 3 個月 ~ 結束錨點後 3 個月
-        rangeStartDate = new Date(anchor.getFullYear(), anchor.getMonth() - EXPAND_MONTHS, 1);
+        // 初始範圍：今天前 2 天起，確保 header/統計列不被推出螢幕
+        rangeStartDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 2);
         rangeEndDate = new Date(endAnchor.getFullYear(), endAnchor.getMonth() + EXPAND_MONTHS + 1, 0);
 
         return { start: rangeStartDate, end: rangeEndDate };
