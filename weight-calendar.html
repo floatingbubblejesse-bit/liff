@@ -802,7 +802,12 @@
                 _weekStats.push({ label: '平均一週', diff: (last - first) / daySpan * 7 });
             }
         }
-        if (_weekStatIndex >= _weekStats.length) _weekStatIndex = 0;
+        // 預設顯示「平均一週」（最後一項）
+        var avgIdx = -1;
+        for (var si = 0; si < _weekStats.length; si++) {
+            if (_weekStats[si].label === '平均一週') { avgIdx = si; break; }
+        }
+        if (_weekStatIndex >= _weekStats.length) _weekStatIndex = avgIdx >= 0 ? avgIdx : 0;
         showWeekStat();
 
         // 期間變化：排程期間首筆 vs 末筆
