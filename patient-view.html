@@ -285,9 +285,11 @@
                 <div class="hw-stat-item" onclick="hwToggleDiffMode()"><div class="hw-stat-value" id="hwStatRight">-</div><div class="hw-stat-label" id="hwStatRightLabel">期間變化</div></div>
             </div>
             <div class="card">
-                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleTable()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle" id="hwTableArrow">▼</span>📋 體重紀錄表</span></div>
+                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleTable()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle" id="hwTableArrow">▼</span>📋 體重紀錄表</span><button onclick="hwTableScrollToToday()" id="hwTableTodayBtn" style="font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-light);border:1px solid var(--border);border-radius:14px;padding:3px 10px 3px 7px;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>今天</button></div>
                 <div id="hwTableBody" class="hw-chart-body">
-                    <div class="table-wrap" id="hwTableWrap"><div class="no-data">載入中…</div></div>
+                    <div class="hw-scroll-wrap" id="hwTableScroll" style="max-height:50vh">
+                        <div id="hwTableWrap"><div class="no-data">載入中…</div></div>
+                    </div>
                 </div>
             </div>
             <div class="card">
@@ -2601,39 +2603,94 @@
         });
     }
 
+    var _hwTableFirstRender = true;
+
     function hwRenderTable() {
         var wrap = document.getElementById('hwTableWrap');
+        var scroll = document.getElementById('hwTableScroll');
         if (!wrap) return;
-        var allKeys = Object.keys(hwWeightData).sort(function(a,b){ return b.localeCompare(a); });
-        if (allKeys.length === 0) {
-            wrap.innerHTML = '<div class="no-data">尚無居家體重紀錄</div>';
-            return;
+
+        // 產生日期範圍：排程期間前後各延伸，或依資料範圍
+        var today = new Date();
+        var todayStr = hwFormatDate(today);
+        var allDataKeys = Object.keys(hwWeightData).filter(function(k){ return hwWeightData[k].weight; }).sort();
+
+        // 起點：最早資料或今天 - 2 個月（取較早者）
+        var rangeStartD = new Date(today.getFullYear(), today.getMonth() - 2, today.getDate());
+        if (allDataKeys.length > 0) {
+            var fp = allDataKeys[0].split('-');
+            var firstData = new Date(parseInt(fp[0]), parseInt(fp[1]) - 1, parseInt(fp[2]));
+            if (firstData < rangeStartD) rangeStartD = firstData;
         }
+        // 終點：最晚資料或今天 + 1 個月（取較晚者）
+        var rangeEndD = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
+        if (allDataKeys.length > 0) {
+            var lp = allDataKeys[allDataKeys.length - 1].split('-');
+            var lastData = new Date(parseInt(lp[0]), parseInt(lp[1]) - 1, parseInt(lp[2]));
+            if (lastData > rangeEndD) rangeEndD = lastData;
+        }
+
+        // 建表：從最新到最舊
         var html = '<table><thead><tr><th>日期</th><th>體重</th><th>碳日</th><th>變化</th></tr></thead><tbody>';
-        for (var i = 0; i < allKeys.length; i++) {
-            var k = allKeys[i];
-            var wt = hwWeightData[k].weight;
-            var parts = k.split('-');
-            var dateObj = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-            var savedDayType = hwWeightData[k].dayType;
+        var cursor = new Date(rangeEndD.getTime());
+        var prevWeight = null;
+        while (cursor >= rangeStartD) {
+            var dateStr = hwFormatDate(cursor);
+            var isToday = dateStr === todayStr;
+            var dateObj = new Date(cursor.getTime());
+            var dayName = HW_DAY_NAMES[dateObj.getDay()];
+            var parts = dateStr.split('-');
+            var dateLabel = parseInt(parts[1]) + '/' + parseInt(parts[2]) + '(' + dayName + ')';
+
+            var savedData = hwWeightData[dateStr];
+            var wt = savedData ? savedData.weight : null;
+            var savedDayType = savedData ? savedData.dayType : '';
             var dayType = savedDayType ? savedDayType : hwGetDayType(dateObj);
             var opt = HW_CYCLE_OPTS.find(function(o){ return o.key === dayType; }) || HW_CYCLE_OPTS[4];
+
             var diff = '';
-            if (i < allKeys.length - 1) {
-                var prevWt = hwWeightData[allKeys[i+1]].weight;
-                var d = wt - prevWt;
+            if (wt && prevWeight) {
+                var d = wt - prevWeight;
                 var sign = d > 0 ? '+' : '';
                 var cls = d < 0 ? 'diff-good' : d > 0 ? 'diff-warn' : 'diff-same';
                 diff = '<span class="' + cls + '">' + sign + d.toFixed(1) + '</span>';
             }
-            var dateLabel = parseInt(parts[1]) + '/' + parseInt(parts[2]) + '(' + HW_DAY_NAMES[dateObj.getDay()] + ')';
-            html += '<tr><td class="date-col">' + esc(dateLabel) + '</td>';
-            html += '<td style="font-weight:700">' + wt.toFixed(1) + '</td>';
+            if (wt) prevWeight = wt;
+
+            var trStyle = isToday ? ' style="background:rgba(123,143,161,0.08)"' : '';
+            var dateStyle = isToday ? 'font-weight:800;color:var(--blue)' : '';
+            html += '<tr' + trStyle + ' id="hwTR' + dateStr + '">';
+            html += '<td class="date-col" style="' + dateStyle + '">' + esc(dateLabel) + '</td>';
+            html += '<td style="font-weight:700">' + (wt ? wt.toFixed(1) : '<span style="color:#ccc">-</span>') + '</td>';
             html += '<td><span class="hw-cal-type ' + opt.cls + '" style="display:inline-flex;width:auto;padding:2px 8px">' + opt.label + '</span></td>';
             html += '<td>' + diff + '</td></tr>';
+
+            cursor.setDate(cursor.getDate() - 1);
         }
         html += '</tbody></table>';
         wrap.innerHTML = html;
+
+        // 首次渲染捲到今天
+        if (_hwTableFirstRender && scroll) {
+            _hwTableFirstRender = false;
+            var todayRow = document.getElementById('hwTR' + todayStr);
+            if (todayRow) {
+                setTimeout(function() {
+                    scroll.scrollTop = todayRow.offsetTop - scroll.offsetTop - scroll.clientHeight / 2 + todayRow.clientHeight / 2;
+                }, 80);
+            }
+        }
+    }
+
+    function hwTableScrollToToday() {
+        var scroll = document.getElementById('hwTableScroll');
+        var todayRow = document.getElementById('hwTR' + hwFormatDate(new Date()));
+        if (scroll && todayRow) {
+            if (_hwTableCollapsed) hwToggleTable();
+            setTimeout(function() {
+                scroll.scrollTop = todayRow.offsetTop - scroll.offsetTop - scroll.clientHeight / 2 + todayRow.clientHeight / 2;
+            }, 60);
+        }
     }
 
     function showError(msg){
