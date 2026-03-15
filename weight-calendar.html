@@ -52,7 +52,7 @@
         .wt-table tbody tr:active{background:#FDFBF7}
         .wt-table tbody tr.today-row{background:#EDF2F7}
         .wt-table tbody tr.today-row td{border-bottom-color:#D0DBE6}
-        .scroll-today-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;cursor:pointer;margin-left:14px;-webkit-tap-highlight-color:transparent;vertical-align:middle;line-height:1}
+        .scroll-today-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#C0CDD9;color:#fff;font-size:12px;cursor:pointer;margin-left:14px;-webkit-tap-highlight-color:transparent;vertical-align:middle;line-height:1}
         .scroll-today-btn:active{opacity:0.5}
         .wt-date{font-weight:600;color:var(--text);white-space:nowrap}
         .wt-date .wt-day{font-size:11px;color:var(--muted);font-weight:400}
@@ -115,7 +115,7 @@
 
 <div class="stats-row">
     <div class="stat-item"><div class="stat-value" id="statLatest">-</div><div class="stat-label">最低體重</div></div>
-    <div class="stat-item"><div class="stat-value" id="statWeekDiff">-</div><div class="stat-label">一週變化</div></div>
+    <div class="stat-item" onclick="cycleWeekStat()" style="cursor:pointer;-webkit-tap-highlight-color:transparent"><div class="stat-value" id="statWeekDiff">-</div><div class="stat-label" id="statWeekLabel">一週變化</div></div>
     <div class="stat-item"><div class="stat-value" id="statDiff">-</div><div class="stat-label">期間變化</div></div>
 </div>
 
@@ -675,6 +675,36 @@
     }
 
     // ====== Stats ======
+    var _weekStats = [];
+    var _weekStatIndex = 0;
+
+    function showWeekStat() {
+        var el = document.getElementById('statWeekDiff');
+        var lbl = document.getElementById('statWeekLabel');
+        if (_weekStats.length === 0) {
+            el.textContent = '-';
+            el.style.color = '';
+            lbl.textContent = '一週變化';
+            return;
+        }
+        var item = _weekStats[_weekStatIndex];
+        lbl.textContent = item.label;
+        if (item.diff !== null) {
+            var sign = item.diff > 0 ? '+' : '';
+            el.textContent = sign + item.diff.toFixed(1);
+            el.style.color = item.diff < 0 ? '#6B8F71' : item.diff > 0 ? '#A0626B' : '#8B8B8B';
+        } else {
+            el.textContent = '-';
+            el.style.color = '';
+        }
+    }
+
+    function cycleWeekStat() {
+        if (_weekStats.length === 0) return;
+        _weekStatIndex = (_weekStatIndex + 1) % _weekStats.length;
+        showWeekStat();
+    }
+
     function updateStats() {
         // 統計排程期間（或全部）的體重
         var allKeys = Object.keys(weightData).filter(function(k) {
@@ -700,24 +730,42 @@
 
         document.getElementById('statLatest').textContent = minW !== null ? minW.toFixed(1) : '-';
 
-        // 一週變化：最近 7 天內最早 vs 最新
-        var todayStr = formatDate(new Date());
-        var weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        var weekAgoStr = formatDate(weekAgo);
-        var weekKeys = allKeys.filter(function(k) { return k >= weekAgoStr && k <= todayStr; });
-        var weekEl = document.getElementById('statWeekDiff');
-        if (weekKeys.length >= 2) {
-            var wFirst = weightData[weekKeys[0]].weight;
-            var wLast = weightData[weekKeys[weekKeys.length - 1]].weight;
-            var wDiff = wLast - wFirst;
-            var wSign = wDiff > 0 ? '+' : '';
-            weekEl.textContent = wSign + wDiff.toFixed(1);
-            weekEl.style.color = wDiff < 0 ? '#6B8F71' : wDiff > 0 ? '#A0626B' : '#8B8B8B';
-        } else {
-            weekEl.textContent = '-';
-            weekEl.style.color = '';
+        // 週變化資料：依排程起始日切每 7 天一週
+        _weekStats = [];
+        if (scheduleStart && rangeKeys.length > 0) {
+            var ws = new Date(scheduleStart.getTime());
+            var weekNum = 1;
+            while (true) {
+                var we = new Date(ws.getTime());
+                we.setDate(we.getDate() + 6);
+                var wsStr = formatDate(ws);
+                var weStr = formatDate(we);
+                var wk = rangeKeys.filter(function(k) { return k >= wsStr && k <= weStr; });
+                if (wk.length >= 2) {
+                    var wf = weightData[wk[0]].weight;
+                    var wl = weightData[wk[wk.length - 1]].weight;
+                    _weekStats.push({ label: '第' + weekNum + '週', diff: wl - wf });
+                } else if (wk.length === 1) {
+                    _weekStats.push({ label: '第' + weekNum + '週', diff: null });
+                }
+                ws = new Date(ws.getTime());
+                ws.setDate(ws.getDate() + 7);
+                weekNum++;
+                if (formatDate(ws) > formatDate(scheduleEnd)) break;
+                if (weekNum > 52) break;
+            }
         }
+        // 平均一週 = 期間變化 / 紀錄天數 * 7
+        if (first && last && rangeKeys.length >= 2) {
+            var d0 = rangeKeys[0].split('-');
+            var d1 = rangeKeys[rangeKeys.length - 1].split('-');
+            var daySpan = Math.round((new Date(parseInt(d1[0]), parseInt(d1[1])-1, parseInt(d1[2])) - new Date(parseInt(d0[0]), parseInt(d0[1])-1, parseInt(d0[2]))) / 86400000);
+            if (daySpan > 0) {
+                _weekStats.push({ label: '平均一週', diff: (last - first) / daySpan * 7 });
+            }
+        }
+        if (_weekStatIndex >= _weekStats.length) _weekStatIndex = 0;
+        showWeekStat();
 
         // 期間變化：排程期間首筆 vs 末筆
         if (first && last) {
