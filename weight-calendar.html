@@ -902,11 +902,10 @@
         var oldZoom = _chartZoom;
         _chartZoom = Math.max(1, Math.min(8, newZoom));
 
-        // 橫向放大倍率高（日期多），縱向低（體重變化小）
+        // 只放大橫向（日期多），縱向完全不放大（體重變化小）
         var zoomX = _chartZoom;
-        var zoomY = 1 + (_chartZoom - 1) * 0.1;
         var w = Math.round(_chartBaseW * zoomX);
-        var h = Math.round(_chartBaseH * zoomY);
+        var h = _chartBaseH;
         inner.style.width = w + 'px';
         inner.style.height = h + 'px';
 
@@ -972,7 +971,7 @@
                 e.preventDefault();
                 var dist = getTouchDist(e);
                 var rawRatio = dist / startDist;
-                var damped = 1 + (rawRatio - 1) * 0.35;
+                var damped = 1 + (rawRatio - 1) * 0.2;
                 var newZoom = Math.max(1, Math.min(8, startZoom * damped));
                 applyChartZoom(newZoom);
                 var scale = newZoom / startZoom;
