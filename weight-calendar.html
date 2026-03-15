@@ -115,9 +115,9 @@
 <div class="schedule-bar" id="scheduleBar" style="display:none"></div>
 
 <div class="stats-row">
-    <div class="stat-item"><div class="stat-value" id="statLatest">-</div><div class="stat-label">最低體重</div></div>
+    <div class="stat-item" onclick="toggleMinMax()" style="cursor:pointer;-webkit-tap-highlight-color:transparent"><div class="stat-value" id="statLatest">-</div><div class="stat-label" id="statLatestLabel">最低體重</div></div>
     <div class="stat-item" onclick="cycleWeekStat()" style="cursor:pointer;-webkit-tap-highlight-color:transparent"><div class="stat-value" id="statWeekDiff">-</div><div class="stat-label" id="statWeekLabel">一週變化</div></div>
-    <div class="stat-item"><div class="stat-value" id="statDiff">-</div><div class="stat-label">期間變化</div></div>
+    <div class="stat-item" onclick="toggleDiffMode()" style="cursor:pointer;-webkit-tap-highlight-color:transparent"><div class="stat-value" id="statDiff">-</div><div class="stat-label" id="statDiffLabel">期間變化</div></div>
 </div>
 
 
@@ -660,6 +660,12 @@
     // ====== Stats ======
     var _weekStats = [];
     var _weekStatIndex = 0;
+    var _showMaxWeight = false;
+    var _showHistoryDiff = false;
+    var _statMinW = null;
+    var _statMaxW = null;
+    var _periodDiff = null;
+    var _historyDiff = null;
 
     function showWeekStat() {
         var el = document.getElementById('statWeekDiff');
@@ -688,6 +694,35 @@
         showWeekStat();
     }
 
+    function toggleMinMax() {
+        _showMaxWeight = !_showMaxWeight;
+        var el = document.getElementById('statLatest');
+        var lbl = document.getElementById('statLatestLabel');
+        if (_showMaxWeight) {
+            lbl.textContent = '最高體重';
+            el.textContent = _statMaxW !== null ? _statMaxW.toFixed(1) : '-';
+        } else {
+            lbl.textContent = '最低體重';
+            el.textContent = _statMinW !== null ? _statMinW.toFixed(1) : '-';
+        }
+    }
+
+    function toggleDiffMode() {
+        _showHistoryDiff = !_showHistoryDiff;
+        var el = document.getElementById('statDiff');
+        var lbl = document.getElementById('statDiffLabel');
+        var diff = _showHistoryDiff ? _historyDiff : _periodDiff;
+        lbl.textContent = _showHistoryDiff ? '歷史變化' : '期間變化';
+        if (diff !== null) {
+            var sign = diff > 0 ? '+' : '';
+            el.textContent = sign + diff.toFixed(1);
+            el.style.color = diff < 0 ? '#6B8F71' : diff > 0 ? '#A0626B' : '#8B8B8B';
+        } else {
+            el.textContent = '-';
+            el.style.color = '';
+        }
+    }
+
     function updateStats() {
         // 統計排程期間（或全部）的體重
         var allKeys = Object.keys(weightData).filter(function(k) {
@@ -706,12 +741,32 @@
         var first = count > 0 ? weightData[rangeKeys[0]].weight : null;
         var last = count > 0 ? weightData[rangeKeys[rangeKeys.length - 1]].weight : null;
         var minW = null;
-        for (var mi = 0; mi < rangeKeys.length; mi++) {
-            var w = weightData[rangeKeys[mi]].weight;
-            if (w && (minW === null || w < minW)) minW = w;
+        var maxW = null;
+        for (var mi = 0; mi < allKeys.length; mi++) {
+            var w = weightData[allKeys[mi]].weight;
+            if (w) {
+                if (minW === null || w < minW) minW = w;
+                if (maxW === null || w > maxW) maxW = w;
+            }
+        }
+        _statMinW = minW;
+        _statMaxW = maxW;
+
+        // 歷史變化：全部紀錄的最早 vs 最後
+        if (allKeys.length >= 2) {
+            var hFirst = weightData[allKeys[0]].weight;
+            var hLast = weightData[allKeys[allKeys.length - 1]].weight;
+            _historyDiff = (hFirst && hLast) ? hLast - hFirst : null;
+        } else {
+            _historyDiff = null;
         }
 
-        document.getElementById('statLatest').textContent = minW !== null ? minW.toFixed(1) : '-';
+        var el = document.getElementById('statLatest');
+        if (_showMaxWeight) {
+            el.textContent = maxW !== null ? maxW.toFixed(1) : '-';
+        } else {
+            el.textContent = minW !== null ? minW.toFixed(1) : '-';
+        }
 
         // 週變化資料：依排程起始日切每 7 天一週
         _weekStats = [];
@@ -751,11 +806,12 @@
         showWeekStat();
 
         // 期間變化：排程期間首筆 vs 末筆
-        if (first && last) {
-            var diff = last - first;
-            var sign = diff > 0 ? '+' : '';
-            document.getElementById('statDiff').textContent = sign + diff.toFixed(1);
-            document.getElementById('statDiff').style.color = diff < 0 ? '#6B8F71' : diff > 0 ? '#A0626B' : '#8B8B8B';
+        _periodDiff = (first && last) ? last - first : null;
+        var activeDiff = _showHistoryDiff ? _historyDiff : _periodDiff;
+        if (activeDiff !== null) {
+            var sign = activeDiff > 0 ? '+' : '';
+            document.getElementById('statDiff').textContent = sign + activeDiff.toFixed(1);
+            document.getElementById('statDiff').style.color = activeDiff < 0 ? '#6B8F71' : activeDiff > 0 ? '#A0626B' : '#8B8B8B';
         } else {
             document.getElementById('statDiff').textContent = '-';
             document.getElementById('statDiff').style.color = '';
