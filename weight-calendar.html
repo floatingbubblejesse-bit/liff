@@ -854,6 +854,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: false,
+                layout: { padding: { bottom: 10, left: 4, right: 4 } },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -967,8 +968,9 @@
             if (e.touches.length === 2 && startDist > 0) {
                 e.preventDefault();
                 var dist = getTouchDist(e);
-                var ratio = dist / startDist;
-                var newZoom = Math.max(1, Math.min(5, startZoom * ratio));
+                var rawRatio = dist / startDist;
+                var damped = 1 + (rawRatio - 1) * 0.35;
+                var newZoom = Math.max(1, Math.min(5, startZoom * damped));
                 applyChartZoom(newZoom);
                 var scale = newZoom / startZoom;
                 scroll.scrollLeft = (startScrollL + startMidX) * scale - startMidX;
