@@ -101,8 +101,12 @@
 
     <script>
     var API_URL = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
+    var MEALS_GAS = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
     var PATIENT_URL = './patient-view.html';
     var allPatients = [];
+    // 預熱兩個 GAS（並行，不等結果）
+    try { fetch(API_URL + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
+    try { fetch(MEALS_GAS + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
 
     function loadData() {
         document.getElementById('loading').style.display = 'flex';

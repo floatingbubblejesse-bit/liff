@@ -68,6 +68,10 @@
     <script>
     var LIFF_ID = '2009326025-XAQhb1rA';
     var API_URL = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
+    var MEALS_GAS = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
+    // 預熱兩個 GAS（並行，不等結果）
+    try { fetch(API_URL + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
+    try { fetch(MEALS_GAS + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
 
     var METRICS = [
         ['體重', '體重', 'kg', true ],

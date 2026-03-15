@@ -157,7 +157,9 @@
     const API_URL = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
     const IMAGE_PROXY = 'https://huangcs.app.n8n.cloud/webhook/meal-photo';
 
-    try { fetch(API_URL + '?preheat=1', { method: 'HEAD', mode: 'no-cors' }).catch(() => {}); } catch(e) {}
+    // 預熱兩個 GAS（並行，不等結果）
+    try { fetch(API_URL + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
+    try { fetch('https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
 
     const CACHE_KEY = 'meal_records_cache';
     const CACHE_TTL = 3600000; // 1 hour

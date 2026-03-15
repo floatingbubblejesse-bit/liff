@@ -396,6 +396,9 @@
     var MEALS_GAS = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
     var IMAGE_PROXY = 'https://huangcs.app.n8n.cloud/webhook/meal-photo';
     var N8N = 'https://huangcs.app.n8n.cloud/webhook';
+    // 預熱兩個 GAS（並行，不等結果）
+    try { fetch(GAS_URL + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
+    try { fetch(MEALS_GAS + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
     var MEALS_WH = N8N + '/patient-meals';
     var NOTE_WH = N8N + '/doctor-note';
     var PRESETS = [

@@ -148,6 +148,8 @@
     var LIFF_ID = '2009326025-0pbHTZa7';
     var MEALS_GAS = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
     var N8N = 'https://huangcs.app.n8n.cloud/webhook';
+    // 預熱 GAS（並行，不等結果）
+    try { fetch(MEALS_GAS + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
 
     var CYCLE_OPTS = [
         {key:'high', label:'高', short:'高', cls:'t-high'},
