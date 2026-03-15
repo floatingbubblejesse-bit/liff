@@ -44,6 +44,10 @@
         .ctab{padding:4px 11px;border-radius:16px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:#EDE8E0;color:#4A4A4A}
         .ctab.active{background:var(--blue);color:white}
         .chart-wrap{position:relative;height:180px}
+        .hw-chart-wrap{height:200px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x pinch-zoom}
+        .hw-chart-inner{position:relative;height:100%;min-width:100%}
+        .hw-chart-body{transition:max-height 0.35s ease,opacity 0.25s ease;max-height:500px;opacity:1;overflow:hidden}
+        .hw-chart-body.collapsed{max-height:0;opacity:0}
         .table-wrap{overflow-x:auto}
         table{width:100%;border-collapse:collapse;font-size:11px}
         th{background:#F5F3EF;padding:7px 5px;text-align:center;font-weight:700;color:#4A4A4A;white-space:nowrap;position:sticky;top:0}
@@ -279,8 +283,14 @@
                 <div id="hwCalWrap" class="hw-scroll-wrap"></div>
             </div>
             <div class="card">
-                <div class="card-title">📈 體重趨勢</div>
-                <div style="position:relative;height:180px"><canvas id="hwWeightChart"></canvas></div>
+                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleChart()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle" id="hwChartArrow">▼</span>📈 體重趨勢</span></div>
+                <div id="hwChartBody" class="hw-chart-body">
+                    <div id="hwChartWrap" class="hw-chart-wrap">
+                        <div id="hwChartInner" class="hw-chart-inner">
+                            <canvas id="hwWeightChart"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="card">
                 <div class="card-title">📋 體重紀錄表</div>
@@ -2158,59 +2168,196 @@
         }
     }
 
-    function hwRenderChart() {
-        var allKeys = Object.keys(hwWeightData).sort();
-        var canvas = document.getElementById('hwWeightChart');
-        if (!canvas) return;
-        if (allKeys.length === 0) {
-            if (hwChartInstance) hwChartInstance.destroy();
-            hwChartInstance = null;
-            return;
-        }
-        var keys = allKeys.slice(-30);
-        var labels = keys.map(function(k) {
-            var p = k.split('-');
-            return parseInt(p[1]) + '/' + parseInt(p[2]);
-        });
-        var values = keys.map(function(k){ return hwWeightData[k].weight; });
-        var colorMap = { high: '#D4A574', mid: '#7B8FA1', low: '#6B8F71', fast: '#B8A9C9' };
-        var ptColors = keys.map(function(k){
-            var dt = hwWeightData[k].dayType;
-            if (!dt) {
-                var p = k.split('-');
-                var d = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
-                dt = hwGetDayType(d);
-            }
-            return colorMap[dt] || '#8B8B8B';
-        });
+    // ── 體重趨勢圖表（含縮放、滑動、星期標籤） ──
+    var HW_DAY_NAMES = ['日','一','二','三','四','五','六'];
+    var HW_CARB_COLORS = { high:'#A0626B', mid:'#F5D98A', low:'#6B8F71', fast:'#9B9B9B', none:'#8B8B8B' };
+    var _hwChartKeys = [];
+    var _hwChartValues = [];
+    var _hwChartColors = [];
+    var _hwChartZoom = 1;
+    var _hwChartBaseW = 0;
+    var _hwChartMaxZoom = 8;
+    var _hwChartCollapsed = false;
+    var _hwChartPinchInited = false;
 
+    function hwToggleChart() {
+        _hwChartCollapsed = !_hwChartCollapsed;
+        var body = document.getElementById('hwChartBody');
+        var arrow = document.getElementById('hwChartArrow');
+        if (body) body.classList.toggle('collapsed', _hwChartCollapsed);
+        if (arrow) arrow.classList.toggle('collapsed', _hwChartCollapsed);
+    }
+
+    function hwGetChartLabels() {
+        var inner = document.getElementById('hwChartInner');
+        var w = inner ? inner.offsetWidth : 300;
+        var n = _hwChartKeys.length || 1;
+        var pxPer = w / n;
+        return _hwChartKeys.map(function(k) {
+            if (pxPer < 22) return '';
+            var p = k.split('-');
+            var dateStr = parseInt(p[1]) + '/' + parseInt(p[2]);
+            if (pxPer >= 50) {
+                var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+                return dateStr + '(' + HW_DAY_NAMES[d.getDay()] + ')';
+            }
+            return dateStr;
+        });
+    }
+
+    function hwBuildChart() {
+        var canvas = document.getElementById('hwWeightChart');
+        if (!canvas || _hwChartKeys.length === 0) return;
         if (hwChartInstance) hwChartInstance.destroy();
+
+        var labels = hwGetChartLabels();
+        var inner = document.getElementById('hwChartInner');
+        var pxPer = inner ? inner.offsetWidth / _hwChartKeys.length : 30;
+        var ptR = pxPer < 10 ? 0 : pxPer < 20 ? 1 : Math.max(2, Math.min(8, _hwChartZoom * 3));
+        var bw = Math.max(1.5, Math.min(3, _hwChartZoom * 2));
+
         hwChartInstance = new Chart(canvas.getContext('2d'), {
             type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
                     label: '體重 (kg)',
-                    data: values,
+                    data: _hwChartValues,
                     borderColor: '#7B8FA1',
                     backgroundColor: 'rgba(123,143,161,0.1)',
-                    borderWidth: 2.5,
-                    pointRadius: 5,
-                    pointBackgroundColor: ptColors,
+                    borderWidth: bw,
+                    pointRadius: ptR,
+                    pointBackgroundColor: _hwChartColors,
+                    pointBorderColor: _hwChartColors,
+                    pointBorderWidth: 1,
                     fill: true,
-                    tension: 0.3
+                    tension: 0.35
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                animation: false,
+                layout: { padding: { bottom: 18, left: 4, right: 4 } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: function(items) {
+                                var idx = items[0].dataIndex;
+                                var k = _hwChartKeys[idx];
+                                var p = k.split('-');
+                                var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+                                return parseInt(p[1]) + '/' + parseInt(p[2]) + '(' + HW_DAY_NAMES[d.getDay()] + ')';
+                            },
+                            label: function(ctx) { return ctx.parsed.y + ' kg'; }
+                        }
+                    }
+                },
                 scales: {
-                    x: { ticks: { font: { size: 10 }, color: '#8B8B8B' }, grid: { display: false } },
+                    x: { ticks: { font: { size: Math.max(9, Math.min(12, pxPer / 5)) }, color: '#8B8B8B', maxRotation: 45, autoSkip: false }, grid: { display: false } },
                     y: { ticks: { font: { size: 10 }, color: '#8B8B8B', callback: function(v){ return v + 'kg'; } }, grid: { color: 'rgba(0,0,0,0.05)' } }
                 }
             }
         });
+    }
+
+    function hwApplyChartZoom(newZoom) {
+        var wrap = document.getElementById('hwChartWrap');
+        var inner = document.getElementById('hwChartInner');
+        if (!wrap || !inner) return;
+        _hwChartZoom = Math.max(1, Math.min(_hwChartMaxZoom, newZoom));
+        var w = Math.round(_hwChartBaseW * _hwChartZoom);
+        inner.style.width = w + 'px';
+        hwBuildChart();
+    }
+
+    function hwRenderChart() {
+        var allKeys = Object.keys(hwWeightData).sort();
+        if (allKeys.length === 0) {
+            if (hwChartInstance) hwChartInstance.destroy();
+            hwChartInstance = null;
+            return;
+        }
+
+        _hwChartKeys = allKeys;
+        _hwChartValues = allKeys.map(function(k){ return hwWeightData[k].weight; });
+        _hwChartColors = allKeys.map(function(k){
+            var dt = hwWeightData[k].dayType;
+            if (!dt) {
+                var p = k.split('-');
+                var d = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+                dt = hwGetDayType(d);
+            }
+            return HW_CARB_COLORS[dt] || HW_CARB_COLORS.none;
+        });
+
+        var wrap = document.getElementById('hwChartWrap');
+        var inner = document.getElementById('hwChartInner');
+        if (!wrap || !inner) return;
+        _hwChartBaseW = wrap.offsetWidth;
+        _hwChartZoom = 1;
+        _hwChartMaxZoom = Math.max(1, Math.ceil(_hwChartKeys.length * 50 / _hwChartBaseW));
+        inner.style.width = _hwChartBaseW + 'px';
+        hwBuildChart();
+        hwInitChartPinch();
+    }
+
+    // ── 圖表雙指縮放 ──
+    function hwInitChartPinch() {
+        if (_hwChartPinchInited) return;
+        _hwChartPinchInited = true;
+        var wrap = document.getElementById('hwChartWrap');
+        if (!wrap) return;
+        var startDist = 0;
+        var startZoom = 1;
+        var startScrollL = 0;
+        var startMidX = 0;
+
+        function dist(e) {
+            var t = e.touches;
+            if (t.length < 2) return 0;
+            var dx = t[0].clientX - t[1].clientX;
+            var dy = t[0].clientY - t[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        wrap.addEventListener('touchstart', function(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                startDist = dist(e);
+                startZoom = _hwChartZoom;
+                startScrollL = wrap.scrollLeft;
+                startMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            }
+        }, { passive: false });
+
+        wrap.addEventListener('touchmove', function(e) {
+            if (e.touches.length === 2 && startDist > 0) {
+                e.preventDefault();
+                var d = dist(e);
+                var rawRatio = d / startDist;
+                var damped = 1 + (rawRatio - 1) * 0.3;
+                var newZoom = Math.max(1, Math.min(_hwChartMaxZoom, startZoom * damped));
+                hwApplyChartZoom(newZoom);
+                var scale = newZoom / startZoom;
+                var wrapRect = wrap.getBoundingClientRect();
+                var relMidX = startMidX - wrapRect.left + startScrollL;
+                wrap.scrollLeft = relMidX * scale - (startMidX - wrapRect.left);
+            }
+        }, { passive: false });
+
+        wrap.addEventListener('touchend', function(e) {
+            if (e.touches.length < 2) {
+                startDist = 0;
+                if (_hwChartZoom < 1.05) {
+                    _hwChartZoom = 1;
+                    var inner = document.getElementById('hwChartInner');
+                    if (inner) inner.style.width = _hwChartBaseW + 'px';
+                    hwBuildChart();
+                }
+            }
+        }, { passive: true });
     }
 
     function hwRenderTable() {
@@ -2238,7 +2385,7 @@
                 var cls = d < 0 ? 'diff-good' : d > 0 ? 'diff-warn' : 'diff-same';
                 diff = '<span class="' + cls + '">' + sign + d.toFixed(1) + '</span>';
             }
-            var dateLabel = parseInt(parts[1]) + '/' + parseInt(parts[2]);
+            var dateLabel = parseInt(parts[1]) + '/' + parseInt(parts[2]) + '(' + HW_DAY_NAMES[dateObj.getDay()] + ')';
             html += '<tr><td class="date-col">' + esc(dateLabel) + '</td>';
             html += '<td style="font-weight:700">' + wt.toFixed(1) + '</td>';
             html += '<td><span class="hw-cal-type ' + opt.cls + '" style="display:inline-flex;width:auto;padding:2px 8px">' + opt.label + '</span></td>';
