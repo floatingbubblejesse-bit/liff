@@ -442,6 +442,9 @@
         } else {
             prefetchLineUid();
         }
+        // 並行預取居家體重 + 看診紀錄（不等結果，使用者切 tab 時資料已在）
+        _prefetchHomeWeight();
+        _prefetchDietHistory();
     }
 
     function buildPresets() {
@@ -1659,12 +1662,38 @@
 
     // ====== 看診紀錄（收折卡片，類似 Flex Message）======
     var dietHistoryCache = null;
+    var _histPrefetchPromise = null;
+
+    // 預取看診紀錄（頁面載入時立即呼叫）
+    function _prefetchDietHistory() {
+        if (dietHistoryCache || _histPrefetchPromise) return;
+        _histPrefetchPromise = fetch(MEALS_GAS + '?dietHistory=' + encodeURIComponent(patientSn))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var records = data.records || [];
+                if (records.length > 0) {
+                    dietHistoryCache = records;
+                    // 如果使用者已經在看 history tab，立即渲染
+                    if (activeTab === 'history') renderHistoryCards(document.getElementById('historyContent'), records);
+                }
+            })
+            .catch(function() {});
+    }
 
     function renderHistoryTab() {
         if (dietHistoryCache) { renderHistoryCards(document.getElementById('historyContent'), dietHistoryCache); return; }
         var el = document.getElementById('historyContent');
+        // 預取還在跑，等它完成
+        if (_histPrefetchPromise) {
+            el.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa"><div class="spinner" style="margin:0 auto 12px"></div>載入看診紀錄中…</div>';
+            _histPrefetchPromise.then(function() {
+                if (dietHistoryCache) { renderHistoryCards(el, dietHistoryCache); }
+                else { renderHistoryFallback(el); }
+            });
+            return;
+        }
         el.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa"><div class="spinner" style="margin:0 auto 12px"></div>載入看診紀錄中…</div>';
-        // 從飲食計劃 sheet 讀取歷史
+        // fallback：直接 fetch
         fetch(MEALS_GAS + '?dietHistory=' + encodeURIComponent(patientSn))
             .then(function(r) { return r.json(); })
             .then(function(data) {
@@ -1907,13 +1936,39 @@
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     }
 
+    // 預取居家體重（頁面載入時立即呼叫，不等使用者切 tab）
+    var _hwPrefetchPromise = null;
+    function _prefetchHomeWeight() {
+        if (hwLoaded || hwLoading || _hwPrefetchPromise) return;
+        _hwPrefetchPromise = fetch(MEALS_GAS + '?homeWeight=' + encodeURIComponent(patientSn))
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                hwLoaded = true;
+                if (data && data.records) {
+                    data.records.forEach(function(rec) {
+                        if (rec.date && rec.weight) {
+                            hwWeightData[rec.date] = { weight: parseFloat(rec.weight), dayType: rec.dayType || '' };
+                        }
+                    });
+                }
+                // 如果使用者已經在看 weight tab，立即渲染
+                if (activeTab === 'weight') hwRenderAll();
+            })
+            .catch(function(e){ hwLoaded = true; console.log('[居家體重] 預取失敗:', e); });
+    }
+
     function loadHomeWeight() {
-        if (hwLoaded || hwLoading) {
+        if (hwLoaded) {
             hwRenderAll();
             return;
         }
+        // 預取還在跑，等它完成後渲染
+        if (_hwPrefetchPromise) {
+            _hwPrefetchPromise.then(function(){ hwRenderAll(); });
+            return;
+        }
+        // fallback：直接 fetch
         hwLoading = true;
-        // 讀取居家體重紀錄
         fetch(MEALS_GAS + '?homeWeight=' + encodeURIComponent(patientSn))
             .then(function(r){ return r.json(); })
             .then(function(data){
@@ -1999,14 +2054,11 @@
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     }
 
-    // 首次進入 weight tab 時也載入排程
-    var hwScheduleLoaded = false;
+    // 排程一律在預取階段載入（不等使用者切 tab）
+    var hwScheduleLoaded = true;
+    hwLoadSchedule();
     var origLoadHomeWeight = loadHomeWeight;
     loadHomeWeight = function() {
-        if (!hwScheduleLoaded) {
-            hwScheduleLoaded = true;
-            hwLoadSchedule();
-        }
         origLoadHomeWeight();
     };
 
