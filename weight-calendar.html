@@ -52,6 +52,8 @@
         .wt-table tbody tr:active{background:#FDFBF7}
         .wt-table tbody tr.today-row{background:#EDF2F7}
         .wt-table tbody tr.today-row td{border-bottom-color:#D0DBE6}
+        .scroll-today-btn{display:inline-block;color:var(--blue);font-size:14px;cursor:pointer;margin-left:6px;-webkit-tap-highlight-color:transparent;vertical-align:middle}
+        .scroll-today-btn:active{opacity:0.5}
         .wt-date{font-weight:600;color:var(--text);white-space:nowrap}
         .wt-date .wt-day{font-size:11px;color:var(--muted);font-weight:400}
         .wt-table tbody tr.today-row .wt-date{color:var(--blue);font-weight:800}
@@ -112,14 +114,14 @@
 <div class="schedule-bar" id="scheduleBar" style="display:none"></div>
 
 <div class="stats-row">
-    <div class="stat-item" onclick="scrollToToday()" style="cursor:pointer"><div class="stat-value" style="color:var(--blue);font-size:13px">↩</div><div class="stat-label">回到今天</div></div>
     <div class="stat-item"><div class="stat-value" id="statLatest">-</div><div class="stat-label">最低體重</div></div>
+    <div class="stat-item"><div class="stat-value" id="statWeekDiff">-</div><div class="stat-label">一週變化</div></div>
     <div class="stat-item"><div class="stat-value" id="statDiff">-</div><div class="stat-label">期間變化</div></div>
 </div>
 
 <div class="table-scroll" id="tableScroll">
 <table class="wt-table">
-    <thead><tr><th>日期</th><th>體重</th><th>碳日</th><th></th></tr></thead>
+    <thead><tr><th>日期 <span class="scroll-today-btn" onclick="scrollToToday()">↩</span></th><th>體重</th><th>碳日</th><th></th></tr></thead>
     <tbody id="wtBody"></tbody>
 </table>
 </div>
@@ -697,6 +699,27 @@
         }
 
         document.getElementById('statLatest').textContent = minW !== null ? minW.toFixed(1) : '-';
+
+        // 一週變化：最近 7 天內最早 vs 最新
+        var todayStr = formatDate(new Date());
+        var weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        var weekAgoStr = formatDate(weekAgo);
+        var weekKeys = allKeys.filter(function(k) { return k >= weekAgoStr && k <= todayStr; });
+        var weekEl = document.getElementById('statWeekDiff');
+        if (weekKeys.length >= 2) {
+            var wFirst = weightData[weekKeys[0]].weight;
+            var wLast = weightData[weekKeys[weekKeys.length - 1]].weight;
+            var wDiff = wLast - wFirst;
+            var wSign = wDiff > 0 ? '+' : '';
+            weekEl.textContent = wSign + wDiff.toFixed(1);
+            weekEl.style.color = wDiff < 0 ? '#6B8F71' : wDiff > 0 ? '#A0626B' : '#8B8B8B';
+        } else {
+            weekEl.textContent = '-';
+            weekEl.style.color = '';
+        }
+
+        // 期間變化：排程期間首筆 vs 末筆
         if (first && last) {
             var diff = last - first;
             var sign = diff > 0 ? '+' : '';
