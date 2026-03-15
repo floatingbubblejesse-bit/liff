@@ -272,7 +272,7 @@
         <div id="tab-body" class="tab-pane" style="display:none"></div>
         <div id="tab-weight" class="tab-pane" style="display:none">
             <div class="card">
-                <div class="card-title">📅 日曆</div>
+                <div class="card-title" style="justify-content:space-between">📅 日曆<span onclick="hwScrollToToday()" style="font-size:11px;font-weight:600;color:var(--blue);cursor:pointer;display:flex;align-items:center;gap:3px;-webkit-tap-highlight-color:transparent">📍 今天</span></div>
                 <div id="hwCalWrap" class="hw-scroll-wrap"></div>
             </div>
             <div class="card">
@@ -2076,6 +2076,14 @@
             }
         } else {
             wrap.scrollTop = prevScroll;
+        }
+    }
+
+    function hwScrollToToday() {
+        var wrap = document.getElementById('hwCalWrap');
+        var todayEl = document.getElementById('hwD' + hwFormatDate(new Date()));
+        if (wrap && todayEl) {
+            wrap.scrollTop = todayEl.offsetTop - wrap.offsetTop - wrap.clientHeight / 2 + todayEl.clientHeight / 2;
         }
     }
 
