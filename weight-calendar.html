@@ -9,7 +9,7 @@
     <style>
         :root { --blue:#7B8FA1; --blue-light:#EDE8E0; --green:#8B9D83; --green-light:#E8EDE6; --red:#A0626B; --orange:#C4A882; --brown:#B8926A; --bg:#F5F3EF; --card:#FDFBF7; --text:#4A4A4A; --muted:#8B8B8B; --border:#E8E4DC; }
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:52px}
 
         /* ====== Header ====== */
         .page-header{background:linear-gradient(135deg,#6B7F91,#7B8FA1);color:white;padding:20px 16px 24px}
@@ -85,16 +85,16 @@
         .wt-row-save.visible{display:inline-block}
 
 
-        /* ====== Chart ====== */
-        .chart-section{margin:10px;background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.07);overflow:hidden}
-        .chart-section-header{display:flex;align-items:center;padding:14px 16px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;gap:8px}
-        .chart-section-header:active{background:#FDFBF7}
-        .chart-section-title{flex:1;font-size:14px;font-weight:700;color:var(--text)}
-        .chart-section-arrow{font-size:11px;color:var(--muted);transition:transform 0.25s ease}
-        .chart-section.open .chart-section-arrow{transform:rotate(180deg)}
-        .chart-section-body{display:none;border-top:1px solid var(--border);padding:10px}
-        .chart-section.open .chart-section-body{display:block}
-        .chart-wrap{height:180px;position:relative}
+        /* ====== Chart fixed bottom ====== */
+        .chart-bottom{position:fixed;bottom:0;left:0;right:0;z-index:100;background:white;box-shadow:0 -2px 8px rgba(0,0,0,0.1);border-top:2px solid var(--border)}
+        .chart-bottom-header{display:flex;align-items:center;padding:12px 16px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;gap:8px}
+        .chart-bottom-header:active{background:#FDFBF7}
+        .chart-bottom-title{flex:1;font-size:14px;font-weight:700;color:var(--text)}
+        .chart-bottom-arrow{font-size:11px;color:var(--muted);transition:transform 0.25s ease}
+        .chart-bottom.open .chart-bottom-arrow{transform:rotate(180deg)}
+        .chart-bottom-body{display:none;border-top:1px solid var(--border);padding:10px}
+        .chart-bottom.open .chart-bottom-body{display:block}
+        .chart-wrap{height:200px;position:relative}
 
         /* ====== Loading ====== */
         .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:40vh;gap:14px}
@@ -127,15 +127,13 @@
 </table>
 </div>
 
-<div style="height:12px;background:var(--bg);border-top:2px solid var(--border)"></div>
-
-<div class="chart-section" id="chartSection">
-    <div class="chart-section-header" onclick="toggleChart()">
+<div class="chart-bottom" id="chartSection">
+    <div class="chart-bottom-header" onclick="toggleChart()">
         <span style="font-size:18px">📈</span>
-        <span class="chart-section-title">體重趨勢</span>
-        <span class="chart-section-arrow">▼</span>
+        <span class="chart-bottom-title">體重趨勢</span>
+        <span class="chart-bottom-arrow">▼</span>
     </div>
-    <div class="chart-section-body">
+    <div class="chart-bottom-body">
         <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
     </div>
 </div>
@@ -296,7 +294,6 @@
         }
         renderScheduleBar();
         renderTable();
-        renderChart();
         initInfiniteScroll();
     }
 
@@ -768,9 +765,15 @@
     var CARB_COLORS = { high:'#A0626B', mid:'#F5D98A', low:'#6B8F71', fast:'#9B9B9B', none:'#8B8B8B' };
     var chartInstance = null;
 
+    var _chartRendered = false;
     function toggleChart() {
         var el = document.getElementById('chartSection');
-        if (el) el.classList.toggle('open');
+        if (!el) return;
+        el.classList.toggle('open');
+        if (el.classList.contains('open') && !_chartRendered) {
+            _chartRendered = true;
+            renderChart();
+        }
     }
 
     function renderChart() {
