@@ -900,10 +900,13 @@
         if (!inner || !scroll) return;
 
         var oldZoom = _chartZoom;
-        _chartZoom = Math.max(1, Math.min(5, newZoom));
+        _chartZoom = Math.max(1, Math.min(8, newZoom));
 
-        var w = Math.round(_chartBaseW * _chartZoom);
-        var h = Math.round(_chartBaseH * _chartZoom);
+        // 橫向放大倍率高（日期多），縱向低（體重變化小）
+        var zoomX = _chartZoom;
+        var zoomY = 1 + (_chartZoom - 1) * 0.3;
+        var w = Math.round(_chartBaseW * zoomX);
+        var h = Math.round(_chartBaseH * zoomY);
         inner.style.width = w + 'px';
         inner.style.height = h + 'px';
 
@@ -970,7 +973,7 @@
                 var dist = getTouchDist(e);
                 var rawRatio = dist / startDist;
                 var damped = 1 + (rawRatio - 1) * 0.35;
-                var newZoom = Math.max(1, Math.min(5, startZoom * damped));
+                var newZoom = Math.max(1, Math.min(8, startZoom * damped));
                 applyChartZoom(newZoom);
                 var scale = newZoom / startZoom;
                 scroll.scrollLeft = (startScrollL + startMidX) * scale - startMidX;
