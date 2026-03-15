@@ -396,12 +396,20 @@
         try {
             _step = '讀取URL';
             const urlParams = new URLSearchParams(location.search);
+            // iOS LIFF 會把 ?mealId=xxx 包進 liff.state，需要解出來
+            const liffState = urlParams.get('liff.state') || '';
+            if (liffState) {
+                var stateStr = liffState.charAt(0) === '?' ? liffState.substring(1) : liffState;
+                var stateParams = new URLSearchParams(stateStr);
+                stateParams.forEach(function(v, k) { if (!urlParams.has(k)) urlParams.set(k, v); });
+            }
             const urlUserId = urlParams.get('userId');
             _targetMealId = urlParams.get('mealId') || null;
             if (urlParams.has('liff.state') && !sessionStorage.getItem('_liff_stripped')) {
                 sessionStorage.setItem('_liff_stripped', '1');
                 urlParams.delete('liff.state');
-                try { const cleanUrl = (location.origin || '') + location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : ''); window.location.replace(cleanUrl); return; }
+                var merged = urlParams.toString();
+                try { const cleanUrl = (location.origin || '') + location.pathname + (merged ? '?' + merged : ''); window.location.replace(cleanUrl); return; }
                 catch (navErr) { console.warn('iOS redirect failed:', navErr && navErr.message); }
             }
             let userId = null, displayName = null, pictureUrl = null;
