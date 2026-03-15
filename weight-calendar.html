@@ -87,9 +87,9 @@
 
         /* ====== Chart fixed bottom ====== */
         .chart-bottom{position:fixed;bottom:0;left:0;right:0;z-index:100;background:white;box-shadow:0 -2px 8px rgba(0,0,0,0.1);border-top:2px solid var(--border)}
-        .chart-bottom-header{display:flex;align-items:center;padding:12px 16px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;gap:8px}
+        .chart-bottom-header{display:flex;align-items:center;padding:16px 16px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;gap:8px}
         .chart-bottom-header:active{background:#FDFBF7}
-        .chart-bottom-title{flex:1;font-size:14px;font-weight:700;color:var(--text)}
+        .chart-bottom-title{flex:1;font-size:15px;font-weight:800;color:var(--text)}
         .chart-bottom-arrow{font-size:11px;color:var(--muted);transition:transform 0.25s ease}
         .chart-bottom.open .chart-bottom-arrow{transform:rotate(180deg)}
         .chart-bottom-body{display:none;border-top:1px solid var(--border);padding:0}
@@ -788,6 +788,7 @@
         var n = _chartKeys.length || 1;
         var pxPer = w / n;
         return _chartKeys.map(function(k) {
+            if (pxPer < 22) return '';
             var p = k.split('-');
             var dateStr = parseInt(p[1]) + '/' + parseInt(p[2]);
             if (pxPer >= 50) {
@@ -806,7 +807,7 @@
         var labels = getChartLabels();
         var inner = document.getElementById('chartInner');
         var pxPer = inner ? inner.offsetWidth / _chartKeys.length : 30;
-        var ptR = Math.max(3, Math.min(8, _chartZoom * 3));
+        var ptR = pxPer < 10 ? 0 : pxPer < 20 ? 1 : Math.max(2, Math.min(8, _chartZoom * 3));
         var bw = Math.max(1.5, Math.min(3, _chartZoom * 2));
 
         chartInstance = new Chart(canvas.getContext('2d'), {
@@ -831,7 +832,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: false,
-                layout: { padding: { bottom: 6, left: 4, right: 4 } },
+                layout: { padding: { bottom: 18, left: 4, right: 4 } },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -855,11 +856,12 @@
         });
     }
 
+    var _chartMaxZoom = 8;
     function applyChartZoom(newZoom) {
         var wrap = document.getElementById('chartWrap');
         var inner = document.getElementById('chartInner');
         if (!wrap || !inner) return;
-        _chartZoom = Math.max(1, Math.min(8, newZoom));
+        _chartZoom = Math.max(1, Math.min(_chartMaxZoom, newZoom));
         var w = Math.round(_chartBaseW * _chartZoom);
         inner.style.width = w + 'px';
         buildChart();
@@ -889,6 +891,7 @@
         if (!wrap || !inner) return;
         _chartBaseW = wrap.offsetWidth;
         _chartZoom = 1;
+        _chartMaxZoom = Math.max(1, Math.ceil(_chartKeys.length * 50 / _chartBaseW));
         inner.style.width = _chartBaseW + 'px';
         buildChart();
         initChartPinch();
@@ -930,7 +933,7 @@
                 var d = dist(e);
                 var rawRatio = d / startDist;
                 var damped = 1 + (rawRatio - 1) * 0.3;
-                var newZoom = Math.max(1, Math.min(8, startZoom * damped));
+                var newZoom = Math.max(1, Math.min(_chartMaxZoom, startZoom * damped));
                 applyChartZoom(newZoom);
                 var scale = newZoom / startZoom;
                 var wrapRect = wrap.getBoundingClientRect();
