@@ -135,20 +135,50 @@
             .catch(function(err) { if (!cached) showError('資料載入失敗：' + (err.message || err) + ' 請重試或聯絡店家'); });
     }
 
-    var params = new URLSearchParams(window.location.search);
-    var urlId = params.get('id');
-    if (urlId) {
-        document.getElementById('headerName').textContent = urlId;
-        fetchData('id', urlId);
-        // 背景跑 LIFF init 取頭像
+    // ====== LINE Profile 快取（頭像秒顯）======
+    var IDX_PROFILE_KEY = 'idx_profile';
+    function _saveProfile(name, pic) {
+        try { localStorage.setItem(IDX_PROFILE_KEY, JSON.stringify({ name: name, pic: pic, ts: Date.now() })); } catch(e) {}
+    }
+    function _loadProfile() {
+        try {
+            var raw = localStorage.getItem(IDX_PROFILE_KEY);
+            if (!raw) return null;
+            var c = JSON.parse(raw);
+            if (Date.now() - c.ts > 86400000) return null; // 24 小時過期
+            return c;
+        } catch(e) { return null; }
+    }
+    function _applyProfile(name, pic) {
+        if (name) document.getElementById('headerName').textContent = name;
+        if (pic) document.getElementById('headerAvatarWrap').innerHTML = '<img class="header-avatar" src="' + pic + '" alt="">';
+    }
+    function _initLiffProfile() {
         liff.init({ liffId: LIFF_ID }).then(function() {
             if (!liff.isLoggedIn()) return;
             return liff.getProfile();
         }).then(function(profile) {
             if (!profile) return;
-            if (profile.displayName) document.getElementById('headerName').textContent = profile.displayName;
-            if (profile.pictureUrl) document.getElementById('headerAvatarWrap').innerHTML = '<img class="header-avatar" src="' + profile.pictureUrl + '" alt="">';
+            _applyProfile(profile.displayName, profile.pictureUrl);
+            _saveProfile(profile.displayName || '', profile.pictureUrl || '');
+            if (profile.displayName) {
+                fetch('https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec?setLineName=' + encodeURIComponent(profile.userId) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){});
+            }
         }).catch(function(){});
+    }
+
+    var params = new URLSearchParams(window.location.search);
+    var urlId = params.get('id');
+
+    // 立即套用快取的頭像和名稱（不等 LIFF init）
+    var _cachedProfile = _loadProfile();
+    if (_cachedProfile) _applyProfile(_cachedProfile.name, _cachedProfile.pic);
+
+    if (urlId) {
+        if (!_cachedProfile) document.getElementById('headerName').textContent = urlId;
+        fetchData('id', urlId);
+        // 背景跑 LIFF init 更新頭像
+        _initLiffProfile();
     } else {
         setMsg('連接 LINE 中...');
         liff.init({ liffId: LIFF_ID })
@@ -159,9 +189,8 @@
             })
             .then(function(profile) {
                 if (!profile || !profile.userId) return;
-                document.getElementById('headerName').textContent = profile.displayName || '';
-                if (profile.pictureUrl) { document.getElementById('headerAvatarWrap').innerHTML = '<img class="header-avatar" src="' + profile.pictureUrl + '" alt="">'; }
-                // 同步 LINE 名稱到客戶清單（背景執行）
+                _applyProfile(profile.displayName, profile.pictureUrl);
+                _saveProfile(profile.displayName || '', profile.pictureUrl || '');
                 if (profile.displayName) {
                     fetch('https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec?setLineName=' + encodeURIComponent(profile.userId) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){});
                 }
