@@ -9,7 +9,7 @@
     <style>
         :root { --blue:#7B8FA1; --blue-light:#EDE8E0; --green:#8B9D83; --green-light:#E8EDE6; --red:#A0626B; --orange:#C4A882; --brown:#B8926A; --bg:#F5F3EF; --card:#FDFBF7; --text:#4A4A4A; --muted:#8B8B8B; --border:#E8E4DC; }
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
 
         /* ====== Header ====== */
         .page-header{background:linear-gradient(135deg,#6B7F91,#7B8FA1);color:white;padding:20px 16px 24px}
@@ -31,7 +31,7 @@
         .stat-label{font-size:10px;color:var(--muted);margin-top:2px}
 
         /* ====== Scroll container ====== */
-        .table-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
+        .table-scroll{}
 
         /* ====== Table ====== */
         .wt-table{width:100%;border-collapse:collapse;background:white;table-layout:fixed}
@@ -94,8 +94,8 @@
         .section.open .section-arrow{transform:rotate(180deg)}
         .section-body{display:none;border-top:1px solid var(--border);padding:10px}
         .section.open .section-body{display:block}
-        .chart-scroll{overflow:visible;height:200px}
-        .chart-scroll.zoomed{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;width:100vw;height:200px;z-index:500;background:rgba(255,255,255,0.97);touch-action:pan-x}
+        .chart-scroll{overflow:visible;height:50vh}
+        .chart-scroll.zoomed{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;width:100vw;height:50vh;z-index:500;background:rgba(255,255,255,0.97);touch-action:pan-x}
         .chart-scroll.zoomed .chart-inner{margin:0}
         .chart-inner{position:relative;min-width:100%;min-height:100%}
         .chart-zoom-hint{display:none;position:fixed;top:12px;right:12px;z-index:501;background:var(--blue);color:#fff;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -800,7 +800,7 @@
     var _chartColors = [];
     var _chartZoom = 1;
     var _chartBaseW = 0;
-    var _chartBaseH = 200;
+    var _chartBaseH = Math.round(window.innerHeight * 0.5);
 
     function getChartLabels() {
         var inner = document.getElementById('chartInner');
