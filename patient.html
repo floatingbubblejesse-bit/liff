@@ -323,6 +323,8 @@
             </div>`;
     }
 
+    var _targetMealId = null;
+
     function renderRecords(records) {
         const list = document.getElementById('records-list');
         if (records.length === 0) { list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>尚無紀錄</p></div>`; return; }
@@ -330,6 +332,8 @@
         records.forEach(r => { const key = toDateKey(r.date); if (!grouped[key]) grouped[key] = []; grouped[key].push(r); });
         const sortedKeys = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
         let html = '';
+        let targetDayIdx = null;
+        let targetCardId = null;
         sortedKeys.forEach((dateKey, di) => {
             const dayRecs = grouped[dateKey];
             const totalProtein = dayRecs.reduce((s, r) => s + (r.protein || 0), 0);
@@ -342,8 +346,12 @@
                 const cardId = `meal-${di}-${mi}`;
                 const timeStr = formatTimeOnly(r.date) || '（無時間）';
                 const proteinMini = r.protein ? `${Math.round(r.protein)}g` : '';
+                if (_targetMealId && r.imageId === _targetMealId) {
+                    targetDayIdx = di;
+                    targetCardId = cardId;
+                }
                 mealsHtml += `
-                    <div class="meal-card" id="${cardId}">
+                    <div class="meal-card" id="${cardId}" ${r.imageId ? 'data-meal-id="' + escHtml(r.imageId) + '"' : ''}>
                         <div class="meal-card-header" onclick="toggleMealCard('${cardId}')">
                             <div class="meal-card-time">🍽 ${escHtml(timeStr)}</div>
                             ${proteinMini ? `<div class="meal-card-protein">蛋白質 ${proteinMini}</div>` : ''}
@@ -367,6 +375,16 @@
                 </div>`;
         });
         list.innerHTML = html;
+
+        if (targetDayIdx !== null && targetCardId) {
+            const dayEl = document.getElementById('day-' + targetDayIdx);
+            const cardEl = document.getElementById(targetCardId);
+            if (dayEl) dayEl.classList.add('open');
+            if (cardEl) cardEl.classList.add('open');
+            setTimeout(function() {
+                if (cardEl) cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 300);
+        }
     }
 
     function toggleDayAccordion(di) { const el = document.getElementById('day-' + di); if (el) el.classList.toggle('open'); }
@@ -379,6 +397,7 @@
             _step = '讀取URL';
             const urlParams = new URLSearchParams(location.search);
             const urlUserId = urlParams.get('userId');
+            _targetMealId = urlParams.get('mealId') || null;
             if (urlParams.has('liff.state') && !sessionStorage.getItem('_liff_stripped')) {
                 sessionStorage.setItem('_liff_stripped', '1');
                 urlParams.delete('liff.state');
