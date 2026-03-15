@@ -159,6 +159,23 @@
 
     try { fetch(API_URL + '?preheat=1', { method: 'HEAD', mode: 'no-cors' }).catch(() => {}); } catch(e) {}
 
+    const CACHE_KEY = 'meal_records_cache';
+    const CACHE_TTL = 3600000; // 1 hour
+
+    function saveCache(userId, data) {
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ userId: userId, ts: Date.now(), data: data })); } catch(e) {}
+    }
+    function loadCache(userId) {
+        try {
+            var raw = localStorage.getItem(CACHE_KEY);
+            if (!raw) return null;
+            var c = JSON.parse(raw);
+            if (c.userId !== userId) return null;
+            if (Date.now() - c.ts > CACHE_TTL) return null;
+            return c.data;
+        } catch(e) { return null; }
+    }
+
     async function fetchWithTimeout(url, timeoutMs) {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -439,18 +456,42 @@
             document.getElementById('patient-name').textContent = displayName || '您好';
             document.getElementById('main').style.display = 'block';
             const loadingEl = document.getElementById('loading');
-            loadingEl.classList.add('fade-out');
-            setTimeout(() => { loadingEl.style.display = 'none'; }, 300);
-            loadingText.textContent = '載入飲食紀錄…';
+
+            // 快取秒開：先用上次的資料立即渲染
+            var cached = loadCache(userId);
+            if (cached) {
+                loadingEl.classList.add('fade-out');
+                setTimeout(() => { loadingEl.style.display = 'none'; }, 300);
+                if (cached.patient?.name) { document.getElementById('patient-name').textContent = cached.patient.name; }
+                var cRecs = cached.records || [];
+                var cRec = cached.patient?.doctorRecommendedProtein || cached.patient?.recommendedProtein || 0;
+                var cWt = cached.patient?.weight || 0;
+                renderProteinProgress(cRecs, cRec, cWt);
+                renderRecords(cRecs);
+                renderChart(cRecs, cRec);
+            } else {
+                loadingText.textContent = '載入飲食紀錄…';
+            }
+
+            // 背景拉新資料
             _step = '載入紀錄';
-            const data = await fetchRecords(userId);
-            if (data.patient?.name) { document.getElementById('patient-name').textContent = data.patient.name; }
-            const recs = data.records || [];
-            const rec = data.patient?.doctorRecommendedProtein || data.patient?.recommendedProtein || 0;
-            const wt = data.patient?.weight || 0;
-            renderProteinProgress(recs, rec, wt);
-            renderRecords(recs);
-            renderChart(recs, rec);
+            fetchRecords(userId).then(function(data) {
+                saveCache(userId, data);
+                if (!cached) { loadingEl.classList.add('fade-out'); setTimeout(function(){ loadingEl.style.display = 'none'; }, 300); }
+                if (data.patient?.name) { document.getElementById('patient-name').textContent = data.patient.name; }
+                var recs = data.records || [];
+                var rec = data.patient?.doctorRecommendedProtein || data.patient?.recommendedProtein || 0;
+                var wt = data.patient?.weight || 0;
+                renderProteinProgress(recs, rec, wt);
+                _targetMealId = _targetMealId; // preserve for re-render
+                renderRecords(recs);
+                renderChart(recs, rec);
+            }).catch(function(err) {
+                console.warn('背景更新失敗:', err);
+                if (!cached) {
+                    document.getElementById('records-list').innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><p>載入失敗：' + escHtml(err.message) + '</p></div>';
+                }
+            });
         } catch (err) {
             console.error('Error [' + _step + ']:', err);
             if (document.getElementById('main').style.display === 'block') {
