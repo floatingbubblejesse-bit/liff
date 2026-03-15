@@ -97,17 +97,42 @@
         el.style.display = 'block';
     }
 
+    // ====== Cache-first ======
+    var IDX_CACHE_KEY = 'idx_body_cache';
+    var IDX_CACHE_TTL = 1800000; // 30 分鐘
+    function idxSaveCache(key, data) {
+        try { localStorage.setItem(IDX_CACHE_KEY, JSON.stringify({ key: key, ts: Date.now(), data: data })); } catch(e) {}
+    }
+    function idxLoadCache(key) {
+        try {
+            var raw = localStorage.getItem(IDX_CACHE_KEY);
+            if (!raw) return null;
+            var c = JSON.parse(raw);
+            if (c.key !== key || Date.now() - c.ts > IDX_CACHE_TTL) return null;
+            return c.data;
+        } catch(e) { return null; }
+    }
+
     function fetchData(paramName, paramValue) {
-        setMsg('載入資料中...');
+        var cacheKey = paramName + ':' + paramValue;
+        // cache-first：先渲染快取
+        var cached = idxLoadCache(cacheKey);
+        if (cached) {
+            allData = cached;
+            renderDashboard(cached);
+        } else {
+            setMsg('載入資料中...');
+        }
+        // 背景更新
         var url = API_URL + '?' + paramName + '=' + encodeURIComponent(paramValue);
         fetch(url)
             .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
             .then(function(data) {
-                if (data.error) { showError(data.error); }
-                else if (!data.measurements || !data.customer) { showError('資料格式異常，請聯絡店家'); }
-                else { allData = data; renderDashboard(data); }
+                if (data.error) { if (!cached) showError(data.error); }
+                else if (!data.measurements || !data.customer) { if (!cached) showError('資料格式異常，請聯絡店家'); }
+                else { idxSaveCache(cacheKey, data); allData = data; renderDashboard(data); }
             })
-            .catch(function(err) { showError('資料載入失敗：' + (err.message || err) + ' 請重試或聯絡店家'); });
+            .catch(function(err) { if (!cached) showError('資料載入失敗：' + (err.message || err) + ' 請重試或聯絡店家'); });
     }
 
     var params = new URLSearchParams(window.location.search);
@@ -115,6 +140,15 @@
     if (urlId) {
         document.getElementById('headerName').textContent = urlId;
         fetchData('id', urlId);
+        // 背景跑 LIFF init 取頭像
+        liff.init({ liffId: LIFF_ID }).then(function() {
+            if (!liff.isLoggedIn()) return;
+            return liff.getProfile();
+        }).then(function(profile) {
+            if (!profile) return;
+            if (profile.displayName) document.getElementById('headerName').textContent = profile.displayName;
+            if (profile.pictureUrl) document.getElementById('headerAvatarWrap').innerHTML = '<img class="header-avatar" src="' + profile.pictureUrl + '" alt="">';
+        }).catch(function(){});
     } else {
         setMsg('連接 LINE 中...');
         liff.init({ liffId: LIFF_ID })
