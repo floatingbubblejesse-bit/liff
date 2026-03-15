@@ -2626,8 +2626,14 @@
             prev.setDate(prev.getDate() - 1);
         }
 
+        var _lastYear = null;
         while (cursor <= dateB) {
             var dateStr = hwFormatDate(cursor);
+            var curYear = cursor.getFullYear();
+            if (_lastYear !== null && curYear !== _lastYear) {
+                html += '<tr><td colspan="4" style="text-align:center;font-weight:800;font-size:15px;color:var(--red);background:var(--blue-light);padding:8px 0;letter-spacing:2px">' + curYear + ' 年</td></tr>';
+            }
+            _lastYear = curYear;
             var isToday = dateStr === todayStr;
             var dayName = HW_DAY_NAMES[cursor.getDay()];
             var parts = dateStr.split('-');
