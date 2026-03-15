@@ -306,29 +306,28 @@
         initInfiniteScroll();
         // 等 infinite scroll 的 expandTop 穩定後再滾到今天
         setTimeout(function() {
-            var scrollEl = document.getElementById('tableScroll');
             var target = document.querySelector('.today-row') || document.getElementById('scheduleStartRow');
-            if (target && scrollEl) {
-                var targetRect = target.getBoundingClientRect();
-                var containerRect = scrollEl.getBoundingClientRect();
+            if (target) {
                 var rowH = target.offsetHeight || 44;
-                scrollEl.scrollTop = scrollEl.scrollTop + (targetRect.top - containerRect.top) - rowH * 2;
+                var rect = target.getBoundingClientRect();
+                window.scrollBy(0, rect.top - rowH * 3);
             }
         }, 500);
     }
 
     // ====== Infinite scroll ======
     function initInfiniteScroll() {
-        var scrollEl = document.getElementById('tableScroll');
-        if (!scrollEl) return;
-        scrollEl.addEventListener('scroll', function() {
+        window.addEventListener('scroll', function() {
             if (_expanding) return;
+            var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            var scrollHeight = document.documentElement.scrollHeight;
+            var clientHeight = window.innerHeight;
             // 接近頂部：往上擴展
-            if (scrollEl.scrollTop < 300) {
+            if (scrollTop < 300) {
                 expandTop();
             }
             // 接近底部：往下擴展
-            if (scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight < 300) {
+            if (scrollHeight - scrollTop - clientHeight < 300) {
                 expandBottom();
             }
         }, {passive: true});
@@ -400,12 +399,11 @@
         if (_expanding) return;
         _expanding = true;
         rangeStartDate = new Date(rangeStartDate.getFullYear(), rangeStartDate.getMonth() - EXPAND_MONTHS, 1);
-        var scrollEl = document.getElementById('tableScroll');
-        var oldHeight = scrollEl.scrollHeight;
-        var oldScroll = scrollEl.scrollTop;
+        var oldHeight = document.documentElement.scrollHeight;
+        var oldScroll = window.pageYOffset || document.documentElement.scrollTop;
         renderTable(true);
-        var newHeight = scrollEl.scrollHeight;
-        scrollEl.scrollTop = oldScroll + (newHeight - oldHeight);
+        var newHeight = document.documentElement.scrollHeight;
+        window.scrollTo(0, oldScroll + (newHeight - oldHeight));
         _expanding = false;
     }
 
@@ -527,10 +525,9 @@
     }
 
     function preserveScrollRender() {
-        var scrollEl = document.getElementById('tableScroll');
-        var savedTop = scrollEl ? scrollEl.scrollTop : 0;
+        var savedTop = window.pageYOffset || document.documentElement.scrollTop;
         renderTable(true);
-        if (scrollEl) scrollEl.scrollTop = savedTop;
+        window.scrollTo(0, savedTop);
     }
 
     // 全部收起：清 editingDate + 所有非已改碳日的 dirtyRows
@@ -1027,13 +1024,11 @@
 
     // ====== Scroll to today ======
     function scrollToToday() {
-        var scrollEl = document.getElementById('tableScroll');
         var target = document.querySelector('.today-row');
-        if (target && scrollEl) {
-            var targetRect = target.getBoundingClientRect();
-            var containerRect = scrollEl.getBoundingClientRect();
+        if (target) {
             var rowH = target.offsetHeight || 44;
-            scrollEl.scrollTop = scrollEl.scrollTop + (targetRect.top - containerRect.top) - rowH * 2;
+            var rect = target.getBoundingClientRect();
+            window.scrollBy(0, rect.top - rowH * 3);
         }
     }
 
