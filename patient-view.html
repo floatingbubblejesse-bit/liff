@@ -465,29 +465,7 @@
     var initTab = (location.hash || '').replace('#','') || 'body';
     if (['body','weight','meals','note','history'].indexOf(initTab) === -1) initTab = 'body';
 
-    if (!patientSn) { showError('缺少病患 ID，請從醫生總覽頁面進入。'); }
-    else {
-        buildPresets();
-        loadBodyData();
-        // 並行預取 LINE UID + 餐食資料
-        if (patientLineUid) {
-            prefetchMealData(patientLineUid);
-        } else {
-            prefetchLineUid();
-        }
-        // 並行預取居家體重 + 看診紀錄（不等結果，使用者切 tab 時資料已在）
-        _prefetchHomeWeight();
-        _prefetchDietHistory();
-        // 安全網：3 秒後強制顯示頁面（防止任何未知錯誤卡在 loading）
-        setTimeout(function() {
-            var ld = document.getElementById('loadingDiv');
-            if (ld && ld.style.display !== 'none') {
-                console.warn('[安全網] 3 秒逾時，強制顯示頁面');
-                ld.style.display = 'none';
-                switchTab(initTab);
-            }
-        }, 3000);
-    }
+    // ★ 初始化程式碼已搬到 script 最底部，確保所有 var 賦值完成後才執行
 
     function buildPresets() {
         var html = '';
@@ -498,41 +476,24 @@
     }
 
     function _applyBodyData(data) {
-        try {
-            allData=data;
-            patientName=getDisplayName(data.customer)||patientSn;
-            var gasUid=findLineUid(data.customer);
-            if(gasUid) patientLineUid=gasUid;
-            document.getElementById('headerName').textContent=patientName;
-            document.getElementById('headerSub').textContent=patientSn+' 體組成資料';
-            renderBodyTab(data);
-            var cust = data.customer || {};
-            var mArr = data.measurements || [];
-            if (mArr.length > 0) {
-                var latest = mArr[mArr.length - 1];
-                if (!cust['體重'] && latest['體重']) cust['體重'] = latest['體重'];
-                if (!cust.weight && latest['體重']) cust.weight = latest['體重'];
-            }
-            try { fillProteinField(cust); } catch(e2) { console.error('[蛋白質]', e2); }
-            try { fillTargetWeightField(cust, data.measurements || []); } catch(e2) { console.error('[目標體重]', e2); }
-        } catch(e) {
-            console.error('[_applyBodyData] 錯誤:', e);
+        allData=data;
+        patientName=getDisplayName(data.customer)||patientSn;
+        var gasUid=findLineUid(data.customer);
+        if(gasUid) patientLineUid=gasUid;
+        document.getElementById('headerName').textContent=patientName;
+        document.getElementById('headerSub').textContent=patientSn+' 體組成資料';
+        renderBodyTab(data);
+        var cust = data.customer || {};
+        var mArr = data.measurements || [];
+        if (mArr.length > 0) {
+            var latest = mArr[mArr.length - 1];
+            if (!cust['體重'] && latest['體重']) cust['體重'] = latest['體重'];
+            if (!cust.weight && latest['體重']) cust.weight = latest['體重'];
         }
-        // 不管上面有沒有錯，一定要顯示頁面
-        try {
-            document.getElementById('loadingDiv').style.display='none';
-            console.log('[_applyBodyData] 準備 switchTab:', initTab);
-            switchTab(initTab);
-            console.log('[_applyBodyData] switchTab 完成');
-        } catch(e3) {
-            console.error('[_applyBodyData] switchTab 錯誤:', e3);
-            // 最後手段：直接顯示 tab
-            try {
-                document.getElementById('loadingDiv').style.display='none';
-                var tgt = document.getElementById('tab-' + initTab);
-                if (tgt) { tgt.style.display = 'block'; tgt.classList.add('active'); }
-            } catch(e4) { console.error('[_applyBodyData] 手動顯示也失敗:', e4); }
-        }
+        fillProteinField(cust);
+        fillTargetWeightField(cust, data.measurements || []);
+        document.getElementById('loadingDiv').style.display='none';
+        switchTab(initTab);
     }
 
     function loadBodyData() {
@@ -3012,6 +2973,20 @@
     }
 
     function esc(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+    // ====== 初始化（放在 script 最底部，確保所有 var 賦值已完成）======
+    if (!patientSn) { showError('缺少病患 ID，請從醫生總覽頁面進入。'); }
+    else {
+        buildPresets();
+        loadBodyData();
+        if (patientLineUid) {
+            prefetchMealData(patientLineUid);
+        } else {
+            prefetchLineUid();
+        }
+        _prefetchHomeWeight();
+        _prefetchDietHistory();
+    }
     </script>
 </body>
 </html>
