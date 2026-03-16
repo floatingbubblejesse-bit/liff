@@ -109,6 +109,11 @@
     <div class="header-top">
         <div id="avatarWrap"><div class="avatar-placeholder">🧑</div></div>
         <div class="header-info"><h2 id="headerSub">載入中...</h2></div>
+        <div id="targetWeightBadge" style="margin-left:auto;text-align:center;display:none">
+            <div style="font-size:10px;opacity:0.7">目標</div>
+            <div style="font-size:18px;font-weight:700" id="targetWeightVal">—</div>
+            <div style="font-size:10px;opacity:0.7">kg</div>
+        </div>
     </div>
 </div>
 
@@ -163,6 +168,22 @@
     var GAS_URL = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
     var patientSn = '', patientUid = '', patientName = '';
     var cycleSchedule = ['high','high','mid','mid','high','mid','mid'];
+
+    // ====== API 快取 ======
+    var WC_CACHE_KEY = 'wc_cache';
+    var WC_CACHE_TTL = 1800000; // 30 分鐘
+    function wcSaveCache(sn, data) {
+        try { localStorage.setItem(WC_CACHE_KEY, JSON.stringify({ sn: sn, ts: Date.now(), data: data })); } catch(e) {}
+    }
+    function wcLoadCache(sn) {
+        try {
+            var raw = localStorage.getItem(WC_CACHE_KEY);
+            if (!raw) return null;
+            var c = JSON.parse(raw);
+            if (c.sn !== sn || Date.now() - c.ts > WC_CACHE_TTL) return null;
+            return c.data;
+        } catch(e) { return null; }
+    }
     var visitDate = null;
     var scheduleStart = null; // 排程開始日（看診日+1）
     var scheduleEnd = null;   // 排程結束日
@@ -220,14 +241,43 @@
     function loadData() {
         loadLocalWeights();
         if (!patientSn) { onDataReady(); return; }
-        // 先用 localStorage 快取立即渲染（不等 API）
-        if (Object.keys(weightData).length > 0) { onDataReady(); }
+
+        // cache-first：用上次的 API 快取立即渲染
+        var cached = wcLoadCache(patientSn);
+        if (cached) {
+            if (cached.dietPlan && cached.dietPlan.schedule) {
+                var cp = cached.dietPlan;
+                cycleSchedule = cp.schedule;
+                var planDate = parseDateToYMD(cp.date);
+                if (!planDate) planDate = formatDate(new Date());
+                var weeks = cp.weeks || 4;
+                visitRecords = [{ date: planDate, schedule: cp.schedule, weeks: weeks }];
+                var p = planDate.split('-');
+                visitDate = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+                scheduleStart = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate() + 1);
+                scheduleEnd = new Date(scheduleStart.getFullYear(), scheduleStart.getMonth(), scheduleStart.getDate() + (weeks * 7) - 1);
+                scheduleWeeks = weeks;
+            }
+            onDataReady(); // 秒開
+        } else if (Object.keys(weightData).length > 0) {
+            onDataReady(); // 至少有 localStorage 體重資料
+        }
+
+        // 背景更新
+        var _cacheData = {};
         var pending = 2;
-        function checkDone() { pending--; if (pending <= 0) onDataReady(); }
+        function checkDone() {
+            pending--;
+            if (pending <= 0) {
+                wcSaveCache(patientSn, _cacheData);
+                onDataReady();
+            }
+        }
 
         fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn))
             .then(function(r){ return r.json(); })
             .then(function(data){
+                _cacheData.dietPlan = data;
                 if (data.schedule && data.schedule.length === 7) {
                     cycleSchedule = data.schedule;
                     var planDate = parseDateToYMD(data.date);
@@ -240,7 +290,6 @@
                     }];
                     var p = planDate.split('-');
                     visitDate = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
-                    // 排程從看診日的隔天開始
                     scheduleStart = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate() + 1);
                     scheduleEnd = new Date(scheduleStart.getFullYear(), scheduleStart.getMonth(), scheduleStart.getDate() + (weeks * 7) - 1);
                     scheduleWeeks = weeks;
@@ -264,6 +313,16 @@
                 }
                 checkDone();
             }).catch(function(e){ checkDone(); });
+
+        // 取得病人期待目標體重（獨立請求，不影響主流程）
+        fetch(MEALS_GAS + '?getTargetWeight=' + encodeURIComponent(patientSn))
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                if (data.ok && data.patientTargetWeight > 0) {
+                    document.getElementById('targetWeightVal').textContent = data.patientTargetWeight;
+                    document.getElementById('targetWeightBadge').style.display = '';
+                }
+            }).catch(function(){});
     }
 
     function storageKey() { return 'weight_' + (patientSn || patientUid || 'default'); }
