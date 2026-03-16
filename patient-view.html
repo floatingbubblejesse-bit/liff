@@ -1125,8 +1125,7 @@
         btn.disabled = true;
         btn.style.opacity = '0.6';
         btn.textContent = '更新中…';
-        var formulaVal = initialWeight > 0 ? Math.round(initialWeight * 0.85 * 10) / 10 : 0;
-        fetch(MEALS_GAS + '?saveTargetWeight=' + encodeURIComponent(patientSn) + '&value=' + encodeURIComponent(val) + '&formulaValue=' + encodeURIComponent(formulaVal))
+        fetch(MEALS_GAS + '?saveTargetWeight=' + encodeURIComponent(patientSn) + '&value=' + encodeURIComponent(val))
         .then(function(r){ return r.json(); })
         .then(function(res){
             btn.disabled = false;
@@ -1571,7 +1570,8 @@
             + '&low='        + encodeURIComponent(JSON.stringify(lowData))
             + '&fast='       + encodeURIComponent(JSON.stringify(fastData))
             + '&schedule='   + encodeURIComponent(JSON.stringify(cycleSchedule))
-            + '&weeks='      + encodeURIComponent(cycleWeeks);
+            + '&weeks='      + encodeURIComponent(cycleWeeks)
+            + '&patientTargetWeight=' + encodeURIComponent(parseFloat(document.getElementById('targetWeightInput').value) || 0);
 
         fetch(gasUrl)
         .then(function(r) { return r.json(); })
