@@ -495,7 +495,7 @@
         if(gasUid) patientLineUid=gasUid;
         document.getElementById('headerName').textContent=patientName;
         document.getElementById('headerSub').textContent=patientSn+' 體組成資料';
-        renderBodyTab(data);
+        try { renderBodyTab(data); } catch(e) { console.error('[身體組成] renderBodyTab err:', e); }
         var cust = data.customer || {};
         var mArr = data.measurements || [];
         if (mArr.length > 0) {
@@ -503,8 +503,8 @@
             if (!cust['體重'] && latest['體重']) cust['體重'] = latest['體重'];
             if (!cust.weight && latest['體重']) cust.weight = latest['體重'];
         }
-        fillProteinField(cust);
-        fillTargetWeightField(cust, data.measurements || []);
+        try { fillProteinField(cust); } catch(e) { console.error('[蛋白質] init err:', e); }
+        try { fillTargetWeightField(cust, data.measurements || []); } catch(e) { console.error('[目標體重] init err:', e); }
         document.getElementById('loadingDiv').style.display='none';
         switchTab(initTab);
     }
