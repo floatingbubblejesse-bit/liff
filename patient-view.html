@@ -332,11 +332,11 @@
                 <div class="card" id="targetWeightCard">
                     <div class="card-title">🎯 目標體重</div>
                     <div>
-                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px" id="formulaTargetLabel">減 15% 的初始體重</div>
+                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px" id="formulaTargetLabel">三個月內減 15% 的初始體重</div>
                         <div style="font-size:24px;font-weight:700;color:#7B8FA1;margin-bottom:12px" id="formulaTargetWeight">— kg</div>
                     </div>
                     <div>
-                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px" id="targetWeightLabel">醫師建議目標</div>
+                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px" id="targetWeightLabel">病人期待目標</div>
                         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
                             <button onclick="adjustTargetWeight(-0.5)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#A0626B;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">−</button>
                             <input type="text" inputmode="decimal" id="targetWeightInput" style="width:64px;font-size:24px;font-weight:700;color:#A0626B;border:2px solid #E8E4DC;border-radius:10px;padding:8px 4px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.style.borderColor='#A0626B';this.style.boxShadow='0 0 0 3px rgba(160,98,107,0.15)'" onblur="this.style.borderColor='#E8E4DC';this.style.boxShadow='none'" oninput="updateTargetWeightPct()">
@@ -1081,11 +1081,11 @@
         if (initialWeight > 0) {
             var formulaTarget = Math.round(initialWeight * 0.85 * 10) / 10;
             document.getElementById('formulaTargetWeight').textContent = formulaTarget + ' kg';
-            document.getElementById('formulaTargetLabel').textContent = '減 15% 的初始體重（' + initialWeight + '）';
+            document.getElementById('formulaTargetLabel').textContent = '三個月內減 15% 的初始體重（' + initialWeight + '）';
         }
         // 醫師建議目標體重
         if (!targetWeightFilled && cust) {
-            var doctorTW = findField(cust, ['醫師建議目標體重','doctorTargetWeight']);
+            var doctorTW = findField(cust, ['病人期待目標體重','patientTargetWeight','醫師建議目標體重','doctorTargetWeight']);
             if (!isNaN(doctorTW) && doctorTW > 0) {
                 document.getElementById('targetWeightInput').value = doctorTW;
                 targetWeightFilled = true;
@@ -1104,9 +1104,9 @@
         if (initialWeight > 0 && val > 0 && val < initialWeight) {
             var diff = initialWeight - val;
             var pct = Math.round(diff / initialWeight * 1000) / 10;
-            label.textContent = '醫師建議目標（減 ' + pct + '% 初始體重）';
+            label.textContent = '病人期待目標（減 ' + pct + '% 初始體重）';
         } else {
-            label.textContent = '醫師建議目標';
+            label.textContent = '病人期待目標';
         }
     }
 
@@ -1125,7 +1125,8 @@
         btn.disabled = true;
         btn.style.opacity = '0.6';
         btn.textContent = '更新中…';
-        fetch(MEALS_GAS + '?saveTargetWeight=' + encodeURIComponent(patientSn) + '&value=' + encodeURIComponent(val))
+        var formulaVal = initialWeight > 0 ? Math.round(initialWeight * 0.85 * 10) / 10 : 0;
+        fetch(MEALS_GAS + '?saveTargetWeight=' + encodeURIComponent(patientSn) + '&value=' + encodeURIComponent(val) + '&formulaValue=' + encodeURIComponent(formulaVal))
         .then(function(r){ return r.json(); })
         .then(function(res){
             btn.disabled = false;
