@@ -478,6 +478,15 @@
         // 並行預取居家體重 + 看診紀錄（不等結果，使用者切 tab 時資料已在）
         _prefetchHomeWeight();
         _prefetchDietHistory();
+        // 安全網：3 秒後強制顯示頁面（防止任何未知錯誤卡在 loading）
+        setTimeout(function() {
+            var ld = document.getElementById('loadingDiv');
+            if (ld && ld.style.display !== 'none') {
+                console.warn('[安全網] 3 秒逾時，強制顯示頁面');
+                ld.style.display = 'none';
+                switchTab(initTab);
+            }
+        }, 3000);
     }
 
     function buildPresets() {
@@ -489,24 +498,41 @@
     }
 
     function _applyBodyData(data) {
-        allData=data;
-        patientName=getDisplayName(data.customer)||patientSn;
-        var gasUid=findLineUid(data.customer);
-        if(gasUid) patientLineUid=gasUid;
-        document.getElementById('headerName').textContent=patientName;
-        document.getElementById('headerSub').textContent=patientSn+' 體組成資料';
-        try { renderBodyTab(data); } catch(e) { console.error('[身體組成] renderBodyTab err:', e); }
-        var cust = data.customer || {};
-        var mArr = data.measurements || [];
-        if (mArr.length > 0) {
-            var latest = mArr[mArr.length - 1];
-            if (!cust['體重'] && latest['體重']) cust['體重'] = latest['體重'];
-            if (!cust.weight && latest['體重']) cust.weight = latest['體重'];
+        try {
+            allData=data;
+            patientName=getDisplayName(data.customer)||patientSn;
+            var gasUid=findLineUid(data.customer);
+            if(gasUid) patientLineUid=gasUid;
+            document.getElementById('headerName').textContent=patientName;
+            document.getElementById('headerSub').textContent=patientSn+' 體組成資料';
+            renderBodyTab(data);
+            var cust = data.customer || {};
+            var mArr = data.measurements || [];
+            if (mArr.length > 0) {
+                var latest = mArr[mArr.length - 1];
+                if (!cust['體重'] && latest['體重']) cust['體重'] = latest['體重'];
+                if (!cust.weight && latest['體重']) cust.weight = latest['體重'];
+            }
+            try { fillProteinField(cust); } catch(e2) { console.error('[蛋白質]', e2); }
+            try { fillTargetWeightField(cust, data.measurements || []); } catch(e2) { console.error('[目標體重]', e2); }
+        } catch(e) {
+            console.error('[_applyBodyData] 錯誤:', e);
         }
-        try { fillProteinField(cust); } catch(e) { console.error('[蛋白質] init err:', e); }
-        try { fillTargetWeightField(cust, data.measurements || []); } catch(e) { console.error('[目標體重] init err:', e); }
-        document.getElementById('loadingDiv').style.display='none';
-        switchTab(initTab);
+        // 不管上面有沒有錯，一定要顯示頁面
+        try {
+            document.getElementById('loadingDiv').style.display='none';
+            console.log('[_applyBodyData] 準備 switchTab:', initTab);
+            switchTab(initTab);
+            console.log('[_applyBodyData] switchTab 完成');
+        } catch(e3) {
+            console.error('[_applyBodyData] switchTab 錯誤:', e3);
+            // 最後手段：直接顯示 tab
+            try {
+                document.getElementById('loadingDiv').style.display='none';
+                var tgt = document.getElementById('tab-' + initTab);
+                if (tgt) { tgt.style.display = 'block'; tgt.classList.add('active'); }
+            } catch(e4) { console.error('[_applyBodyData] 手動顯示也失敗:', e4); }
+        }
     }
 
     function loadBodyData() {
