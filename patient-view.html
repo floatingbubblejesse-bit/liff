@@ -332,7 +332,7 @@
                 <div class="card" id="targetWeightCard">
                     <div class="card-title">🎯 目標體重</div>
                     <div>
-                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">減 15% 初始體重</div>
+                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px" id="formulaTargetLabel">減 15% 的初始體重</div>
                         <div style="font-size:24px;font-weight:700;color:#7B8FA1;margin-bottom:12px" id="formulaTargetWeight">— kg</div>
                     </div>
                     <div>
@@ -1077,10 +1077,11 @@
             var wt = findField(cust, ['體重','weight']);
             if (!isNaN(wt) && wt > 0) initialWeight = wt;
         }
-        // 公式目標：顯示初始體重 × 0.85 的實際公斤數
+        // 公式目標：顯示初始體重 × 0.85，標籤帶初始體重數值
         if (initialWeight > 0) {
             var formulaTarget = Math.round(initialWeight * 0.85 * 10) / 10;
             document.getElementById('formulaTargetWeight').textContent = formulaTarget + ' kg';
+            document.getElementById('formulaTargetLabel').textContent = '減 15% 的初始體重（' + initialWeight + '）';
         }
         // 醫師建議目標體重
         if (!targetWeightFilled && cust) {
