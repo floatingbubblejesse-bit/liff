@@ -24,6 +24,11 @@
         .tab-pane>*{margin-bottom:14px}
         .card{background:white;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
         .card-title{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+        /* ── 可編輯卡片：+/- 和更新按鈕預設隱藏 ── */
+        .edit-row-adj{display:inline;opacity:0;max-width:0;overflow:hidden;transition:opacity .2s,max-width .2s}
+        .edit-row-save{opacity:0;max-height:0;overflow:hidden;transition:opacity .2s,max-height .2s;margin-top:0}
+        .card.editing .edit-row-adj{opacity:1;max-width:80px}
+        .card.editing .edit-row-save{opacity:1;max-height:50px;margin-top:8px}
         .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:50vh;gap:14px}
         .spinner{width:40px;height:40px;border:4px solid #E8E4DC;border-top-color:var(--blue);border-radius:50%;animation:spin .9s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
@@ -311,7 +316,7 @@
         <div id="tab-note" class="tab-pane" style="display:none">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="proteinWeightRow">
                 <!-- 左：蛋白質攝取建議 -->
-                <div class="card" id="proteinRecCard">
+                <div class="card" id="proteinRecCard" onmouseenter="this.classList.add('editing')" onmouseleave="if(!this.querySelector(':focus'))this.classList.remove('editing')">
                     <div class="card-title">🥩 蛋白質攝取建議</div>
                     <div>
                         <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">公式攝取量（體重＋40）</div>
@@ -320,16 +325,16 @@
                     <div>
                         <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">醫師建議攝取量</div>
                         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-                            <button onclick="adjustProtein(-1)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#8B9D83;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">−</button>
-                            <input type="text" inputmode="numeric" id="proteinInput" style="width:64px;font-size:24px;font-weight:700;color:#8B9D83;border:2px solid #E8E4DC;border-radius:10px;padding:8px 4px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.style.borderColor='#8B9D83';this.style.boxShadow='0 0 0 3px rgba(139,157,131,0.15)'" onblur="this.style.borderColor='#E8E4DC';this.style.boxShadow='none'">
-                            <button onclick="adjustProtein(1)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#8B9D83;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">+</button>
+                            <span class="edit-row-adj"><button onclick="adjustProtein(-1)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#8B9D83;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">−</button></span>
+                            <input type="text" inputmode="numeric" id="proteinInput" style="width:64px;font-size:24px;font-weight:700;color:#8B9D83;border:2px solid #E8E4DC;border-radius:10px;padding:8px 4px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.closest('.card').classList.add('editing')" onblur="var c=this.closest('.card');setTimeout(function(){if(!c.querySelector(':focus'))c.classList.remove('editing')},150)">
+                            <span class="edit-row-adj"><button onclick="adjustProtein(1)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#8B9D83;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">+</button></span>
                             <span style="font-size:14px;color:#8B8B8B;font-weight:600">g</span>
                         </div>
-                        <button id="saveProteinBtn" onclick="saveProtein()" style="margin-top:8px;width:100%;padding:8px;border-radius:8px;border:none;background:#8B9D83;color:white;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(139,157,131,0.3)">更新</button>
+                        <button id="saveProteinBtn" onclick="saveProtein()" class="edit-row-save" style="width:100%;padding:8px;border-radius:8px;border:none;background:#8B9D83;color:white;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(139,157,131,0.3)">更新</button>
                     </div>
                 </div>
                 <!-- 右：目標體重 -->
-                <div class="card" id="targetWeightCard">
+                <div class="card" id="targetWeightCard" onmouseenter="this.classList.add('editing')" onmouseleave="if(!this.querySelector(':focus'))this.classList.remove('editing')">
                     <div class="card-title">🎯 目標體重</div>
                     <div>
                         <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px" id="formulaTargetLabel">三個月內減 15% 的初始體重</div>
@@ -338,12 +343,12 @@
                     <div>
                         <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px" id="targetWeightLabel">病人期待目標</div>
                         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-                            <button onclick="adjustTargetWeight(-0.5)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#A0626B;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">−</button>
-                            <input type="text" inputmode="decimal" id="targetWeightInput" style="width:64px;font-size:24px;font-weight:700;color:#A0626B;border:2px solid #E8E4DC;border-radius:10px;padding:8px 4px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.style.borderColor='#A0626B';this.style.boxShadow='0 0 0 3px rgba(160,98,107,0.15)'" onblur="this.style.borderColor='#E8E4DC';this.style.boxShadow='none'" oninput="updateTargetWeightPct()">
-                            <button onclick="adjustTargetWeight(0.5)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#A0626B;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">+</button>
+                            <span class="edit-row-adj"><button onclick="adjustTargetWeight(-0.5)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#A0626B;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">−</button></span>
+                            <input type="text" inputmode="decimal" id="targetWeightInput" style="width:64px;font-size:24px;font-weight:700;color:#A0626B;border:2px solid #E8E4DC;border-radius:10px;padding:8px 4px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.closest('.card').classList.add('editing')" onblur="var c=this.closest('.card');setTimeout(function(){if(!c.querySelector(':focus'))c.classList.remove('editing')},150)" oninput="updateTargetWeightPct()">
+                            <span class="edit-row-adj"><button onclick="adjustTargetWeight(0.5)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#A0626B;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">+</button></span>
                             <span style="font-size:14px;color:#8B8B8B;font-weight:600">kg</span>
                         </div>
-                        <button id="saveTargetWeightBtn" onclick="saveTargetWeight()" style="margin-top:8px;width:100%;padding:8px;border-radius:8px;border:none;background:#A0626B;color:white;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(160,98,107,0.3)">更新</button>
+                        <button id="saveTargetWeightBtn" onclick="saveTargetWeight()" class="edit-row-save" style="width:100%;padding:8px;border-radius:8px;border:none;background:#A0626B;color:white;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(160,98,107,0.3)">更新</button>
                     </div>
                 </div>
             </div>
@@ -1027,6 +1032,7 @@
         var val = parseInt(input.value, 10) || 0;
         val = Math.max(1, Math.min(200, val + delta));
         input.value = val;
+        input.closest('.card').classList.add('editing');
     }
 
     function saveProtein() {
@@ -1048,6 +1054,8 @@
                 setTimeout(function(){
                     btn.textContent = '更新';
                     btn.style.background = '#8B9D83';
+                    var card = document.getElementById('proteinRecCard');
+                    if (!card.querySelector(':focus')) card.classList.remove('editing');
                 }, 2500);
             } else {
                 btn.textContent = '更新';
@@ -1116,6 +1124,7 @@
         val = Math.max(30, Math.min(200, Math.round((val + delta) * 10) / 10));
         input.value = val;
         updateTargetWeightPct();
+        input.closest('.card').classList.add('editing');
     }
 
     function saveTargetWeight() {
@@ -1136,6 +1145,8 @@
                 setTimeout(function(){
                     btn.textContent = '更新';
                     btn.style.background = '#A0626B';
+                    var card = document.getElementById('targetWeightCard');
+                    if (!card.querySelector(':focus')) card.classList.remove('editing');
                 }, 2500);
             } else {
                 btn.textContent = '更新';
@@ -2975,6 +2986,14 @@
     }
 
     function esc(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+    // ====== 點外面收起編輯卡片 ======
+    document.addEventListener('click', function(e) {
+        var cards = document.querySelectorAll('.card.editing');
+        for (var i = 0; i < cards.length; i++) {
+            if (!cards[i].contains(e.target)) cards[i].classList.remove('editing');
+        }
+    }, true);
 
     // ====== 初始化（放在 script 最底部，確保所有 var 賦值已完成）======
     if (!patientSn) { showError('缺少病患 ID，請從醫生總覽頁面進入。'); }
