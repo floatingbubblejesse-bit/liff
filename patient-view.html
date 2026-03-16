@@ -1165,7 +1165,7 @@
     var DIET_COLS = [
         {label:'代餐',       type:'select', unit:'(包)', opts:['-','1']},
         {label:'配方',       type:'select', unit:'(包)', opts:['-','1']},
-        {label:'排糖包±排油包', type:'select', unit:'', opts:['-','1']},
+        {label:'排糖包±排油包', type:'select', unit:'', opts:['-','1'], sep:'+'},
         {label:'食物蛋白',    type:'number', unit:'(克)', min:0, max:200, step:1},
         {label:'蔬菜',       type:'select', unit:'',  opts:['-','適量','大量'], sep:'+'},
         {label:'Q寶',        type:'select', unit:'(包)', opts:['-','1']},
@@ -1404,7 +1404,7 @@
             html += '<div class="' + cls + '" id="' + p + '-meal-' + m + '" onclick="toggleDietMeal(\'' + p + '\',' + m + ')">';
             html += '<div class="diet-meal-title">' + MEAL_ICONS[m] + ' ' + MEAL_NAMES[m] + '</div><div class="diet-flow">';
             for (var f = 0; f < DIET_COLS.length; f++) {
-                var sep = (f === 4) ? '+' : '→';
+                var sep = DIET_COLS[f].sep || '→';
                 var curVal = plan[m] ? plan[m][f] || '-' : '-';
                 if (f > 0) html += '<span class="diet-arrow">' + sep + '</span>';
                 html += dietStepHtml(p, m, f, curVal);
