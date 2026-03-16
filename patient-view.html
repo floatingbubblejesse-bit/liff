@@ -309,26 +309,43 @@
         </div>
         <div id="tab-meals" class="tab-pane" style="display:none"></div>
         <div id="tab-note" class="tab-pane" style="display:none">
-            <div class="card" id="proteinRecCard">
-                <div class="card-title">🥩 蛋白質攝取建議</div>
-                <div style="display:flex;align-items:center;gap:16px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="proteinWeightRow">
+                <!-- 左：蛋白質攝取建議 -->
+                <div class="card" id="proteinRecCard">
+                    <div class="card-title">🥩 蛋白質攝取建議</div>
                     <div>
-                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">目前攝取量（體重＋40）</div>
-                        <div style="font-size:28px;font-weight:700;color:#7B8FA1" id="currentProtein">— g</div>
+                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">公式攝取量（體重＋40）</div>
+                        <div style="font-size:24px;font-weight:700;color:#7B8FA1;margin-bottom:12px" id="currentProtein">— g</div>
                     </div>
-                    <div style="font-size:24px;color:#ccc">→</div>
-                    <div style="flex:1">
+                    <div>
                         <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">醫師建議攝取量</div>
-                        <div style="display:flex;align-items:center;gap:6px">
-                            <button onclick="adjustProtein(-1)" style="width:36px;height:36px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:20px;font-weight:700;color:#8B9D83;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">−</button>
-                            <input type="text" inputmode="numeric" id="proteinInput" style="width:80px;font-size:28px;font-weight:700;color:#8B9D83;border:2px solid #E8E4DC;border-radius:10px;padding:10px 8px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.style.borderColor='#8B9D83';this.style.boxShadow='0 0 0 3px rgba(139,157,131,0.15)'" onblur="this.style.borderColor='#E8E4DC';this.style.boxShadow='none'">
-                            <button onclick="adjustProtein(1)" style="width:36px;height:36px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:20px;font-weight:700;color:#8B9D83;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">+</button>
-                            <span style="font-size:16px;color:#8B8B8B;font-weight:600">g</span>
-                            <button id="saveProteinBtn" onclick="saveProtein()" style="padding:8px 16px;border-radius:8px;border:none;background:#8B9D83;color:white;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(139,157,131,0.3);white-space:nowrap">更新</button>
+                        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+                            <button onclick="adjustProtein(-1)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#8B9D83;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">−</button>
+                            <input type="text" inputmode="numeric" id="proteinInput" style="width:64px;font-size:24px;font-weight:700;color:#8B9D83;border:2px solid #E8E4DC;border-radius:10px;padding:8px 4px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.style.borderColor='#8B9D83';this.style.boxShadow='0 0 0 3px rgba(139,157,131,0.15)'" onblur="this.style.borderColor='#E8E4DC';this.style.boxShadow='none'">
+                            <button onclick="adjustProtein(1)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#8B9D83;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">+</button>
+                            <span style="font-size:14px;color:#8B8B8B;font-weight:600">g</span>
                         </div>
+                        <button id="saveProteinBtn" onclick="saveProtein()" style="margin-top:8px;width:100%;padding:8px;border-radius:8px;border:none;background:#8B9D83;color:white;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(139,157,131,0.3)">更新</button>
                     </div>
                 </div>
-                <!-- 更新狀態已整合到按鈕本身 -->
+                <!-- 右：目標體重 -->
+                <div class="card" id="targetWeightCard">
+                    <div class="card-title">🎯 目標體重</div>
+                    <div>
+                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">公式目標（初始體重−15%）</div>
+                        <div style="font-size:24px;font-weight:700;color:#7B8FA1;margin-bottom:12px" id="formulaTargetWeight">— kg</div>
+                    </div>
+                    <div>
+                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">醫師建議目標</div>
+                        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+                            <button onclick="adjustTargetWeight(-0.5)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#A0626B;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">−</button>
+                            <input type="text" inputmode="decimal" id="targetWeightInput" style="width:64px;font-size:24px;font-weight:700;color:#A0626B;border:2px solid #E8E4DC;border-radius:10px;padding:8px 4px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.style.borderColor='#A0626B';this.style.boxShadow='0 0 0 3px rgba(160,98,107,0.15)'" onblur="this.style.borderColor='#E8E4DC';this.style.boxShadow='none'">
+                            <button onclick="adjustTargetWeight(0.5)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#A0626B;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">+</button>
+                            <span style="font-size:14px;color:#8B8B8B;font-weight:600">kg</span>
+                        </div>
+                        <button id="saveTargetWeightBtn" onclick="saveTargetWeight()" style="margin-top:8px;width:100%;padding:8px;border-radius:8px;border:none;background:#A0626B;color:white;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(160,98,107,0.3)">更新</button>
+                    </div>
+                </div>
             </div>
             <div class="card" id="dietPlanCard">
                 <div class="card-title">🔄 碳水循環計劃</div>
@@ -487,6 +504,7 @@
             if (!cust.weight && latest['體重']) cust.weight = latest['體重'];
         }
         fillProteinField(cust);
+        fillTargetWeightField(cust, data.measurements || []);
         document.getElementById('loadingDiv').style.display='none';
         switchTab(initTab);
     }
@@ -1043,6 +1061,79 @@
                 setTimeout(function(){
                     btn.textContent = '更新';
                     btn.style.background = '#8B9D83';
+                }, 2500);
+            } else {
+                btn.textContent = '更新';
+                alert('更新失敗：' + (res.error || JSON.stringify(res)));
+            }
+        })
+        .catch(function(err){
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.textContent = '更新';
+            alert('更新失敗：' + err.message);
+        });
+    }
+
+    // ====== 目標體重 ======
+    var targetWeightFilled = false;
+    var initialWeight = 0; // 第一筆測量紀錄的體重
+
+    function fillTargetWeightField(cust, measurements) {
+        // 計算初始體重（第一筆測量紀錄）
+        if (measurements && measurements.length > 0) {
+            var firstW = parseFloat(measurements[0]['體重']);
+            if (!isNaN(firstW) && firstW > 0) initialWeight = firstW;
+        }
+        // 若沒有測量紀錄，用客戶清單的體重
+        if (initialWeight <= 0 && cust) {
+            var wt = findField(cust, ['體重','weight']);
+            if (!isNaN(wt) && wt > 0) initialWeight = wt;
+        }
+        // 公式目標 = 初始體重 × 85%
+        if (initialWeight > 0) {
+            var formulaTarget = Math.round(initialWeight * 0.85 * 10) / 10;
+            document.getElementById('formulaTargetWeight').textContent = formulaTarget + ' kg';
+        }
+        // 醫師建議目標體重
+        if (!targetWeightFilled && cust) {
+            var doctorTW = findField(cust, ['醫師建議目標體重','doctorTargetWeight']);
+            if (!isNaN(doctorTW) && doctorTW > 0) {
+                document.getElementById('targetWeightInput').value = doctorTW;
+                targetWeightFilled = true;
+            } else if (initialWeight > 0) {
+                // 預設用公式目標
+                document.getElementById('targetWeightInput').value = Math.round(initialWeight * 0.85 * 10) / 10;
+                targetWeightFilled = true;
+            }
+        }
+    }
+
+    function adjustTargetWeight(delta) {
+        var input = document.getElementById('targetWeightInput');
+        var val = parseFloat(input.value) || 0;
+        val = Math.max(30, Math.min(200, Math.round((val + delta) * 10) / 10));
+        input.value = val;
+    }
+
+    function saveTargetWeight() {
+        var val = parseFloat(document.getElementById('targetWeightInput').value);
+        if (isNaN(val) || val <= 0) { alert('請輸入有效的目標體重'); return; }
+        var btn = document.getElementById('saveTargetWeightBtn');
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.textContent = '更新中…';
+        fetch(MEALS_GAS + '?saveTargetWeight=' + encodeURIComponent(patientSn) + '&value=' + encodeURIComponent(val))
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            if (res.ok || res.success) {
+                btn.textContent = '更新完成';
+                btn.style.background = '#6B8F71';
+                setTimeout(function(){
+                    btn.textContent = '更新';
+                    btn.style.background = '#A0626B';
                 }, 2500);
             } else {
                 btn.textContent = '更新';
