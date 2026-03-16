@@ -1090,10 +1090,10 @@
             var wt = findField(cust, ['體重','weight']);
             if (!isNaN(wt) && wt > 0) initialWeight = wt;
         }
-        // 公式目標：顯示「減 XX.X kg」（= 初始體重 × 15%）
+        // 公式目標：顯示初始體重 × 0.85 的實際公斤數
         if (initialWeight > 0) {
-            var reduceKg = Math.round(initialWeight * 0.15 * 10) / 10;
-            document.getElementById('formulaTargetWeight').textContent = '減 ' + reduceKg + ' kg';
+            var formulaTarget = Math.round(initialWeight * 0.85 * 10) / 10;
+            document.getElementById('formulaTargetWeight').textContent = formulaTarget + ' kg';
         }
         // 醫師建議目標體重
         if (!targetWeightFilled && cust) {
