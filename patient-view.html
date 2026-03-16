@@ -332,14 +332,14 @@
                 <div class="card" id="targetWeightCard">
                     <div class="card-title">🎯 目標體重</div>
                     <div>
-                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">公式目標（初始體重−15%）</div>
+                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">減 15% 初始體重</div>
                         <div style="font-size:24px;font-weight:700;color:#7B8FA1;margin-bottom:12px" id="formulaTargetWeight">— kg</div>
                     </div>
                     <div>
-                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">醫師建議目標</div>
+                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px" id="targetWeightLabel">醫師建議目標</div>
                         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
                             <button onclick="adjustTargetWeight(-0.5)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#A0626B;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">−</button>
-                            <input type="text" inputmode="decimal" id="targetWeightInput" style="width:64px;font-size:24px;font-weight:700;color:#A0626B;border:2px solid #E8E4DC;border-radius:10px;padding:8px 4px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.style.borderColor='#A0626B';this.style.boxShadow='0 0 0 3px rgba(160,98,107,0.15)'" onblur="this.style.borderColor='#E8E4DC';this.style.boxShadow='none'">
+                            <input type="text" inputmode="decimal" id="targetWeightInput" style="width:64px;font-size:24px;font-weight:700;color:#A0626B;border:2px solid #E8E4DC;border-radius:10px;padding:8px 4px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.style.borderColor='#A0626B';this.style.boxShadow='0 0 0 3px rgba(160,98,107,0.15)'" onblur="this.style.borderColor='#E8E4DC';this.style.boxShadow='none'" oninput="updateTargetWeightPct()">
                             <button onclick="adjustTargetWeight(0.5)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#A0626B;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">+</button>
                             <span style="font-size:14px;color:#8B8B8B;font-weight:600">kg</span>
                         </div>
@@ -1080,7 +1080,7 @@
     var initialWeight = 0; // 第一筆測量紀錄的體重
 
     function fillTargetWeightField(cust, measurements) {
-        // 計算初始體重（第一筆測量紀錄）
+        // 計算初始體重（第一筆測量紀錄 = 最早的那筆）
         if (measurements && measurements.length > 0) {
             var firstW = parseFloat(measurements[0]['體重']);
             if (!isNaN(firstW) && firstW > 0) initialWeight = firstW;
@@ -1090,10 +1090,10 @@
             var wt = findField(cust, ['體重','weight']);
             if (!isNaN(wt) && wt > 0) initialWeight = wt;
         }
-        // 公式目標 = 初始體重 × 85%
+        // 公式目標：顯示「減 XX.X kg」（= 初始體重 × 15%）
         if (initialWeight > 0) {
-            var formulaTarget = Math.round(initialWeight * 0.85 * 10) / 10;
-            document.getElementById('formulaTargetWeight').textContent = formulaTarget + ' kg';
+            var reduceKg = Math.round(initialWeight * 0.15 * 10) / 10;
+            document.getElementById('formulaTargetWeight').textContent = '減 ' + reduceKg + ' kg';
         }
         // 醫師建議目標體重
         if (!targetWeightFilled && cust) {
@@ -1102,10 +1102,23 @@
                 document.getElementById('targetWeightInput').value = doctorTW;
                 targetWeightFilled = true;
             } else if (initialWeight > 0) {
-                // 預設用公式目標
+                // 預設用公式目標（初始體重 × 85%）
                 document.getElementById('targetWeightInput').value = Math.round(initialWeight * 0.85 * 10) / 10;
                 targetWeightFilled = true;
             }
+        }
+        updateTargetWeightPct();
+    }
+
+    function updateTargetWeightPct() {
+        var val = parseFloat(document.getElementById('targetWeightInput').value) || 0;
+        var label = document.getElementById('targetWeightLabel');
+        if (initialWeight > 0 && val > 0 && val < initialWeight) {
+            var diff = initialWeight - val;
+            var pct = Math.round(diff / initialWeight * 1000) / 10;
+            label.textContent = '醫師建議目標（減 ' + pct + '% 初始體重）';
+        } else {
+            label.textContent = '醫師建議目標';
         }
     }
 
@@ -1114,6 +1127,7 @@
         var val = parseFloat(input.value) || 0;
         val = Math.max(30, Math.min(200, Math.round((val + delta) * 10) / 10));
         input.value = val;
+        updateTargetWeightPct();
     }
 
     function saveTargetWeight() {
