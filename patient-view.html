@@ -389,7 +389,6 @@
                     <div id="midDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="midDietSummaryText"></div>
                         <div id="midDietMeals"></div>
-                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('mid')">↩ 預設</button></div>
                     </div>
                 </div>
                 <div class="diet-day-section" id="highDietSection">
@@ -397,7 +396,6 @@
                     <div id="highDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="highDietSummaryText"></div>
                         <div id="highDietMeals"></div>
-                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('high')">↩ 預設</button></div>
                     </div>
                 </div>
                 <div class="diet-day-section" id="lowDietSection">
@@ -405,7 +403,6 @@
                     <div id="lowDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="lowDietSummaryText"></div>
                         <div id="lowDietMeals"></div>
-                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('low')">↩ 預設</button></div>
                     </div>
                 </div>
                 <div class="diet-day-section" id="fastDietSection">
@@ -413,7 +410,6 @@
                     <div id="fastDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="fastDietSummaryText"></div>
                         <div id="fastDietMeals"></div>
-                        <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('fast')">↩ 預設</button></div>
                     </div>
                 </div>
             </div>
@@ -1165,10 +1161,45 @@
         input.closest('.card').classList.add('editing');
     }
 
+    // ── 劇本設定 ──
+    // schedule: [六,日,一,二,三,四,五]
+    // formula: 配方 column(index 1）override per day type
+    //   陣列長度 6 = 6 餐 [早餐,早午餐,午餐,下午茶,晚餐,宵夜]
+    //   '1' = 有配方, '-' = 無配方
+    var SCRIPT_CONFIGS = {
+        midCarb:   { label: '中碳週', schedule: ['high','high','mid','mid','high','mid','mid'],
+            formula: { mid: ['1','-','1','-','1','-'], high: ['1','-','1','-','1','-'], low: ['1','-','1','-','1','1'], fast: ['1','-','1','-','1','1'] } },
+        lowCarb:   { label: '低碳週', schedule: ['high','high','low','mid','high','mid','mid'],
+            formula: { mid: ['1','-','1','-','1','-'], high: ['1','-','1','-','1','-'], low: ['1','-','1','-','1','1'], fast: ['1','-','1','-','1','1'] } },
+        carbCycle: { label: '碳循環', schedule: ['high','high','low','mid','high','low','mid'],
+            formula: { mid: ['1','-','1','-','1','-'], high: ['1','-','1','-','1','-'], low: ['1','-','1','-','1','1'], fast: ['1','-','1','-','1','1'] } },
+        lightFast: { label: '輕斷食', schedule: ['high','high','fast','mid','high','low','mid'],
+            formula: { mid: ['1','-','1','-','1','-'], high: ['1','-','1','-','1','-'], low: ['1','-','1','-','1','1'], fast: ['1','-','1','-','1','1'] } },
+        beast:     { label: '猛健週', schedule: ['high','high','low','mid','high','low','mid'],
+            formula: { mid: ['1','-','-','-','1','-'], high: ['1','-','-','-','1','-'], low: ['1','-','-','-','1','-'], fast: ['1','-','-','-','1','-'] } }
+    };
+    var currentScript = 'midCarb'; // 預設劇本
+
     function applyScript(scriptId) {
-        // TODO: 劇本邏輯待實作
-        console.log('applyScript:', scriptId);
-        alert('劇本「' + scriptId + '」功能開發中');
+        var cfg = SCRIPT_CONFIGS[scriptId];
+        if (!cfg) return;
+        currentScript = scriptId;
+        // 1. 設定排程
+        cycleSchedule = cfg.schedule.slice();
+        renderCycleSchedule();
+        // 2. 重新生成所有碳日餐食（generateDietPlan 會套用 formula）
+        ['mid','high','low','fast'].forEach(function(d){ generateDietPlan(d); });
+        // 3. 高亮被選中的劇本按鈕
+        var btns = document.querySelectorAll('.script-btn');
+        for (var i = 0; i < btns.length; i++) {
+            btns[i].style.boxShadow = '';
+            btns[i].style.borderWidth = '1.5px';
+        }
+        var activeBtn = document.querySelector('.script-btn[onclick*="' + scriptId + '"]');
+        if (activeBtn) {
+            activeBtn.style.boxShadow = '0 0 0 2px ' + activeBtn.style.borderColor;
+            activeBtn.style.borderWidth = '2px';
+        }
     }
 
     function saveTargetWeight() {
@@ -1327,11 +1358,20 @@
             mrG = packs * 20; foodG = 0;
         } else {
             var fixedSet = FIXED_PLANS[rec];
-            if (!fixedSet || !fixedSet[p]) return; // 不支援的蛋白質值
+            if (!fixedSet || !fixedSet[p]) return;
             var fp2 = fixedSet[p];
             plan = fp2.meals.map(function(r){ return r.slice(); });
             totalProtein = fp2.protein; packs = fp2.packs;
             mrG = packs * 20; foodG = totalProtein - mrG;
+        }
+
+        // 套用劇本的配方 pattern（覆寫 index 1）
+        var cfg = SCRIPT_CONFIGS[currentScript];
+        if (cfg && cfg.formula && cfg.formula[p]) {
+            var fPat = cfg.formula[p];
+            for (var m = 0; m < plan.length && m < fPat.length; m++) {
+                plan[m][1] = fPat[m];
+            }
         }
 
         renderDietPlan(p, plan, totalProtein, packs, mrG, foodG);
@@ -1341,26 +1381,14 @@
         var col = DIET_COLS[f];
         var id = p + '-d-' + m + '-' + f;
         var isDash = (val === '-' || val === '0' || val === 0);
-        var editable = (f === 1); // 只有配方(index 1)可調整
+        // 所有欄位皆唯讀（含配方），由劇本統一控制
         var html = '<div class="diet-step' + (isDash ? ' dash' : '') + '" id="' + p + '-s-' + m + '-' + f + '">';
         html += '<div class="diet-step-ctrl">';
         if (col.type === 'number') {
             var displayVal = (val === '0' || val === 0) ? '-' : esc(val);
-            if (editable) {
-                html += '<button class="diet-step-btn" onclick="dietAdj(\'' + id + '\',-1)">−</button>';
-                html += '<input type="text" id="' + id + '" value="' + displayVal + '" inputmode="numeric" readonly>';
-                html += '<button class="diet-step-btn" onclick="dietAdj(\'' + id + '\',1)">+</button>';
-            } else {
-                html += '<input type="text" id="' + id + '" value="' + displayVal + '" inputmode="numeric" readonly style="opacity:0.8">';
-            }
+            html += '<input type="text" id="' + id + '" value="' + displayVal + '" inputmode="numeric" readonly style="opacity:0.8">';
         } else {
-            if (editable) {
-                html += '<button class="diet-step-btn" onclick="dietCycle(\'' + id + '\',' + f + ',-1)">◀</button>';
-                html += '<input type="text" id="' + id + '" value="' + esc(val) + '" readonly>';
-                html += '<button class="diet-step-btn" onclick="dietCycle(\'' + id + '\',' + f + ',1)">▶</button>';
-            } else {
-                html += '<input type="text" id="' + id + '" value="' + esc(val) + '" readonly style="opacity:0.8">';
-            }
+            html += '<input type="text" id="' + id + '" value="' + esc(val) + '" readonly style="opacity:0.8">';
         }
         html += '</div>';
         var unitText = col.unit ? '<span class="diet-step-unit">' + col.unit + '</span>' : '';
@@ -1511,10 +1539,13 @@
         }
         if (!src) return [];
         var plan = src.meals.map(function(r){ return r.slice(); });
-        // 配方欄(index 1)可能被醫師調整，從 DOM 讀取最新值
-        for (var m = 0; m < MEAL_COUNT; m++) {
-            var el = document.getElementById(p + '-d-' + m + '-1');
-            if (el) plan[m][1] = el.value;
+        // 套用劇本的配方 pattern（覆寫 index 1）
+        var cfg = SCRIPT_CONFIGS[currentScript];
+        if (cfg && cfg.formula && cfg.formula[p]) {
+            var fPat = cfg.formula[p];
+            for (var m = 0; m < plan.length && m < fPat.length; m++) {
+                plan[m][1] = fPat[m];
+            }
         }
         return plan;
     }
