@@ -4,6 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>看診紀錄</title>
+    <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
+    <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <script>
+    (function() {
+        var _origReplace = history.replaceState.bind(history);
+        var _origPush = history.pushState.bind(history);
+        history.replaceState = function(s, t, u) {
+            try { _origReplace(s, t, u); } catch(e) { console.warn('[iOS patch] replaceState suppressed:', e && e.message); }
+        };
+        history.pushState = function(s, t, u) {
+            try { _origPush(s, t, u); } catch(e) { console.warn('[iOS patch] pushState suppressed:', e && e.message); }
+        };
+    })();
+    </script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         :root { --primary:#7B8FA1; --accent:#8B9D83; --warm:#C4A882; --brown:#B8926A; --bg:#F5F3EF; --card:#FDFBF7; --text:#4A4A4A; --muted:#8B8B8B; --border:#E8E4DC; }
@@ -20,6 +34,8 @@
         .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:14px}
         .spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .9s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
+        #loadingDiv{transition:opacity 0.3s ease}
+        #loadingDiv.fade-out{opacity:0;pointer-events:none}
         .error-box{margin:24px;padding:18px;background:#FFF3F3;border:1px solid #E8C4C4;border-radius:12px;text-align:center;color:#A0626B}
         .hx-card{background:var(--card);border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,0.06);margin-bottom:12px;overflow:hidden;border:1px solid var(--border)}
         .hx-header{display:flex;align-items:center;padding:14px 16px;cursor:pointer;user-select:none;gap:10px;-webkit-tap-highlight-color:transparent;transition:background 0.15s}
@@ -100,6 +116,21 @@
     var lineUid = '';
     var patientSn = '';
 
+    // ====== Profile 快取（姓名/頭像秒開）======
+    var MR_PROFILE_KEY = 'mr_profile';
+    function mrSaveProfile(sn, name, pic) {
+        try { localStorage.setItem(MR_PROFILE_KEY, JSON.stringify({ sn: sn, name: name, pic: pic })); } catch(e) {}
+    }
+    function mrLoadProfile(sn) {
+        try {
+            var raw = localStorage.getItem(MR_PROFILE_KEY);
+            if (!raw) return null;
+            var c = JSON.parse(raw);
+            if (c.sn !== sn) return null;
+            return c;
+        } catch(e) { return null; }
+    }
+
     // 先檢查 URL 參數，有的話直接跳過 LIFF init 加速載入
     var _urlParams = new URLSearchParams(window.location.search);
     var _urlId = _urlParams.get('id') || '';
@@ -108,8 +139,14 @@
     if (_urlId) {
         // 有院區病歷號 → 直接載入，不等 LIFF
         patientSn = _urlId;
+        // 先從 profile cache 秒顯示姓名/頭像
+        var _pCache = mrLoadProfile(patientSn);
+        if (_pCache) {
+            if (_pCache.name) document.getElementById('headerSub').textContent = _pCache.name;
+            if (_pCache.pic) document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + _pCache.pic + '" alt="">';
+        }
         loadDietPlan(patientSn);
-        // LIFF init 背景執行（取頭像用）
+        // LIFF init 背景執行（取頭像用，不阻塞資料載入）
         liff.init({ liffId: LIFF_ID }).then(function() {
             if (!liff.isLoggedIn()) return;
             return liff.getProfile();
@@ -118,7 +155,8 @@
             lineUid = profile.userId;
             document.getElementById('headerSub').textContent = profile.displayName;
             if (profile.pictureUrl) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + profile.pictureUrl + '" alt="">'; }
-            if (profile.displayName) { fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(lineUid) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){}); }
+            mrSaveProfile(patientSn, profile.displayName, profile.pictureUrl);
+            if (profile.displayName) { fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(patientSn) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){}); }
         }).catch(function(){});
     } else {
         // 沒有 URL 參數 → 走 LIFF init 流程
@@ -169,14 +207,17 @@
         // cache-first：先顯示快取，再背景更新
         var cached = mrLoadCache(sn);
         if (cached && cached.length > 0) {
-            document.getElementById('loadingDiv').style.display = 'none';
+            var _ld = document.getElementById('loadingDiv');
+            _ld.classList.add('fade-out');
+            setTimeout(function(){ _ld.style.display = 'none'; }, 300);
             var cachedRecords = cached.slice().reverse();
             renderCards(cachedRecords);
         }
         fetch(MEALS_GAS + '?dietHistory=' + encodeURIComponent(sn))
             .then(function(r) { return r.json(); })
             .then(function(result) {
-                document.getElementById('loadingDiv').style.display = 'none';
+                var _ld2 = document.getElementById('loadingDiv');
+                if (_ld2 && _ld2.style.display !== 'none') { _ld2.classList.add('fade-out'); setTimeout(function(){ _ld2.style.display = 'none'; }, 300); }
                 var records = result.records || [];
                 mrSaveCache(sn, records);
                 if (records.length === 0 && !cached) {
@@ -190,7 +231,8 @@
             })
             .catch(function(err) {
                 if (!cached) {
-                    document.getElementById('loadingDiv').style.display = 'none';
+                    var _ld3 = document.getElementById('loadingDiv');
+                    if (_ld3) { _ld3.style.display = 'none'; }
                     showError('載入飲食計劃失敗：' + err.message);
                 }
             });
