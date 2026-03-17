@@ -4,6 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>醫生數據總覽｜金鶯減重</title>
+    <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <script>
+    // 提前檢測 cache：如果有快取，直接隱藏 loading 避免閃爍
+    (function() {
+        try {
+            var raw = localStorage.getItem('doc_cache');
+            if (raw) {
+                var c = JSON.parse(raw);
+                if (Date.now() - c.ts < 1800000) {
+                    window._docCacheHit = true;
+                }
+            }
+        } catch(e) {}
+    })();
+    </script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-serif; background: #F5F3EF; color: #4A4A4A; min-height: 100vh; }
@@ -23,6 +38,8 @@
         .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh; gap: 14px; }
         .spinner { width: 40px; height: 40px; border: 4px solid #E8E4DC; border-top-color: #7B8FA1; border-radius: 50%; animation: spin 0.9s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        #loading{transition:opacity 0.3s ease}
+        #loading.fade-out{opacity:0;pointer-events:none}
 
         .error-box { margin: 24px 16px; padding: 18px; background: #F5F3EF; border: 1px solid #E8E4DC; border-radius: 12px; text-align: center; color: #A0626B; }
 
@@ -81,6 +98,7 @@
         <div class="spinner"></div>
         <p style="color:#8B8B8B;font-size:13px;">載入病患資料中...</p>
     </div>
+    <script>if(window._docCacheHit){document.getElementById('loading').style.display='none';}</script>
     <div id="error" style="display:none"></div>
     <div id="main" style="display:none">
         <div class="stats-bar" id="statsBar"></div>
@@ -204,7 +222,11 @@
         document.getElementById('recentList').innerHTML = recentHtml;
 
         renderPatientList(allPatients);
-        document.getElementById('loading').style.display = 'none';
+        var _ldEl = document.getElementById('loading');
+        if (_ldEl && _ldEl.style.display !== 'none') {
+            _ldEl.classList.add('fade-out');
+            setTimeout(function(){ _ldEl.style.display = 'none'; }, 300);
+        }
         document.getElementById('main').style.display = 'block';
     }
 
