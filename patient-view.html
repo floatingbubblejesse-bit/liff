@@ -1167,15 +1167,15 @@
     //   陣列長度 6 = 6 餐 [早餐,早午餐,午餐,下午茶,晚餐,宵夜]
     //   '1' = 有配方, '-' = 無配方
     var SCRIPT_CONFIGS = {
-        midCarb:   { label: '中碳週', schedule: ['high','high','mid','mid','high','mid','mid'],
+        midCarb:   { label: '中碳週', weeks: 1, schedule: ['high','high','mid','mid','high','mid','mid'],
             formula: { mid: ['1','-','1','-','1','-'], high: ['1','-','1','-','1','-'], low: ['1','-','1','-','1','1'], fast: ['1','-','1','-','1','1'] } },
-        lowCarb:   { label: '低碳週', schedule: ['high','high','low','mid','high','mid','mid'],
+        lowCarb:   { label: '低碳週', weeks: 2, schedule: ['high','high','low','mid','high','mid','mid'],
             formula: { mid: ['1','-','1','-','1','-'], high: ['1','-','1','-','1','-'], low: ['1','-','1','-','1','1'], fast: ['1','-','1','-','1','1'] } },
-        carbCycle: { label: '碳循環', schedule: ['high','high','low','mid','high','low','mid'],
+        carbCycle: { label: '碳循環', weeks: 2, schedule: ['high','high','low','mid','high','low','mid'],
             formula: { mid: ['1','-','1','-','1','-'], high: ['1','-','1','-','1','-'], low: ['1','-','1','-','1','1'], fast: ['1','-','1','-','1','1'] } },
-        lightFast: { label: '輕斷食', schedule: ['high','high','fast','mid','high','low','mid'],
+        lightFast: { label: '輕斷食', weeks: 2, schedule: ['high','high','fast','mid','high','low','mid'],
             formula: { mid: ['1','-','1','-','1','-'], high: ['1','-','1','-','1','-'], low: ['1','-','1','-','1','1'], fast: ['1','-','1','-','1','1'] } },
-        beast:     { label: '猛健週', schedule: ['high','high','low','mid','high','low','mid'],
+        beast:     { label: '猛健週', weeks: 1, schedule: ['high','high','low','mid','high','low','mid'],
             formula: { mid: ['1','-','-','-','1','-'], high: ['1','-','-','-','1','-'], low: ['1','-','-','-','1','-'], fast: ['1','-','-','-','1','-'] } }
     };
     var currentScript = 'midCarb'; // 預設劇本
@@ -1186,6 +1186,7 @@
         if (!cfg) return;
         currentScript = scriptId;
         cycleSchedule = cfg.schedule.slice();
+        if (cfg.weeks) cycleWeeks = cfg.weeks;
         renderCycleSchedule();
         ['mid','high','low','fast'].forEach(function(d){ generateDietPlan(d); });
         highlightScriptBtn(scriptId);
@@ -1242,9 +1243,13 @@
         // 1. 套用排程
         if (rec.schedule && rec.schedule.length === 7) {
             cycleSchedule = rec.schedule.slice();
-            renderCycleSchedule();
         }
-        // 2. 從 dayPlans 的 meals items 解析配方 pattern
+        // 2. 套用週數
+        if (rec.weeks && parseInt(rec.weeks) > 0) {
+            cycleWeeks = parseInt(rec.weeks);
+        }
+        renderCycleSchedule();
+        // 3. 從 dayPlans 的 meals items 解析配方 pattern
         var DITTO_MEALS = ['早餐','早午餐','午餐','下午茶','晚餐','宵夜'];
         var formulaPatterns = {};
         ['mid','high','low','fast'].forEach(function(dt) {
@@ -1260,16 +1265,17 @@
             }
             formulaPatterns[dt] = pattern;
         });
-        // 3. 註冊為 ditto 劇本（動態）
+        // 4. 註冊為 ditto 劇本（動態）
         currentScript = 'ditto';
         SCRIPT_CONFIGS.ditto = {
             label: 'Ditto 上一次',
+            weeks: cycleWeeks,
             schedule: cycleSchedule.slice(),
             formula: formulaPatterns
         };
-        // 4. 重新生成所有碳日
+        // 5. 重新生成所有碳日
         ['mid','high','low','fast'].forEach(function(d){ generateDietPlan(d); });
-        // 5. 高亮按鈕
+        // 6. 高亮按鈕
         highlightScriptBtn('ditto');
     }
 
@@ -1852,7 +1858,7 @@
         {key:'fast', label:'斷', cls:'t-fast'},
     ];
     var cycleSchedule = ['high','high','mid','mid','high','mid','mid']; // 預設：六日一二三四五
-    var cycleWeeks = 4; // 預設4週
+    var cycleWeeks = 1; // 預設1週
 
     function renderCycleSchedule() {
         var el = document.getElementById('cycleSchedule');
