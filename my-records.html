@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
     <link rel="preconnect" href="https://script.google.com" crossorigin>
     <script>
+    // ★ iOS history patch
     (function() {
         var _origReplace = history.replaceState.bind(history);
         var _origPush = history.pushState.bind(history);
@@ -18,7 +19,43 @@
         };
     })();
     </script>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script>
+    // ★ 秒開核心：在 LIFF SDK 載入前就偵測快取，決定是否跳過 loading
+    (function() {
+        var MR_CACHE_TTL = 1800000;
+        try {
+            var params = new URLSearchParams(window.location.search);
+            var urlId = params.get('id') || '';
+            // 嘗試從 uid→sn 快取取得 sn
+            var sn = urlId;
+            if (!sn) {
+                var uidSnRaw = localStorage.getItem('mr_uid_sn');
+                if (uidSnRaw) {
+                    var uidSnObj = JSON.parse(uidSnRaw);
+                    if (uidSnObj && uidSnObj.sn) sn = uidSnObj.sn;
+                }
+            }
+            if (sn) {
+                var raw = localStorage.getItem('mr_cache');
+                if (raw) {
+                    var c = JSON.parse(raw);
+                    if (c.key === sn && Date.now() - c.ts < MR_CACHE_TTL && c.data && c.data.length > 0) {
+                        window._mrEarly = { sn: sn, data: c.data };
+                    }
+                }
+                var profRaw = localStorage.getItem('mr_profile');
+                if (profRaw) {
+                    var prof = JSON.parse(profRaw);
+                    if (prof && prof.sn === sn) {
+                        window._mrEarlyProfile = prof;
+                    }
+                }
+            }
+        } catch(e) {}
+    })();
+    </script>
+    <!-- ★ LIFF SDK 改 async：不阻塞頁面渲染 -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js" async></script>
     <style>
         :root { --primary:#7B8FA1; --accent:#8B9D83; --warm:#C4A882; --brown:#B8926A; --bg:#F5F3EF; --card:#FDFBF7; --text:#4A4A4A; --muted:#8B8B8B; --border:#E8E4DC; }
         *{box-sizing:border-box;margin:0;padding:0}
@@ -87,6 +124,108 @@
             <p style="color:#8B8B8B;font-size:13px">載入資料中...</p>
         </div>
     </div>
+    <!-- ★ 秒開：如果 <head> 偵測到快取，body 渲染後立刻出卡片 -->
+    <script>
+    (function() {
+        if (!window._mrEarly) return;
+        // 立刻隱藏 loading
+        var ld = document.getElementById('loadingDiv');
+        if (ld) ld.style.display = 'none';
+        // 立刻顯示 profile
+        if (window._mrEarlyProfile) {
+            var p = window._mrEarlyProfile;
+            if (p.name) document.getElementById('headerSub').textContent = p.name;
+            if (p.pic) document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + p.pic + '" alt="">';
+        }
+        // 立刻渲染快取卡片
+        var records = window._mrEarly.data.slice().reverse();
+        var html = '';
+        for (var i = 0; i < records.length; i++) {
+            html += _buildCard(records[i], i);
+        }
+        document.getElementById('mainContent').innerHTML = html;
+        window._mrRenderedFromCache = true;
+    })();
+
+    function _esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function _buildCard(rec, idx) {
+        var d = rec.date || '';
+        var parts = d.split('-');
+        var yearNum = parts.length > 0 ? parts[0] : '';
+        var monthNum = parts.length > 1 ? parseInt(parts[1]) : '';
+        var dayNum = parts.length > 2 ? parseInt(parts[2]) : '';
+        var month = monthNum ? monthNum + '月' : '';
+        var isOpen = idx === 0 ? ' open' : '';
+        var dayLabels = {high:'高碳日', low:'低碳日', mid:'中碳日', fast:'斷食日'};
+        var dayEmojis = {high:'🔴', low:'🟢', mid:'🟡', fast:'⚪'};
+        var cycleLabels = {high:'高', low:'低', mid:'中', fast:'斷'};
+        var cycleCls = {high:'t-high', low:'t-low', mid:'t-mid', fast:'t-fast'};
+        var DAYS = ['六','日','一','二','三','四','五'];
+        var schedule = rec.schedule || [];
+        var subParts = [];
+        if (rec.protein) subParts.push('蛋白質 ' + rec.protein + 'g');
+        if (rec.weeklyMr) subParts.push('代餐 ' + rec.weeklyMr + '包/週');
+        var html = '<div class="hx-card' + isOpen + '" id="hxCard' + idx + '">';
+        html += '<div class="hx-header" data-idx="' + idx + '">';
+        html += '<div class="hx-date-icon"><div class="hx-date-month">' + _esc(month) + '</div><div class="hx-date-day">' + _esc(String(dayNum)) + '</div></div>';
+        html += '<div class="hx-header-info">';
+        html += '<div class="hx-header-title">📋 ' + _esc(yearNum + '年' + monthNum + '月' + dayNum + '日') + ' 看診</div>';
+        html += '<div class="hx-header-sub">' + _esc(subParts.join('　')) + '</div>';
+        html += '</div>';
+        html += '<span class="hx-arrow">▼</span>';
+        html += '</div>';
+        html += '<div class="hx-body">';
+        if (schedule.length === 7) {
+            html += '<div class="hx-section">';
+            html += '<div class="hx-section-title">📅 碳水循環排程</div>';
+            html += '<div class="hx-schedule-row">';
+            for (var s = 0; s < 7; s++) {
+                var ck = schedule[s] || 'mid';
+                html += '<div class="hx-sch-day"><div class="hx-sch-day-label">' + DAYS[s] + '</div>';
+                html += '<div class="hx-sch-day-btn ' + (cycleCls[ck]||'t-mid') + '">' + (cycleLabels[ck]||'?') + '</div></div>';
+            }
+            html += '</div></div>';
+        }
+        if (rec.weeklyMr > 0 || rec.weeklyQb > 0) {
+            html += '<div class="hx-section">';
+            html += '<div class="hx-section-title">📦 每週所需</div>';
+            html += '<div class="hx-packs-row">';
+            if (rec.weeklyMr > 0) html += '<span class="hx-pack-badge hx-pack-mr">🥤 代餐 ' + rec.weeklyMr + '包</span>';
+            if (rec.weeklyQb > 0) html += '<span class="hx-pack-badge hx-pack-qb">💊 Q寶 ' + rec.weeklyQb + '包</span>';
+            html += '</div></div>';
+        }
+        var dayPlans = rec.dayPlans || {};
+        var dayOrder = ['mid','high','low','fast'];
+        var scheduleSet = {};
+        if (schedule.length > 0) {
+            for (var si = 0; si < schedule.length; si++) { scheduleSet[schedule[si]] = true; }
+        }
+        var sortedDpKeys = dayOrder.filter(function(k){ return dayPlans[k] && (schedule.length === 0 || scheduleSet[k]); });
+        sortedDpKeys.forEach(function(p) {
+            var dp = dayPlans[p];
+            html += '<div class="hx-section">';
+            html += '<div class="hx-day-label" style="margin-bottom:8px">' + (dayEmojis[p]||'●') + ' ' + _esc(dayLabels[p] || p) + '</div>';
+            if (dp.meals && dp.meals.length > 0) {
+                dp.meals.forEach(function(meal) {
+                    html += '<div class="hx-meal-row">';
+                    html += '<span class="hx-meal-name">' + meal.icon + meal.name + '</span>';
+                    html += '<span class="hx-meal-items">' + _esc(meal.items) + '</span>';
+                    html += '</div>';
+                });
+            }
+            html += '</div>';
+        });
+        if (rec.note) {
+            html += '<div class="hx-section">';
+            html += '<div class="hx-section-title">💬 醫師建議</div>';
+            html += '<div class="hx-note">' + _esc(rec.note) + '</div>';
+            html += '</div>';
+        }
+        html += '</div></div>';
+        return html;
+    }
+    </script>
 
     <script>
     // ====== API URLs ======
@@ -146,121 +285,35 @@
         } catch(e) { return null; }
     }
 
-    // 先檢查 URL 參數，有的話直接跳過 LIFF init 加速載入
-    var _urlParams = new URLSearchParams(window.location.search);
-    var _urlId = _urlParams.get('id') || '';
-    var _urlUid = _urlParams.get('uid') || '';
-
-    if (_urlId) {
-        // 有院區病歷號 → 直接載入，不等 LIFF
-        patientSn = _urlId;
-        // 先從 profile cache 秒顯示姓名/頭像
-        var _pCache = mrLoadProfile(patientSn);
-        if (_pCache) {
-            if (_pCache.name) document.getElementById('headerSub').textContent = _pCache.name;
-            if (_pCache.pic) document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + _pCache.pic + '" alt="">';
+    // ====== 共用渲染函式（複用 _buildCard）======
+    function renderCards(records) {
+        var html = '';
+        for (var i = 0; i < records.length; i++) {
+            html += _buildCard(records[i], i);
         }
-        loadDietPlan(patientSn);
-        // LIFF init 背景執行（取頭像用，不阻塞資料載入）
-        liff.init({ liffId: LIFF_ID }).then(function() {
-            if (!liff.isLoggedIn()) return;
-            return liff.getProfile();
-        }).then(function(profile) {
-            if (!profile) return;
-            lineUid = profile.userId;
-            document.getElementById('headerSub').textContent = profile.displayName;
-            if (profile.pictureUrl) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + profile.pictureUrl + '" alt="">'; }
-            mrSaveProfile(patientSn, profile.displayName, profile.pictureUrl);
-            if (profile.displayName) { fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(patientSn) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){}); }
-        }).catch(function(){});
-    } else {
-        // 沒有 URL 參數 → 走 LIFF init 流程
-        liff.init({ liffId: LIFF_ID })
-            .then(function() {
-                if (!liff.isLoggedIn()) { liff.login(); return; }
-                return liff.getProfile();
-            })
-            .then(function(profile) {
-                if (!profile) return;
-                lineUid = profile.userId;
-                document.getElementById('headerSub').textContent = profile.displayName;
-                if (profile.pictureUrl) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + profile.pictureUrl + '" alt="">'; }
-
-                // ★ 秒開核心：先查 uid→sn 快取，有的話跳過 loadPatientData API
-                var cachedSn = mrLoadUidSn(lineUid);
-                if (cachedSn) {
-                    patientSn = cachedSn;
-                    var pCache = mrLoadProfile(patientSn);
-                    if (pCache && pCache.name) document.getElementById('headerSub').textContent = pCache.name;
-                    if (pCache && pCache.pic) document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + pCache.pic + '" alt="">';
-                    loadDietPlan(patientSn); // 直接進 cache-first 秒開
-                }
-
-                // 背景驗證/更新 uid→sn 映射
-                var param = 'uid=' + encodeURIComponent(lineUid);
-                fetch(GAS_URL + '?' + param)
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        if (data && !data.error && data.customer) {
-                            var freshSn = data.customer.sn;
-                            mrSaveUidSn(lineUid, freshSn);
-                            mrSaveProfile(freshSn, profile.displayName, profile.pictureUrl);
-                            if (profile.displayName) { fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(freshSn) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){}); }
-                            if (!cachedSn) {
-                                patientSn = freshSn;
-                                loadDietPlan(patientSn);
-                            } else if (freshSn !== cachedSn) {
-                                patientSn = freshSn;
-                                loadDietPlan(patientSn);
-                            }
-                        } else if (!cachedSn) {
-                            showError('找不到病患資料');
-                        }
-                    })
-                    .catch(function(err) {
-                        if (!cachedSn) showError('載入病患資料失敗：' + err.message);
-                    });
-            })
-            .catch(function(err) {
-                if (_urlUid) {
-                    lineUid = _urlUid;
-                    document.getElementById('headerSub').textContent = '';
-                    loadPatientData();
-                } else {
-                    showError('無法取得使用者資料：' + err.message);
-                }
-            });
+        document.getElementById('mainContent').innerHTML = html;
     }
 
-    // ====== Step 1: Get patient SN from LINE userId ======
-    function loadPatientData() {
-        var param = lineUid ? ('uid=' + encodeURIComponent(lineUid)) : ('id=' + encodeURIComponent(patientSn));
-        fetch(GAS_URL + '?' + param)
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data.error || !data.customer) {
-                    showError('找不到病患資料');
-                    return;
-                }
-                patientSn = data.customer.sn;
-                loadDietPlan(patientSn);
-            })
-            .catch(function(err) {
-                showError('載入病患資料失敗：' + err.message);
-            });
-    }
-
-    // ====== Step 2: Get diet history from MEALS_GAS (includes dayPlans with meals) ======
+    // ====== Step 2: Get diet history from MEALS_GAS ======
+    var _dietPlanLoaded = false;
     function loadDietPlan(sn) {
-        // cache-first：先顯示快取，再背景更新
-        var cached = mrLoadCache(sn);
-        if (cached && cached.length > 0) {
-            var _ld = document.getElementById('loadingDiv');
-            _ld.classList.add('fade-out');
-            setTimeout(function(){ _ld.style.display = 'none'; }, 300);
-            var cachedRecords = cached.slice().reverse();
-            renderCards(cachedRecords);
+        if (_dietPlanLoaded) return;
+        _dietPlanLoaded = true;
+
+        // 如果 early render 已經從快取畫好了，直接跳到背景更新
+        var alreadyRendered = window._mrRenderedFromCache;
+        if (!alreadyRendered) {
+            // 沒有 early render → 嘗試一般 cache-first
+            var cached = mrLoadCache(sn);
+            if (cached && cached.length > 0) {
+                var _ld = document.getElementById('loadingDiv');
+                if (_ld) { _ld.classList.add('fade-out'); setTimeout(function(){ _ld.style.display = 'none'; }, 300); }
+                renderCards(cached.slice().reverse());
+                alreadyRendered = true;
+            }
         }
+
+        // 背景更新
         fetch(MEALS_GAS + '?dietHistory=' + encodeURIComponent(sn))
             .then(function(r) { return r.json(); })
             .then(function(result) {
@@ -268,7 +321,7 @@
                 if (_ld2 && _ld2.style.display !== 'none') { _ld2.classList.add('fade-out'); setTimeout(function(){ _ld2.style.display = 'none'; }, 300); }
                 var records = result.records || [];
                 mrSaveCache(sn, records);
-                if (records.length === 0 && !cached) {
+                if (records.length === 0 && !alreadyRendered) {
                     document.getElementById('mainContent').innerHTML = '<div class="no-data">尚無看診紀錄<br><span style="font-size:12px;color:#bbb">看診後醫師儲存飲食計劃，紀錄會自動出現在這裡</span></div>';
                     return;
                 }
@@ -278,7 +331,7 @@
                 }
             })
             .catch(function(err) {
-                if (!cached) {
+                if (!alreadyRendered) {
                     var _ld3 = document.getElementById('loadingDiv');
                     if (_ld3) { _ld3.style.display = 'none'; }
                     showError('載入飲食計劃失敗：' + err.message);
@@ -286,104 +339,117 @@
             });
     }
 
-    // (buildRecordFromPlan removed — dietHistory API already returns formatted dayPlans)
-
-    // ====== Render cards ======
-    function renderCards(records) {
-        var html = '';
-        for (var i = 0; i < records.length; i++) {
-            html += buildHistoryCard(records[i], i);
-        }
-        document.getElementById('mainContent').innerHTML = html;
+    // ====== LIFF SDK ready 偵測（因為 async 載入）======
+    function waitForLiff(cb) {
+        if (typeof liff !== 'undefined') { cb(); return; }
+        var tries = 0;
+        var iv = setInterval(function() {
+            tries++;
+            if (typeof liff !== 'undefined') { clearInterval(iv); cb(); return; }
+            if (tries > 100) { clearInterval(iv); } // 10 秒超時放棄
+        }, 100);
     }
 
-    function buildHistoryCard(rec, idx) {
-        var d = rec.date || '';
-        var parts = d.split('-');
-        var yearNum = parts.length > 0 ? parts[0] : '';
-        var monthNum = parts.length > 1 ? parseInt(parts[1]) : '';
-        var dayNum = parts.length > 2 ? parseInt(parts[2]) : '';
-        var month = monthNum ? monthNum + '月' : '';
-        var isOpen = idx === 0 ? ' open' : '';
+    // ====== 主初始化流程 ======
+    var _urlParams = new URLSearchParams(window.location.search);
+    var _urlId = _urlParams.get('id') || '';
+    var _urlUid = _urlParams.get('uid') || '';
 
-        var dayLabels = {high:'高碳日', low:'低碳日', mid:'中碳日', fast:'斷食日'};
-        var dayEmojis = {high:'🔴', low:'🟢', mid:'🟡', fast:'⚪'};
-        var cycleLabels = {high:'高', low:'低', mid:'中', fast:'斷'};
-        var cycleCls = {high:'t-high', low:'t-low', mid:'t-mid', fast:'t-fast'};
-        var DAYS = ['六','日','一','二','三','四','五'];
-
-        var schedule = rec.schedule || [];
-        var subParts = [];
-        if (rec.protein) subParts.push('蛋白質 ' + rec.protein + 'g');
-        if (rec.weeklyMr) subParts.push('代餐 ' + rec.weeklyMr + '包/週');
-
-        var html = '<div class="hx-card' + isOpen + '" id="hxCard' + idx + '">';
-        html += '<div class="hx-header" data-idx="' + idx + '">';
-        html += '<div class="hx-date-icon"><div class="hx-date-month">' + esc(month) + '</div><div class="hx-date-day">' + esc(String(dayNum)) + '</div></div>';
-        html += '<div class="hx-header-info">';
-        html += '<div class="hx-header-title">📋 ' + esc(yearNum + '年' + monthNum + '月' + dayNum + '日') + ' 看診</div>';
-        html += '<div class="hx-header-sub">' + esc(subParts.join('　')) + '</div>';
-        html += '</div>';
-        html += '<span class="hx-arrow">▼</span>';
-        html += '</div>';
-        html += '<div class="hx-body">';
-
-        // Schedule section
-        if (schedule.length === 7) {
-            html += '<div class="hx-section">';
-            html += '<div class="hx-section-title">📅 碳水循環排程</div>';
-            html += '<div class="hx-schedule-row">';
-            for (var s = 0; s < 7; s++) {
-                var ck = schedule[s] || 'mid';
-                html += '<div class="hx-sch-day"><div class="hx-sch-day-label">' + DAYS[s] + '</div>';
-                html += '<div class="hx-sch-day-btn ' + (cycleCls[ck]||'t-mid') + '">' + (cycleLabels[ck]||'?') + '</div></div>';
+    if (_urlId) {
+        // ★ 有 ?id= → 不需要 LIFF 就能載入資料
+        patientSn = _urlId;
+        // profile cache（如果 early render 沒做的話補上）
+        if (!window._mrRenderedFromCache) {
+            var _pCache = mrLoadProfile(patientSn);
+            if (_pCache) {
+                if (_pCache.name) document.getElementById('headerSub').textContent = _pCache.name;
+                if (_pCache.pic) document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + _pCache.pic + '" alt="">';
             }
-            html += '</div></div>';
         }
-
-        // Weekly packs section
-        if (rec.weeklyMr > 0 || rec.weeklyQb > 0) {
-            html += '<div class="hx-section">';
-            html += '<div class="hx-section-title">📦 每週所需</div>';
-            html += '<div class="hx-packs-row">';
-            if (rec.weeklyMr > 0) html += '<span class="hx-pack-badge hx-pack-mr">🥤 代餐 ' + rec.weeklyMr + '包</span>';
-            if (rec.weeklyQb > 0) html += '<span class="hx-pack-badge hx-pack-qb">💊 Q寶 ' + rec.weeklyQb + '包</span>';
-            html += '</div></div>';
-        }
-
-        // Day plans — 只顯示排程中實際存在的碳日類型
-        var dayPlans = rec.dayPlans || {};
-        var dayOrder = ['mid','high','low','fast'];
-        var scheduleSet = {};
-        if (schedule.length > 0) {
-            for (var si = 0; si < schedule.length; si++) { scheduleSet[schedule[si]] = true; }
-        }
-        var sortedDpKeys = dayOrder.filter(function(k){ return dayPlans[k] && (schedule.length === 0 || scheduleSet[k]); });
-        sortedDpKeys.forEach(function(p) {
-            var dp = dayPlans[p];
-            html += '<div class="hx-section">';
-            html += '<div class="hx-day-label" style="margin-bottom:8px">' + (dayEmojis[p]||'●') + ' ' + esc(dayLabels[p] || p) + '</div>';
-            if (dp.meals && dp.meals.length > 0) {
-                dp.meals.forEach(function(meal) {
-                    html += '<div class="hx-meal-row">';
-                    html += '<span class="hx-meal-name">' + meal.icon + meal.name + '</span>';
-                    html += '<span class="hx-meal-items">' + esc(meal.items) + '</span>';
-                    html += '</div>';
-                });
-            }
-            html += '</div>';
+        loadDietPlan(patientSn);
+        // LIFF 背景執行（只取頭像，完全不阻塞）
+        waitForLiff(function() {
+            liff.init({ liffId: LIFF_ID }).then(function() {
+                if (!liff.isLoggedIn()) return;
+                return liff.getProfile();
+            }).then(function(profile) {
+                if (!profile) return;
+                lineUid = profile.userId;
+                document.getElementById('headerSub').textContent = profile.displayName;
+                if (profile.pictureUrl) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + profile.pictureUrl + '" alt="">'; }
+                mrSaveProfile(patientSn, profile.displayName, profile.pictureUrl);
+                if (profile.displayName) { fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(patientSn) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){}); }
+            }).catch(function(){});
         });
+    } else {
+        // 沒有 URL 參數 → 等 LIFF SDK ready 後走 init
+        waitForLiff(function() {
+            liff.init({ liffId: LIFF_ID })
+                .then(function() {
+                    if (!liff.isLoggedIn()) { liff.login(); return; }
+                    return liff.getProfile();
+                })
+                .then(function(profile) {
+                    if (!profile) return;
+                    lineUid = profile.userId;
+                    document.getElementById('headerSub').textContent = profile.displayName;
+                    if (profile.pictureUrl) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + profile.pictureUrl + '" alt="">'; }
 
-        // Note section
-        if (rec.note) {
-            html += '<div class="hx-section">';
-            html += '<div class="hx-section-title">💬 醫師建議</div>';
-            html += '<div class="hx-note">' + esc(rec.note) + '</div>';
-            html += '</div>';
-        }
+                    // ★ 秒開核心：先查 uid→sn 快取
+                    var cachedSn = mrLoadUidSn(lineUid);
+                    if (cachedSn) {
+                        patientSn = cachedSn;
+                        var pCache = mrLoadProfile(patientSn);
+                        if (pCache && pCache.name) document.getElementById('headerSub').textContent = pCache.name;
+                        if (pCache && pCache.pic) document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + pCache.pic + '" alt="">';
+                        loadDietPlan(patientSn);
+                    }
 
-        html += '</div></div>';
-        return html;
+                    // 背景驗證/更新 uid→sn 映射
+                    var param = 'uid=' + encodeURIComponent(lineUid);
+                    fetch(GAS_URL + '?' + param)
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            if (data && !data.error && data.customer) {
+                                var freshSn = data.customer.sn;
+                                mrSaveUidSn(lineUid, freshSn);
+                                mrSaveProfile(freshSn, profile.displayName, profile.pictureUrl);
+                                if (profile.displayName) { fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(freshSn) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){}); }
+                                if (!cachedSn) {
+                                    patientSn = freshSn;
+                                    loadDietPlan(patientSn);
+                                } else if (freshSn !== cachedSn) {
+                                    patientSn = freshSn;
+                                    _dietPlanLoaded = false;
+                                    loadDietPlan(patientSn);
+                                }
+                            } else if (!cachedSn) {
+                                showError('找不到病患資料');
+                            }
+                        })
+                        .catch(function(err) {
+                            if (!cachedSn) showError('載入病患資料失敗：' + err.message);
+                        });
+                })
+                .catch(function(err) {
+                    if (_urlUid) {
+                        lineUid = _urlUid;
+                        document.getElementById('headerSub').textContent = '';
+                        // fallback: loadPatientData
+                        var param = 'uid=' + encodeURIComponent(lineUid);
+                        fetch(GAS_URL + '?' + param)
+                            .then(function(r) { return r.json(); })
+                            .then(function(data) {
+                                if (data.error || !data.customer) { showError('找不到病患資料'); return; }
+                                patientSn = data.customer.sn;
+                                loadDietPlan(patientSn);
+                            })
+                            .catch(function(e) { showError('載入病患資料失敗：' + e.message); });
+                    } else {
+                        showError('無法取得使用者資料：' + err.message);
+                    }
+                });
+        });
     }
 
     // ====== Card toggle ======
@@ -423,11 +489,12 @@
 
     // ====== Utilities ======
     function showError(msg) {
-        document.getElementById('loadingDiv').style.display = 'none';
-        document.getElementById('mainContent').innerHTML = '<div class="error-box">⚠️ ' + esc(msg) + '</div>';
+        var ld = document.getElementById('loadingDiv');
+        if (ld) ld.style.display = 'none';
+        document.getElementById('mainContent').innerHTML = '<div class="error-box">⚠️ ' + _esc(msg) + '</div>';
     }
 
-    function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function esc(str) { return _esc(str); }
     </script>
 </body>
 </html>
