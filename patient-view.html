@@ -1966,13 +1966,18 @@
         var fastData = getDietPlanData('fast');
         var targetWt = parseFloat(document.getElementById('targetWeightInput').value) || 0;
 
+        var cardMsgTexts = getEnabledCardMsgTexts();
+        var foodTableRows = getEnabledFoodTableRows();
+
         var sheetPayload = {
             patientSn: patientSn,
             proteinRec: parseInt(proteinVal) || 0,
             mid: midData, high: highData, low: lowData, fast: fastData,
             schedule: cycleSchedule,
             weeks: cycleWeeks,
-            patientTargetWeight: targetWt
+            patientTargetWeight: targetWt,
+            cardMsg: cardMsgTexts,
+            foodTable: foodTableRows
         };
 
         var n8nPayload = {
