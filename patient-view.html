@@ -1747,6 +1747,9 @@
                 btn.textContent = '已發送'; btn.style.background = '#6B8F71';
                 dietHistoryCache = null;
                 _histPrefetchPromise = null;
+                try { localStorage.removeItem('pv_hist'); } catch(e) {}
+                // 延遲重新載入看診紀錄（等 N8N 寫入 Sheet 完成）
+                setTimeout(function() { _prefetchDietHistory(); }, 2000);
                 var pStatus = document.getElementById('proteinSaveStatus');
                 if (pStatus) { pStatus.textContent = '✓ 已同步'; pStatus.style.color = '#6B8F71'; pStatus.style.opacity = '1'; setTimeout(function(){ pStatus.style.opacity = '0'; }, 2500); }
                 setTimeout(function() { btn.textContent = '儲存並發送給客戶'; btn.style.background = ''; }, 2500);
