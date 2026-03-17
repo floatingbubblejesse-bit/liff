@@ -349,13 +349,13 @@
                     <div>
                         <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">醫師建議攝取量</div>
                         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-                            <select id="proteinInput" onchange="this.closest('.card').classList.add('editing')" style="font-size:20px;font-weight:700;color:#8B9D83;border:2px solid #E8E4DC;border-radius:10px;padding:6px 8px;text-align:center;outline:none;background:#F0EDE6;cursor:pointer;appearance:auto">
+                            <select id="proteinInput" onchange="onProteinChange()" style="font-size:20px;font-weight:700;color:#8B9D83;border:2px solid #E8E4DC;border-radius:10px;padding:6px 8px;text-align:center;outline:none;background:#F0EDE6;cursor:pointer;appearance:auto">
                                 <option value="100" selected>100</option>
                                 <option value="120">120</option>
                                 <option value="140">140</option>
                             </select>
                             <span style="font-size:14px;color:#8B8B8B;font-weight:600">g</span>
-                            <button id="saveProteinBtn" onclick="saveProtein()" class="inline-save" style="padding:3px 10px;border-radius:6px;border:none;background:#8B9D83;color:white;font-size:11px;font-weight:600;cursor:pointer;margin-left:2px">儲存</button>
+                            <span id="proteinSaveStatus" style="font-size:10px;color:#6B8F71;font-weight:600;opacity:0;transition:opacity .3s"></span>
                         </div>
                     </div>
                 </div>
@@ -1080,40 +1080,31 @@
         input.closest('.card').classList.add('editing');
     }
 
-    function saveProtein() {
+    function onProteinChange() {
         var val = parseInt(document.getElementById('proteinInput').value, 10);
-        if (isNaN(val) || val <= 0) { alert('請輸入有效的蛋白質攝取量'); return; }
-        var btn = document.getElementById('saveProteinBtn');
-        btn.disabled = true;
-        btn.style.opacity = '0.6';
-        btn.textContent = '儲存中…';
+        if (isNaN(val) || val <= 0) return;
+        // 立即重新產生所有碳日計劃（不等 API 回傳）
+        ['mid','high','low','fast'].forEach(function(d){ generateDietPlan(d); });
+        // 背景儲存到 I 欄（fire-and-forget，最快速）
+        var status = document.getElementById('proteinSaveStatus');
+        status.textContent = '儲存中…';
+        status.style.opacity = '1';
         fetch(MEALS_GAS + '?saveProtein=' + encodeURIComponent(patientSn) + '&value=' + encodeURIComponent(val))
         .then(function(r){ return r.json(); })
         .then(function(res){
-            btn.disabled = false;
             if (res.ok || res.success) {
-                btn.textContent = '已儲存';
-                btn.style.background = '#6B8F71';
-                btn.style.opacity = '1';
-                ['mid','high','low','fast'].forEach(function(d){ generateDietPlan(d); });
-                setTimeout(function(){
-                    btn.textContent = '儲存';
-                    btn.style.background = '#8B9D83';
-                    btn.style.opacity = '';
-                    btn.blur();
-                    document.getElementById('proteinRecCard').classList.remove('editing');
-                }, 2500);
+                status.textContent = '✓ 已儲存';
+                status.style.color = '#6B8F71';
             } else {
-                btn.textContent = '儲存';
-                btn.style.opacity = '';
-                alert('儲存失敗：' + (res.error || JSON.stringify(res)));
+                status.textContent = '✗ 失敗';
+                status.style.color = '#A0626B';
             }
+            setTimeout(function(){ status.style.opacity = '0'; }, 1500);
         })
-        .catch(function(err){
-            btn.disabled = false;
-            btn.style.opacity = '';
-            btn.textContent = '儲存';
-            alert('儲存失敗：' + err.message);
+        .catch(function(){
+            status.textContent = '✗ 失敗';
+            status.style.color = '#A0626B';
+            setTimeout(function(){ status.style.opacity = '0'; }, 1500);
         });
     }
 
@@ -1492,11 +1483,14 @@
             var cls = 'diet-meal-card' + (allDash ? ' inactive' : '');
             html += '<div class="' + cls + '" id="' + p + '-meal-' + m + '" onclick="toggleDietMeal(\'' + p + '\',' + m + ')">';
             html += '<div class="diet-meal-title">' + MEAL_ICONS[m] + ' ' + MEAL_NAMES[m] + '</div><div class="diet-flow">';
+            var visCount = 0;
             for (var f = 0; f < DIET_COLS.length; f++) {
-                var sep = DIET_COLS[f].sep || '→';
                 var curVal = plan[m] ? plan[m][f] || '-' : '-';
-                if (f > 0) html += '<span class="diet-arrow">' + sep + '</span>';
+                if (curVal === '-' || curVal === '0' || curVal === 0) continue; // 跳過空欄位
+                var sep = DIET_COLS[f].sep || '→';
+                if (visCount > 0) html += '<span class="diet-arrow">' + sep + '</span>';
                 html += dietStepHtml(p, m, f, curVal);
+                visCount++;
             }
             html += '</div></div>';
         }
@@ -1712,8 +1706,8 @@
             if (res.ok || res.success) {
                 btn.textContent = '已發送'; btn.style.background = '#6B8F71';
                 dietHistoryCache = null; // 清掉快取，讓看診紀錄 tab 重新載入
-                var pBtn = document.getElementById('saveProteinBtn');
-                if (pBtn) { pBtn.textContent = '已同步'; pBtn.style.background = '#6B8F71'; setTimeout(function(){ pBtn.textContent = '更新'; pBtn.style.background = '#8B9D83'; }, 2500); }
+                var pStatus = document.getElementById('proteinSaveStatus');
+                if (pStatus) { pStatus.textContent = '✓ 已同步'; pStatus.style.color = '#6B8F71'; pStatus.style.opacity = '1'; setTimeout(function(){ pStatus.style.opacity = '0'; }, 2500); }
                 setTimeout(function() { btn.textContent = '儲存並發送給客戶'; btn.style.background = ''; }, 2500);
             } else { btn.textContent = '儲存並發送給客戶'; alert('LINE 推播失敗：' + (res.error || JSON.stringify(res))); }
         })
