@@ -66,16 +66,6 @@
         tr:last-child td{border-bottom:none}
         .date-col{font-size:10px;color:#888}
         .no-data{text-align:center;color:#aaa;padding:24px;font-size:13px}
-        .presets-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
-        .preset-btn{padding:9px 10px;background:#F5F3EF;border:1px solid #E8E4DC;border-radius:8px;font-size:11px;color:#7B8FA1;cursor:pointer;text-align:left;line-height:1.4}
-        .preset-btn:hover{background: #F0EDE6}
-        .note-textarea{width:100%;min-height:120px;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;outline:none;line-height:1.6}
-        .note-textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,101,192,0.1)}
-        .char-count{font-size:11px;color:var(--muted);text-align:right;margin-top:4px}
-        .send-btn{width:100%;padding:13px;background:var(--blue);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px}
-        .send-btn:hover{background:#6B7F91}
-        .send-btn:disabled{background:#90a4ae;cursor:not-allowed}
-        .send-success{display:none;background:#E8EDE6;color:#6B8F71;padding:12px;border-radius:10px;text-align:center;font-size:13px;font-weight:600;margin-top:8px}
 
         /* ====== 居家體重 stats row ====== */
         .hw-stats-row{display:flex;gap:6px;margin-bottom:14px}
@@ -413,19 +403,6 @@
                     </div>
                 </div>
             </div>
-            <div class="card">
-                <div class="card-title">💬 快速預設建議</div>
-                <div class="presets-grid" id="presetsGrid"></div>
-            </div>
-            <div class="card">
-                <div class="card-title">✏️ 建議內容</div>
-                <textarea class="note-textarea" id="noteText" placeholder="輸入給病患的建議..." oninput="updateChar()"></textarea>
-                <div class="char-count"><span id="charCount">0</span> 字</div>
-                <button class="send-btn" id="sendBtn" onclick="sendNote()">
-                    <span>📤 傳送給病患（LINE）</span>
-                </button>
-                <div class="send-success" id="sendSuccess">✅ 建議已成功傳送！</div>
-            </div>
         </div>
         <div id="tab-history" class="tab-pane" style="display:none">
             <div id="historyContent"><div class="no-history">載入資料後即可查看看診紀錄</div></div>
@@ -457,21 +434,6 @@
     }
 
     var MEALS_WH = N8N + '/patient-meals';
-    var NOTE_WH = N8N + '/doctor-note';
-    var PRESETS = [
-        {label:'體重控制',text:'建議維持規律飲食，控制每日熱量攝取，避免宵夜及高糖食物，搭配每週 3 次有氧運動。'},
-        {label:'運動處方',text:'建議每週至少 150 分鐘中等強度運動，可選擇快走、游泳或騎車，循序漸進增加強度。'},
-        {label:'血糖管理',text:'注意飲食中醣類的種類與份量，選擇低 GI 食物，定時定量進餐，避免空腹時間過長。'},
-        {label:'血壓控制',text:'減少鈉鹽攝取，多吃蔬菜水果，維持正常體重，規律運動，並按時服藥。'},
-        {label:'蛋白質攝取',text:'每日蛋白質建議攝取量為體重（kg）+40g（上限140g），優先選擇雞胸肉、魚、豆腐、蛋等優質蛋白。'},
-        {label:'睡眠建議',text:'充足睡眠對代謝與體重管理至關重要，建議每天睡足 7~8 小時，維持固定作息。'},
-        {label:'飲水建議',text:'每日飲水量建議為體重（kg）× 30~35 ml，分次補充，避免一次大量飲水，少喝含糖飲料。'},
-        {label:'減脂進度',text:'本週體脂率已有進步，請繼續保持！重點在飲食控制，建議記錄每日飲食，下次回診帶來。'},
-        {label:'肌肉量不足',text:'目前肌肉量偏低，建議增加阻力訓練，每週 2~3 次，同時提高蛋白質攝取幫助肌肉合成。'},
-        {label:'內臟脂肪警示',text:'內臟脂肪指數偏高，需特別注意，建議減少精緻澱粉及酒精攝取，配合核心肌群訓練。'},
-        {label:'維持期建議',text:'目前數據維持良好，請繼續保持現有飲食與運動習慣，每 2~3 個月回診追蹤即可。'},
-        {label:'下次回診',text:'建議 4 週後回診追蹤體組成變化，如有任何不適請提前聯絡。期待您下次的好成績！'},
-    ];
     var METRICS = [
         ['體重','體重','kg',true],['體脂率','體脂率','%',true],['肌肉量','肌肉量','kg',false],
         ['水分比率','水分','%',false],['內臟脂肪指數','內臟脂肪','',true],
@@ -491,13 +453,6 @@
 
     // ★ 初始化程式碼已搬到 script 最底部，確保所有 var 賦值完成後才執行
 
-    function buildPresets() {
-        var html = '';
-        PRESETS.forEach(function(p) {
-            html += '<button class="preset-btn" onclick="applyPreset(' + JSON.stringify(p.text) + ')">' + esc(p.label) + '</button>';
-        });
-        document.getElementById('presetsGrid').innerHTML = html;
-    }
 
     function _applyBodyData(data) {
         allData=data;
@@ -1952,38 +1907,6 @@
         loadAllDietPlans();
     }
 
-    function applyPreset(text){document.getElementById('noteText').value=text;updateChar();}
-    function updateChar(){document.getElementById('charCount').textContent=document.getElementById('noteText').value.length;}
-
-    function sendNote(){
-        var note=document.getElementById('noteText').value.trim();
-        if(!note){alert('請先輸入建議內容');return;}
-        if(!patientLineUid){alert('此病患尚未綁定 LINE，無法傳送。');return;}
-        var proteinVal = document.getElementById('proteinInput').value || '';
-        var btn=document.getElementById('sendBtn');
-        btn.disabled=true;
-        btn.innerHTML='<div class="spinner" style="width:18px;height:18px;border-width:3px"></div><span>傳送中...</span>';
-        fetch(NOTE_WH,{method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({
-                lineUid:patientLineUid,
-                note:note,
-                patientSn:patientSn,
-                proteinRecommendation: proteinVal,
-                saveRecord: true
-            })})
-            .then(function(r){return r.json();})
-            .then(function(res){
-                btn.disabled=false;
-                btn.innerHTML='<span>📤 傳送給病患（LINE）</span>';
-                if(res.ok){
-                    document.getElementById('sendSuccess').style.display='block';
-                    setTimeout(function(){document.getElementById('sendSuccess').style.display='none';},4000);
-                    document.getElementById('noteText').value='';
-                    updateChar();
-                } else { alert('傳送失敗：'+(res.error||JSON.stringify(res))); }
-            })
-            .catch(function(err){btn.disabled=false;btn.innerHTML='<span>📤 傳送給病患（LINE）</span>';alert('傳送失敗：'+err.message);});
-    }
 
     // ====== 看診紀錄（收折卡片，類似 Flex Message）======
     var dietHistoryCache = null;
@@ -3179,7 +3102,6 @@
     // ====== 初始化（放在 script 最底部，確保所有 var 賦值已完成）======
     if (!patientSn) { showError('缺少病患 ID，請從醫生總覽頁面進入。'); }
     else {
-        buildPresets();
         loadBodyData();
         if (patientLineUid) {
             prefetchMealData(patientLineUid);
