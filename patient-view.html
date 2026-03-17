@@ -1501,14 +1501,20 @@
     }
 
     function getDietPlanData(p) {
-        var plan = [];
+        var rec = parseInt(document.getElementById('proteinInput').value) || 100;
+        var src;
+        if (p === 'fast') {
+            src = FIXED_PLANS.fast;
+        } else {
+            var fixedSet = FIXED_PLANS[rec];
+            if (fixedSet && fixedSet[p]) src = fixedSet[p];
+        }
+        if (!src) return [];
+        var plan = src.meals.map(function(r){ return r.slice(); });
+        // 配方欄(index 1)可能被醫師調整，從 DOM 讀取最新值
         for (var m = 0; m < MEAL_COUNT; m++) {
-            var row = [];
-            for (var f = 0; f < DIET_COLS.length; f++) {
-                var el = document.getElementById(p + '-d-' + m + '-' + f);
-                row.push(el ? el.value : '');
-            }
-            plan.push(row);
+            var el = document.getElementById(p + '-d-' + m + '-1');
+            if (el) plan[m][1] = el.value;
         }
         return plan;
     }
