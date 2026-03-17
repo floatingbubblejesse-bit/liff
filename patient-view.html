@@ -1232,109 +1232,144 @@
     var MEAL_COUNT = 6;
     var dietPlanInitialized = false;
 
+    // ====== 寫死的餐食計劃（依醫師建議攝取量，配方除外）======
+    var FIXED_PLANS = {
+        100: {
+            mid:  { protein: 100, packs: 2, meals: [
+                ['1','1','-','20','大量','-','1拳頭','-'],
+                ['-','-','-','-','-','-','-','-'],
+                ['-','1','-','20','大量','-','1拳頭','-'],
+                ['-','-','-','-','-','-','-','-'],
+                ['1','1','-','20','大量','-','-','-'],
+                ['-','-','-','-','-','-','-','-']
+            ]},
+            high: { protein: 100, packs: 2, meals: [
+                ['1','1','-','20','大量','-','1拳頭','-'],
+                ['-','-','-','-','-','-','-','-'],
+                ['-','1','1','20','大量','-','1拳頭','適量'],
+                ['-','-','-','-','-','-','-','-'],
+                ['1','1','-','20','大量','-','-','-'],
+                ['-','-','-','-','-','-','-','-']
+            ]},
+            low:  { protein: 120, packs: 3, meals: [
+                ['1','1','-','20','大量','-','-','-'],
+                ['-','-','-','-','-','-','-','-'],
+                ['1','1','-','20','大量','-','-','-'],
+                ['-','-','-','-','-','1','-','-'],
+                ['1','1','-','20','大量','-','-','-'],
+                ['-','1','-','-','-','-','-','-']
+            ]}
+        },
+        120: {
+            mid:  { protein: 120, packs: 3, meals: [
+                ['1','1','-','20','大量','-','1拳頭','-'],
+                ['-','-','-','-','-','-','-','-'],
+                ['1','1','-','20','大量','-','1拳頭','-'],
+                ['-','-','-','-','-','-','-','-'],
+                ['1','1','-','20','大量','-','-','-'],
+                ['-','-','-','-','-','-','-','-']
+            ]},
+            high: { protein: 120, packs: 3, meals: [
+                ['1','1','-','20','大量','-','1拳頭','-'],
+                ['-','-','-','-','-','-','-','-'],
+                ['1','1','1','20','大量','-','1拳頭','適量'],
+                ['-','-','-','-','-','-','-','-'],
+                ['1','1','-','20','大量','-','-','-'],
+                ['-','-','-','-','-','-','-','-']
+            ]},
+            low:  { protein: 140, packs: 3, meals: [
+                ['1','1','-','20','大量','-','-','-'],
+                ['-','-','-','-','-','-','-','-'],
+                ['1','1','-','20','大量','-','-','-'],
+                ['-','-','-','20','-','1','-','-'],
+                ['1','1','-','20','大量','-','-','-'],
+                ['-','1','-','-','-','-','-','-']
+            ]}
+        },
+        140: {
+            mid:  { protein: 140, packs: 3, meals: [
+                ['1','1','-','20','大量','-','1拳頭','-'],
+                ['-','-','-','-','-','-','-','-'],
+                ['1','1','-','20','大量','-','1拳頭','-'],
+                ['-','-','-','20','-','-','-','-'],
+                ['1','1','-','20','大量','-','1拳頭','-'],
+                ['-','-','-','-','-','-','-','-']
+            ]},
+            high: { protein: 140, packs: 3, meals: [
+                ['1','1','-','20','大量','-','1拳頭','-'],
+                ['-','-','-','-','-','-','-','-'],
+                ['1','1','1','20','大量','-','1拳頭','適量'],
+                ['-','-','-','20','-','-','-','-'],
+                ['1','1','-','20','大量','-','-','-'],
+                ['-','-','-','-','-','-','-','-']
+            ]},
+            low:  { protein: 140, packs: 3, meals: [
+                ['1','1','-','20','大量','-','-','-'],
+                ['-','-','-','-','-','-','-','-'],
+                ['1','1','-','20','大量','-','-','-'],
+                ['-','-','-','20','-','1','-','-'],
+                ['1','1','-','20','大量','-','-','-'],
+                ['-','1','-','-','-','-','-','-']
+            ]}
+        },
+        fast: { protein: 120, packs: 6, meals: [
+            ['1','1','-','-','大量','1','-','-'],
+            ['1','-','-','-','-','-','-','-'],
+            ['1','1','-','-','-','-','-','-'],
+            ['1','-','-','-','-','1','-','-'],
+            ['1','1','-','-','-','-','-','-'],
+            ['1','1','-','-','-','-','-','-']
+        ]}
+    };
+
     // p = 'mid' | 'high' | 'low' | 'fast'
     function generateDietPlan(p) {
         var rec = parseInt(document.getElementById('proteinInput').value) || 0;
         if (rec <= 0) return;
-        var packs = rec <= 110 ? 2 : 3;
-        var mrG = packs * 20;
-        var foodG = rec - mrG;
-        var perMeal = Math.round(foodG / 3);
-        var fp = perMeal > 0 ? String(perMeal) : '-';
-        var plan;
+
+        var plan, totalProtein, packs, mrG, foodG;
 
         if (p === 'fast') {
-            // 斷食日：固定120g蛋白質，6包代餐，不受醫師建議攝取量影響
-            var fastPacks = 6;
-            var fastMrG = 120;
-            var fastFoodG = 0;
-            var fastTotal = 120;
-            plan = [
-                ['1', '1', '-', '-', '大量', '1', '-', '-'],  // 早餐: 代餐=1, 配方=1, 蔬菜=大量, Q寶=1
-                ['1', '-', '-', '-', '-',    '-', '-', '-'],  // 早午餐: 代餐=1
-                ['1', '1', '-', '-', '-',    '-', '-', '-'],  // 午餐: 代餐=1, 配方=1
-                ['1', '-', '-', '-', '-',    '1', '-', '-'],  // 下午茶: 代餐=1, Q寶=1
-                ['1', '1', '-', '-', '-',    '-', '-', '-'],  // 晚餐: 代餐=1, 配方=1
-                ['1', '1', '-', '-', '-',    '-', '-', '-'],  // 宵夜: 代餐=1, 配方=1
-            ];
-            renderDietPlan(p, plan, fastTotal, fastPacks, fastMrG, fastFoodG);
-            return;
+            var fp = FIXED_PLANS.fast;
+            plan = fp.meals.map(function(r){ return r.slice(); });
+            totalProtein = fp.protein; packs = fp.packs;
+            mrG = packs * 20; foodG = 0;
         } else {
-            // 中碳日基底
-            if (packs === 2) {
-                plan = [
-                    ['1',  '1', '-', fp,  '大量', '-', '1拳頭', '-'],  // 早餐
-                    ['-',  '-', '-', '-', '-',    '-', '-',     '-'],  // 早午餐
-                    ['-',  '1', '-', fp,  '大量', '-', '1拳頭', '-'],  // 午餐
-                    ['-',  '-', '-', '-', '-',    '-', '-',     '-'],  // 下午茶
-                    ['1',  '1', '-', fp,  '大量', '-', '-',     '-'],  // 晚餐
-                    ['-',  '-', '-', '-', '-',    '-', '-',     '-'],  // 宵夜
-                ];
-            } else {
-                plan = [
-                    ['1',  '1', '-', fp,  '大量', '-', '1拳頭', '-'],  // 早餐
-                    ['-',  '-', '-', '-', '-',    '-', '-',     '-'],  // 早午餐
-                    ['1',  '1', '-', fp,  '大量', '-', '1拳頭', '-'],  // 午餐
-                    ['-',  '-', '-', '-', '-',    '-', '-',     '-'],  // 下午茶
-                    ['1',  '1', '-', fp,  '大量', '-', '-',     '-'],  // 晚餐
-                    ['-',  '-', '-', '-', '-',    '-', '-',     '-'],  // 宵夜
-                ];
-            }
-            if (p === 'high') {
-                // 高碳日：午餐(idx 2) 排糖包±排油包=1, 高碳水±高油脂=適量
-                plan[2][2] = '1';
-                plan[2][7] = '適量';
-            }
+            var fixedSet = FIXED_PLANS[rec];
+            if (!fixedSet || !fixedSet[p]) return; // 不支援的蛋白質值
+            var fp2 = fixedSet[p];
+            plan = fp2.meals.map(function(r){ return r.slice(); });
+            totalProtein = fp2.protein; packs = fp2.packs;
+            mrG = packs * 20; foodG = totalProtein - mrG;
         }
 
-        if (p === 'low') {
-            // 低碳日：代餐比中碳日多1包(上限3)，食物蛋白=(rec+20)-代餐蛋白 平分早午晚
-            var lowPacks = Math.min(packs + 1, 3);
-            var lowMrG = lowPacks * 20;
-            var lowFoodG = Math.max((rec + 20) - lowMrG, 0);
-            var lowPerMeal = Math.round(lowFoodG / 3);
-            var lfp = lowPerMeal > 0 ? String(lowPerMeal) : '-';
-            if (lowPacks === 2) {
-                plan = [
-                    ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 早餐
-                    ['-',  '-', '-', '-',  '-',    '-', '-', '-'],  // 早午餐
-                    ['-',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 午餐
-                    ['-',  '-', '-', '-',  '-',    '1', '-', '-'],  // 下午茶: Q寶=1
-                    ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 晚餐
-                    ['-',  '1', '-', '-',  '-',    '-', '-', '-'],  // 宵夜: 配方=1
-                ];
-            } else {
-                plan = [
-                    ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 早餐
-                    ['-',  '-', '-', '-',  '-',    '-', '-', '-'],  // 早午餐
-                    ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 午餐
-                    ['-',  '-', '-', '-',  '-',    '1', '-', '-'],  // 下午茶: Q寶=1
-                    ['1',  '1', '-', lfp,  '大量', '-', '-', '-'],  // 晚餐
-                    ['-',  '1', '-', '-',  '-',    '-', '-', '-'],  // 宵夜: 配方=1
-                ];
-            }
-            renderDietPlan(p, plan, rec + 20, lowPacks, lowMrG, lowFoodG);
-            return;
-        }
-
-        renderDietPlan(p, plan, rec, packs, mrG, foodG);
+        renderDietPlan(p, plan, totalProtein, packs, mrG, foodG);
     }
 
     function dietStepHtml(p, m, f, val) {
         var col = DIET_COLS[f];
         var id = p + '-d-' + m + '-' + f;
         var isDash = (val === '-' || val === '0' || val === 0);
+        var editable = (f === 1); // 只有配方(index 1)可調整
         var html = '<div class="diet-step' + (isDash ? ' dash' : '') + '" id="' + p + '-s-' + m + '-' + f + '">';
         html += '<div class="diet-step-ctrl">';
         if (col.type === 'number') {
             var displayVal = (val === '0' || val === 0) ? '-' : esc(val);
-            html += '<button class="diet-step-btn" onclick="dietAdj(\'' + id + '\',-1)">−</button>';
-            html += '<input type="text" id="' + id + '" value="' + displayVal + '" inputmode="numeric" readonly>';
-            html += '<button class="diet-step-btn" onclick="dietAdj(\'' + id + '\',1)">+</button>';
+            if (editable) {
+                html += '<button class="diet-step-btn" onclick="dietAdj(\'' + id + '\',-1)">−</button>';
+                html += '<input type="text" id="' + id + '" value="' + displayVal + '" inputmode="numeric" readonly>';
+                html += '<button class="diet-step-btn" onclick="dietAdj(\'' + id + '\',1)">+</button>';
+            } else {
+                html += '<input type="text" id="' + id + '" value="' + displayVal + '" inputmode="numeric" readonly style="opacity:0.8">';
+            }
         } else {
-            html += '<button class="diet-step-btn" onclick="dietCycle(\'' + id + '\',' + f + ',-1)">◀</button>';
-            html += '<input type="text" id="' + id + '" value="' + esc(val) + '" readonly>';
-            html += '<button class="diet-step-btn" onclick="dietCycle(\'' + id + '\',' + f + ',1)">▶</button>';
+            if (editable) {
+                html += '<button class="diet-step-btn" onclick="dietCycle(\'' + id + '\',' + f + ',-1)">◀</button>';
+                html += '<input type="text" id="' + id + '" value="' + esc(val) + '" readonly>';
+                html += '<button class="diet-step-btn" onclick="dietCycle(\'' + id + '\',' + f + ',1)">▶</button>';
+            } else {
+                html += '<input type="text" id="' + id + '" value="' + esc(val) + '" readonly style="opacity:0.8">';
+            }
         }
         html += '</div>';
         var unitText = col.unit ? '<span class="diet-step-unit">' + col.unit + '</span>' : '';
