@@ -188,7 +188,11 @@
         .diet-btn-save:disabled{background:#90a4ae;cursor:not-allowed}
         .diet-toggle{font-size:10px;color:var(--muted);margin-left:auto;transition:transform 0.3s}
         .diet-body.collapsed{display:none}
-        .diet-day-section{margin-bottom:6px}
+        .diet-day-section{margin-bottom:6px;transition:opacity .3s,max-height .3s}
+        .diet-day-section.unused{opacity:0.25;max-height:20px;overflow:hidden;margin-bottom:2px}
+        .diet-day-section.unused .diet-day-header{padding:4px 14px;font-size:11px}
+        .diet-day-section.unused .diet-body{display:none!important}
+        .diet-day-section.unused:hover{opacity:0.6}
         .diet-day-header{display:flex;align-items:center;gap:8px;padding:12px 14px;cursor:pointer;user-select:none;border-radius:10px;background:#F5F3EF;font-size:14px;font-weight:700;color:var(--text);border:1px solid var(--border);transition:background 0.2s}
         .diet-day-header:hover{background:#F5F3EF}
         .diet-day-header .diet-mode{font-size:10px}
@@ -361,7 +365,7 @@
                 <div class="diet-btn-row" style="margin-bottom:12px">
                     <button class="diet-btn-save" id="saveAllDietBtn" onclick="saveAllDietPlans()" style="width:100%">儲存並發送給客戶</button>
                 </div>
-                <div class="diet-day-section">
+                <div class="diet-day-section" id="midDietSection">
                     <div class="diet-day-header" onclick="toggleDietBody('mid')">🟡 中碳日 <span class="diet-mode" id="midDietModeBadge"></span><span class="diet-toggle" id="midDietToggle">▶</span></div>
                     <div id="midDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="midDietSummaryText"></div>
@@ -369,7 +373,7 @@
                         <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('mid')">↩ 預設</button></div>
                     </div>
                 </div>
-                <div class="diet-day-section">
+                <div class="diet-day-section" id="highDietSection">
                     <div class="diet-day-header" onclick="toggleDietBody('high')">🔴 高碳日 <span class="diet-mode" id="highDietModeBadge"></span><span class="diet-toggle" id="highDietToggle">▶</span></div>
                     <div id="highDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="highDietSummaryText"></div>
@@ -377,7 +381,7 @@
                         <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('high')">↩ 預設</button></div>
                     </div>
                 </div>
-                <div class="diet-day-section">
+                <div class="diet-day-section" id="lowDietSection">
                     <div class="diet-day-header" onclick="toggleDietBody('low')">🟢 低碳日 <span class="diet-mode" id="lowDietModeBadge"></span><span class="diet-toggle" id="lowDietToggle">▶</span></div>
                     <div id="lowDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="lowDietSummaryText"></div>
@@ -385,7 +389,7 @@
                         <div class="diet-btn-row"><button class="diet-btn-regen" onclick="generateDietPlan('low')">↩ 預設</button></div>
                     </div>
                 </div>
-                <div class="diet-day-section">
+                <div class="diet-day-section" id="fastDietSection">
                     <div class="diet-day-header" onclick="toggleDietBody('fast')">⚪ 斷食日 <span class="diet-mode" id="fastDietModeBadge"></span><span class="diet-toggle" id="fastDietToggle">▶</span></div>
                     <div id="fastDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="fastDietSummaryText"></div>
@@ -1705,6 +1709,18 @@
         }
         el.innerHTML = html;
         updateCycleWeeksSummary();
+        updateDaySectionVisibility();
+    }
+
+    function updateDaySectionVisibility() {
+        var types = ['mid','high','low','fast'];
+        for (var i = 0; i < types.length; i++) {
+            var sec = document.getElementById(types[i] + 'DietSection');
+            if (!sec) continue;
+            var used = cycleSchedule.indexOf(types[i]) !== -1;
+            if (used) { sec.classList.remove('unused'); }
+            else { sec.classList.add('unused'); }
+        }
     }
 
     function cycleDayType(idx) {
