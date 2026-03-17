@@ -196,6 +196,11 @@
         .diet-day-header .diet-mode{font-size:10px}
         .diet-day-header .diet-toggle{margin-left:auto}
         /* 小卡內容 */
+        .card-msg-send-btn{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.15s;flex-shrink:0;user-select:none;-webkit-tap-highlight-color:transparent}
+        .card-msg-send-btn.on{background:#D4EDDA;border:2px solid #81c784;color:#2A4A34}
+        .card-msg-send-btn.off{background:#F8D7DA;border:2px solid #e57373;color:#A0626B}
+        #cardMsgSection.send-off .diet-day-header{opacity:0.45}
+        #cardMsgSection.send-off #cardMsgBody{opacity:0.3;pointer-events:none}
         .card-msg-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;margin-bottom:6px;border-radius:8px;background:#FDFBF7;border:1px solid var(--border);font-size:12px;line-height:1.6;color:var(--text);transition:opacity 0.2s}
         .card-msg-item.disabled{opacity:0.3;text-decoration:line-through}
         .card-msg-item-text{flex:1;word-break:break-word}
@@ -411,10 +416,10 @@
                 </div>
                 <!-- ★ 小卡內容（LINE 推播附加文字）-->
                 <div class="diet-day-section" id="cardMsgSection">
-                    <div class="diet-day-header" onclick="toggleCardMsg()" style="background:#EDE8E0">
-                        💬 小卡內容
-                        <span class="diet-mode" id="cardMsgBadge" style="color:var(--muted);font-size:10px"></span>
-                        <span class="diet-toggle" id="cardMsgToggle">▶</span>
+                    <div class="diet-day-header" style="background:#EDE8E0">
+                        <span onclick="toggleCardMsgSend(event)" id="cardMsgSendBtn" class="card-msg-send-btn on" title="點擊切換發送/不發送">✓</span>
+                        <span onclick="toggleCardMsg()" style="flex:1;cursor:pointer">💬 小卡內容 <span class="diet-mode" id="cardMsgBadge" style="color:var(--muted);font-size:10px"></span></span>
+                        <span class="diet-toggle" id="cardMsgToggle" onclick="toggleCardMsg()" style="cursor:pointer">▶</span>
                     </div>
                     <div id="cardMsgBody" class="diet-body collapsed" style="padding:10px 14px">
                         <div id="cardMsgItems"></div>
@@ -1510,6 +1515,22 @@
         ditto:     ['⚠️ 排糖包與排油包務必在高碳日用掉，才會瘦更快！']
     };
     var cardMsgList = []; // [{text, enabled}]
+    var cardMsgSendEnabled = true; // 整條小卡是否發送
+
+    function toggleCardMsgSend(e) {
+        if (e) e.stopPropagation();
+        cardMsgSendEnabled = !cardMsgSendEnabled;
+        var btn = document.getElementById('cardMsgSendBtn');
+        var section = document.getElementById('cardMsgSection');
+        if (btn) {
+            btn.className = 'card-msg-send-btn ' + (cardMsgSendEnabled ? 'on' : 'off');
+            btn.textContent = cardMsgSendEnabled ? '✓' : '✕';
+        }
+        if (section) {
+            if (cardMsgSendEnabled) { section.classList.remove('send-off'); }
+            else { section.classList.add('send-off'); }
+        }
+    }
 
     function toggleCardMsg() {
         var body = document.getElementById('cardMsgBody');
@@ -1577,6 +1598,7 @@
 
     // 取得啟用的小卡文字（供 buildDietLineMessage 使用）
     function getEnabledCardMsgTexts() {
+        if (!cardMsgSendEnabled) return []; // 整條被打叉 → 不發送
         var result = [];
         for (var i = 0; i < cardMsgList.length; i++) {
             if (cardMsgList[i].enabled) result.push(cardMsgList[i].text);
