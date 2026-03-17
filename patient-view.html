@@ -350,7 +350,6 @@
                         <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">醫師建議攝取量</div>
                         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                             <select id="proteinInput" onchange="this.closest('.card').classList.add('editing')" style="font-size:20px;font-weight:700;color:#8B9D83;border:2px solid #E8E4DC;border-radius:10px;padding:6px 8px;text-align:center;outline:none;background:#F0EDE6;cursor:pointer;appearance:auto">
-                                <option value="80">80</option>
                                 <option value="100" selected>100</option>
                                 <option value="120">120</option>
                                 <option value="140">140</option>
@@ -1003,7 +1002,7 @@
             if (!isNaN(doctorRec) && doctorRec > 0) {
                 prefill = doctorRec;
             } else if (!isNaN(current)) {
-                var opts = [80, 100, 120, 140];
+                var opts = [100, 120, 140];
                 prefill = NaN;
                 for (var oi = 0; oi < opts.length; oi++) {
                     if (opts[oi] > current) { prefill = opts[oi]; break; }
@@ -1045,7 +1044,7 @@
             proteinFilled = true;
             console.log('[蛋白質] 已用 I 欄覆蓋: ' + iCol);
         } else if (!isNaN(hCol)) {
-            var opts2 = [80, 100, 120, 140];
+            var opts2 = [100, 120, 140];
             var autoVal = 140;
             for (var oi2 = 0; oi2 < opts2.length; oi2++) {
                 if (opts2[oi2] > hCol) { autoVal = opts2[oi2]; break; }
