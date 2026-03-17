@@ -354,8 +354,8 @@
                                 <option value="140">140</option>
                             </select>
                             <span style="font-size:14px;color:#8B8B8B;font-weight:600">g</span>
+                            <button id="saveProteinBtn" onclick="saveProtein()" class="edit-row-save" style="padding:3px 10px;border-radius:6px;border:none;background:#8B9D83;color:white;font-size:11px;font-weight:600;cursor:pointer;margin-left:2px">儲存</button>
                         </div>
-                        <button id="saveProteinBtn" onclick="saveProtein()" class="edit-row-save" style="width:100%;padding:8px;border-radius:8px;border:none;background:#8B9D83;color:white;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(139,157,131,0.3)">更新</button>
                     </div>
                 </div>
                 <!-- 右：目標體重 -->
@@ -372,8 +372,8 @@
                             <input type="text" inputmode="decimal" id="targetWeightInput" style="width:64px;font-size:24px;font-weight:700;color:#A0626B;border:2px solid #E8E4DC;border-radius:10px;padding:8px 4px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.closest('.card').classList.add('editing')" onblur="var c=this.closest('.card');setTimeout(function(){if(!c.querySelector(':focus'))c.classList.remove('editing')},150)" oninput="updateTargetWeightPct()">
                             <span class="edit-row-adj"><button onclick="adjustTargetWeight(1)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#A0626B;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">+</button></span>
                             <span style="font-size:14px;color:#8B8B8B;font-weight:600">kg</span>
+                            <button id="saveTargetWeightBtn" onclick="saveTargetWeight()" class="edit-row-save" style="padding:3px 10px;border-radius:6px;border:none;background:#A0626B;color:white;font-size:11px;font-weight:600;cursor:pointer;margin-left:2px">儲存</button>
                         </div>
-                        <button id="saveTargetWeightBtn" onclick="saveTargetWeight()" class="edit-row-save" style="width:100%;padding:8px;border-radius:8px;border:none;background:#A0626B;color:white;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(160,98,107,0.3)">更新</button>
                     </div>
                 </div>
             </div>
