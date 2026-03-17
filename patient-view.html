@@ -1691,62 +1691,42 @@
         var lowData  = getDietPlanData('low');
         var fastData = getDietPlanData('fast');
 
-        // Step 1: 先呼叫 GAS 儲存飲食計畫（含日期覆寫規則）
-        var gasUrl = MEALS_GAS
-            + '?saveDietPlan=true'
-            + '&patientSn='  + encodeURIComponent(patientSn)
-            + '&proteinRec=' + encodeURIComponent(parseInt(proteinVal) || 0)
-            + '&mid='        + encodeURIComponent(JSON.stringify(midData))
-            + '&high='       + encodeURIComponent(JSON.stringify(highData))
-            + '&low='        + encodeURIComponent(JSON.stringify(lowData))
-            + '&fast='       + encodeURIComponent(JSON.stringify(fastData))
-            + '&schedule='   + encodeURIComponent(JSON.stringify(cycleSchedule))
-            + '&weeks='      + encodeURIComponent(cycleWeeks)
-            + '&patientTargetWeight=' + encodeURIComponent(parseFloat(document.getElementById('targetWeightInput').value) || 0);
+        // 統一走 N8N（POST+JSON），同時處理 Sheet 儲存 + LINE 推播
+        // 避免 GAS GET URL 過長（中文字元 URL 編碼後容易超過 2048 限制）
+        var n8nPayload = {
+            patientSn: patientSn,
+            proteinRec: parseInt(proteinVal) || 0,
+            mid:  midData,
+            high: highData,
+            low:  lowData,
+            fast: fastData,
+            schedule: cycleSchedule,
+            weeks: cycleWeeks,
+            lineUid: patientLineUid,
+            lineFlexMessage: lineMsg,
+            patientTargetWeight: parseFloat(document.getElementById('targetWeightInput').value) || 0
+        };
 
-        fetch(gasUrl)
-        .then(function(r) { return r.json(); })
-        .then(function(gasRes) {
-            if (gasRes.error) {
-                throw new Error('Sheet 儲存失敗：' + gasRes.error);
-            }
-
-            // Step 2: GAS 儲存成功 → 呼叫 N8N 發送 LINE 推播
-            var n8nPayload = {
-                patientSn: patientSn,
-                proteinRec: parseInt(proteinVal) || 0,
-                mid:  midData,
-                high: highData,
-                low:  lowData,
-                fast: fastData,
-                schedule: cycleSchedule,
-                weeks: cycleWeeks,
-                lineUid: patientLineUid,
-                lineFlexMessage: lineMsg,
-                skipSheetSave: true  // 告知 N8N 不需要再寫 Sheet
-            };
-
-            return fetch(N8N + '/save-diet-plan', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(n8nPayload)
-            })
-            .then(function(r2) {
-                var ct = r2.headers.get('content-type') || '';
-                if (ct.indexOf('json') !== -1) return r2.json();
-                return r2.text().then(function(t) {
-                    try { return JSON.parse(t); } catch(e) { return { ok: r2.ok, raw: t }; }
-                });
+        fetch(N8N + '/save-diet-plan', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(n8nPayload)
+        })
+        .then(function(r) {
+            var ct = r.headers.get('content-type') || '';
+            if (ct.indexOf('json') !== -1) return r.json();
+            return r.text().then(function(t) {
+                try { return JSON.parse(t); } catch(e) { return { ok: r.ok, raw: t }; }
             });
         })
         .then(function(res) {
             btn.disabled = false;
             if (res.ok || res.success) {
                 btn.textContent = '已發送'; btn.style.background = '#6B8F71';
-                dietHistoryCache = null; // 清掉快取，讓看診紀錄 tab 重新載入
+                dietHistoryCache = null;
                 var pStatus = document.getElementById('proteinSaveStatus');
                 if (pStatus) { pStatus.textContent = '✓ 已同步'; pStatus.style.color = '#6B8F71'; pStatus.style.opacity = '1'; setTimeout(function(){ pStatus.style.opacity = '0'; }, 2500); }
                 setTimeout(function() { btn.textContent = '儲存並發送給客戶'; btn.style.background = ''; }, 2500);
-            } else { btn.textContent = '儲存並發送給客戶'; alert('LINE 推播失敗：' + (res.error || JSON.stringify(res))); }
+            } else { btn.textContent = '儲存並發送給客戶'; alert('推播失敗：' + (res.error || JSON.stringify(res))); }
         })
         .catch(function(err) { btn.disabled = false; btn.textContent = '儲存並發送給客戶'; alert('儲存失敗：' + err.message); });
     }
