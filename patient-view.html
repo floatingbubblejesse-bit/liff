@@ -189,10 +189,11 @@
         .diet-toggle{font-size:10px;color:var(--muted);margin-left:auto;transition:transform 0.3s}
         .diet-body.collapsed{display:none}
         .diet-day-section{margin-bottom:6px;transition:opacity .3s,max-height .3s}
-        .diet-day-section.unused{opacity:0.25;max-height:20px;overflow:hidden;margin-bottom:2px}
+        .diet-day-section.unused{opacity:0.25;max-height:20px;overflow:hidden;margin-bottom:2px;transition:opacity .3s,max-height .3s,margin-bottom .3s}
         .diet-day-section.unused .diet-day-header{padding:4px 14px;font-size:11px}
-        .diet-day-section.unused .diet-body{display:none!important}
-        .diet-day-section.unused:hover{opacity:0.6}
+        .diet-day-section.unused .diet-body{display:none}
+        .diet-day-section.unused:hover{opacity:1;max-height:2000px;overflow:visible;margin-bottom:6px}
+        .diet-day-section.unused:hover .diet-day-header{padding:12px 14px;font-size:14px}
         .diet-day-header{display:flex;align-items:center;gap:8px;padding:12px 14px;cursor:pointer;user-select:none;border-radius:10px;background:#F5F3EF;font-size:14px;font-weight:700;color:var(--text);border:1px solid var(--border);transition:background 0.2s}
         .diet-day-header:hover{background:#F5F3EF}
         .diet-day-header .diet-mode{font-size:10px}
