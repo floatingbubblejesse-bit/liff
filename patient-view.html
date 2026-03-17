@@ -998,9 +998,19 @@
                 document.getElementById('proteinFormulaLabel').textContent = '公式攝取量（體重（' + wt2 + '）＋40）';
             }
         }
-        // 輸入框：優先 I 欄，I 欄空 → 用 H 欄（= 體重+40，上限140）
+        // 輸入框：優先 I 欄，I 欄空 → 選比公式值大的最小選項
         if (!proteinFilled) {
-            var prefill = (!isNaN(doctorRec) && doctorRec > 0) ? doctorRec : (!isNaN(current) ? current : NaN);
+            var prefill;
+            if (!isNaN(doctorRec) && doctorRec > 0) {
+                prefill = doctorRec;
+            } else if (!isNaN(current)) {
+                var opts = [80, 100, 120, 140];
+                prefill = NaN;
+                for (var oi = 0; oi < opts.length; oi++) {
+                    if (opts[oi] > current) { prefill = opts[oi]; break; }
+                }
+                if (isNaN(prefill)) prefill = 140;
+            }
             if (!isNaN(prefill)) {
                 document.getElementById('proteinInput').value = prefill;
                 proteinFilled = true;
@@ -1036,7 +1046,12 @@
             proteinFilled = true;
             console.log('[蛋白質] 已用 I 欄覆蓋: ' + iCol);
         } else if (!isNaN(hCol)) {
-            document.getElementById('proteinInput').value = hCol;
+            var opts2 = [80, 100, 120, 140];
+            var autoVal = 140;
+            for (var oi2 = 0; oi2 < opts2.length; oi2++) {
+                if (opts2[oi2] > hCol) { autoVal = opts2[oi2]; break; }
+            }
+            document.getElementById('proteinInput').value = autoVal;
             proteinFilled = true;
         }
         initDietPlan();
@@ -1073,32 +1088,32 @@
         var btn = document.getElementById('saveProteinBtn');
         btn.disabled = true;
         btn.style.opacity = '0.6';
-        btn.textContent = '更新中…';
+        btn.textContent = '儲存中…';
         fetch(MEALS_GAS + '?saveProtein=' + encodeURIComponent(patientSn) + '&value=' + encodeURIComponent(val))
         .then(function(r){ return r.json(); })
         .then(function(res){
             btn.disabled = false;
             btn.style.opacity = '1';
             if (res.ok || res.success) {
-                btn.textContent = '更新完成';
+                btn.textContent = '已儲存';
                 btn.style.background = '#6B8F71';
                 ['mid','high','low','fast'].forEach(function(d){ generateDietPlan(d); });
                 setTimeout(function(){
-                    btn.textContent = '更新';
+                    btn.textContent = '儲存';
                     btn.style.background = '#8B9D83';
                     var card = document.getElementById('proteinRecCard');
                     if (!card.querySelector(':focus')) card.classList.remove('editing');
                 }, 2500);
             } else {
-                btn.textContent = '更新';
-                alert('更新失敗：' + (res.error || JSON.stringify(res)));
+                btn.textContent = '儲存';
+                alert('儲存失敗：' + (res.error || JSON.stringify(res)));
             }
         })
         .catch(function(err){
             btn.disabled = false;
             btn.style.opacity = '1';
-            btn.textContent = '更新';
-            alert('更新失敗：' + err.message);
+            btn.textContent = '儲存';
+            alert('儲存失敗：' + err.message);
         });
     }
 
@@ -1144,7 +1159,7 @@
         if (initialWeight > 0 && val > 0 && val < initialWeight) {
             var diff = initialWeight - val;
             var pct = Math.round(diff / initialWeight * 1000) / 10;
-            label.textContent = '病人期待目標（減 ' + pct + '% 初始體重）';
+            label.textContent = '病人期待目標（減 ' + pct + '% 的初始體重）';
         } else {
             label.textContent = '病人期待目標';
         }
@@ -1171,31 +1186,31 @@
         var btn = document.getElementById('saveTargetWeightBtn');
         btn.disabled = true;
         btn.style.opacity = '0.6';
-        btn.textContent = '更新中…';
+        btn.textContent = '儲存中…';
         fetch(MEALS_GAS + '?saveTargetWeight=' + encodeURIComponent(patientSn) + '&value=' + encodeURIComponent(val))
         .then(function(r){ return r.json(); })
         .then(function(res){
             btn.disabled = false;
             btn.style.opacity = '1';
             if (res.ok || res.success) {
-                btn.textContent = '更新完成';
+                btn.textContent = '已儲存';
                 btn.style.background = '#6B8F71';
                 setTimeout(function(){
-                    btn.textContent = '更新';
+                    btn.textContent = '儲存';
                     btn.style.background = '#A0626B';
                     var card = document.getElementById('targetWeightCard');
                     if (!card.querySelector(':focus')) card.classList.remove('editing');
                 }, 2500);
             } else {
-                btn.textContent = '更新';
-                alert('更新失敗：' + (res.error || JSON.stringify(res)));
+                btn.textContent = '儲存';
+                alert('儲存失敗：' + (res.error || JSON.stringify(res)));
             }
         })
         .catch(function(err){
             btn.disabled = false;
             btn.style.opacity = '1';
-            btn.textContent = '更新';
-            alert('更新失敗：' + err.message);
+            btn.textContent = '儲存';
+            alert('儲存失敗：' + err.message);
         });
     }
 
