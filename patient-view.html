@@ -1723,6 +1723,7 @@
             if (res.ok || res.success) {
                 btn.textContent = '已發送'; btn.style.background = '#6B8F71';
                 dietHistoryCache = null;
+                _histPrefetchPromise = null;
                 var pStatus = document.getElementById('proteinSaveStatus');
                 if (pStatus) { pStatus.textContent = '✓ 已同步'; pStatus.style.color = '#6B8F71'; pStatus.style.opacity = '1'; setTimeout(function(){ pStatus.style.opacity = '0'; }, 2500); }
                 setTimeout(function() { btn.textContent = '儲存並發送給客戶'; btn.style.background = ''; }, 2500);
