@@ -324,8 +324,20 @@
         </div>
         <div id="tab-meals" class="tab-pane" style="display:none"></div>
         <div id="tab-note" class="tab-pane" style="display:none">
-            <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px" id="proteinWeightRow">
-                <!-- 左：蛋白質攝取建議 -->
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px" id="proteinWeightRow">
+                <!-- 左：劇本 -->
+                <div class="card" id="scriptCard">
+                    <div class="card-title">📋 劇本</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                        <button class="script-btn" style="background:#D4C5A0;border-color:#C4B590;color:#5A4E30" onclick="applyScript('midCarb')">中碳週</button>
+                        <button class="script-btn" style="background:#E0BEB8;border-color:#D0AEA8;color:#6B3A3A" onclick="applyScript('lowCarb')">低碳週</button>
+                        <button class="script-btn" style="background:#B8CDD8;border-color:#A8BDC8;color:#2E4A5A" onclick="applyScript('carbCycle')">碳循環</button>
+                        <button class="script-btn" style="background:#B8D4C0;border-color:#A8C4B0;color:#2A4A34" onclick="applyScript('lightFast')">輕斷食</button>
+                        <button class="script-btn" style="background:#D5BED8;border-color:#C5AEC8;color:#4A2E4E" onclick="applyScript('beast')">猛健週</button>
+                        <button class="script-btn" style="background:#C8C0B0;border-color:#B8B0A0;color:#4A4640" onclick="applyScript('ditto')">Ditto 上一次</button>
+                    </div>
+                </div>
+                <!-- 中：蛋白質攝取建議 -->
                 <div class="card" id="proteinRecCard" onmouseenter="this.classList.add('editing')" onmouseleave="if(!this.querySelector(':focus'))this.classList.remove('editing')">
                     <div class="card-title">🥩 蛋白質攝取建議</div>
                     <div>
@@ -334,10 +346,13 @@
                     </div>
                     <div>
                         <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">醫師建議攝取量</div>
-                        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-                            <span class="edit-row-adj"><button onclick="adjustProtein(-1)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#8B9D83;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">−</button></span>
-                            <input type="text" inputmode="numeric" id="proteinInput" style="width:64px;font-size:24px;font-weight:700;color:#8B9D83;border:2px solid #E8E4DC;border-radius:10px;padding:8px 4px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.closest('.card').classList.add('editing')" onblur="var c=this.closest('.card');setTimeout(function(){if(!c.querySelector(':focus'))c.classList.remove('editing')},150)">
-                            <span class="edit-row-adj"><button onclick="adjustProtein(1)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#8B9D83;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">+</button></span>
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                            <select id="proteinInput" onchange="this.closest('.card').classList.add('editing')" style="font-size:20px;font-weight:700;color:#8B9D83;border:2px solid #E8E4DC;border-radius:10px;padding:6px 8px;text-align:center;outline:none;background:#F0EDE6;cursor:pointer;appearance:auto">
+                                <option value="80">80</option>
+                                <option value="100" selected>100</option>
+                                <option value="120">120</option>
+                                <option value="140">140</option>
+                            </select>
                             <span style="font-size:14px;color:#8B8B8B;font-weight:600">g</span>
                         </div>
                         <button id="saveProteinBtn" onclick="saveProtein()" class="edit-row-save" style="width:100%;padding:8px;border-radius:8px;border:none;background:#8B9D83;color:white;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(139,157,131,0.3)">更新</button>
@@ -353,24 +368,12 @@
                     <div>
                         <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px" id="targetWeightLabel">病人期待目標</div>
                         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-                            <span class="edit-row-adj"><button onclick="adjustTargetWeight(-0.5)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#A0626B;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">−</button></span>
+                            <span class="edit-row-adj"><button onclick="adjustTargetWeight(-1)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#A0626B;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">−</button></span>
                             <input type="text" inputmode="decimal" id="targetWeightInput" style="width:64px;font-size:24px;font-weight:700;color:#A0626B;border:2px solid #E8E4DC;border-radius:10px;padding:8px 4px;text-align:center;outline:none;background:#F0EDE6" onfocus="this.closest('.card').classList.add('editing')" onblur="var c=this.closest('.card');setTimeout(function(){if(!c.querySelector(':focus'))c.classList.remove('editing')},150)" oninput="updateTargetWeightPct()">
-                            <span class="edit-row-adj"><button onclick="adjustTargetWeight(0.5)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#A0626B;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">+</button></span>
+                            <span class="edit-row-adj"><button onclick="adjustTargetWeight(1)" style="width:32px;height:32px;border:2px solid #E8E4DC;border-radius:8px;background:#F5F3EF;font-size:18px;font-weight:700;color:#A0626B;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">+</button></span>
                             <span style="font-size:14px;color:#8B8B8B;font-weight:600">kg</span>
                         </div>
                         <button id="saveTargetWeightBtn" onclick="saveTargetWeight()" class="edit-row-save" style="width:100%;padding:8px;border-radius:8px;border:none;background:#A0626B;color:white;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(160,98,107,0.3)">更新</button>
-                    </div>
-                </div>
-                <!-- 右：劇本 -->
-                <div class="card" id="scriptCard">
-                    <div class="card-title">📋 劇本</div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-                        <button class="script-btn" style="background:#D4C5A0;border-color:#C4B590;color:#5A4E30" onclick="applyScript('midCarb')">中碳週</button>
-                        <button class="script-btn" style="background:#E0BEB8;border-color:#D0AEA8;color:#6B3A3A" onclick="applyScript('lowCarb')">低碳週</button>
-                        <button class="script-btn" style="background:#B8CDD8;border-color:#A8BDC8;color:#2E4A5A" onclick="applyScript('carbCycle')">碳循環</button>
-                        <button class="script-btn" style="background:#B8D4C0;border-color:#A8C4B0;color:#2A4A34" onclick="applyScript('lightFast')">輕斷食</button>
-                        <button class="script-btn" style="background:#D5BED8;border-color:#C5AEC8;color:#4A2E4E" onclick="applyScript('beast')">猛健週</button>
-                        <button class="script-btn" style="background:#C8C0B0;border-color:#B8B0A0;color:#4A4640" onclick="applyScript('ditto')">Ditto 上一次</button>
                     </div>
                 </div>
             </div>
@@ -1124,11 +1127,11 @@
         if (!targetWeightFilled && cust) {
             var doctorTW = findField(cust, ['病人期待目標體重','patientTargetWeight','醫師建議目標體重','doctorTargetWeight']);
             if (!isNaN(doctorTW) && doctorTW > 0) {
-                document.getElementById('targetWeightInput').value = doctorTW;
+                document.getElementById('targetWeightInput').value = Math.ceil(doctorTW);
                 targetWeightFilled = true;
             } else if (initialWeight > 0) {
-                // 預設用公式目標（初始體重 × 85%）
-                document.getElementById('targetWeightInput').value = Math.round(initialWeight * 0.85 * 10) / 10;
+                // 預設用公式目標（初始體重 × 85%），無條件進位為整數
+                document.getElementById('targetWeightInput').value = Math.ceil(initialWeight * 0.85);
                 targetWeightFilled = true;
             }
         }
@@ -1150,7 +1153,7 @@
     function adjustTargetWeight(delta) {
         var input = document.getElementById('targetWeightInput');
         var val = parseFloat(input.value) || 0;
-        val = Math.max(30, Math.min(200, Math.round((val + delta) * 10) / 10));
+        val = Math.max(30, Math.min(200, Math.ceil(val + delta)));
         input.value = val;
         updateTargetWeightPct();
         input.closest('.card').classList.add('editing');
