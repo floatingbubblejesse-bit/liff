@@ -195,6 +195,17 @@
         .diet-day-header:hover{background:#F5F3EF}
         .diet-day-header .diet-mode{font-size:10px}
         .diet-day-header .diet-toggle{margin-left:auto}
+        /* 小卡內容 */
+        .card-msg-scripts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+        .card-msg-script-btn{display:inline-flex;align-items:center;gap:2px;padding:5px 10px;border-radius:16px;font-size:11px;font-weight:600;background:#F5F3EF;border:1px solid var(--border);cursor:pointer;user-select:none;transition:background 0.15s;-webkit-tap-highlight-color:transparent}
+        .card-msg-script-btn:active{background:#E8E4DC}
+        .card-msg-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;margin-bottom:6px;border-radius:8px;background:#FDFBF7;border:1px solid var(--border);font-size:12px;line-height:1.6;color:var(--text);transition:opacity 0.2s}
+        .card-msg-item.disabled{opacity:0.3;text-decoration:line-through}
+        .card-msg-item-text{flex:1;word-break:break-word}
+        .card-msg-item-x{flex-shrink:0;width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent}
+        .card-msg-item-x:active{background:#F8D7DA;border-color:#e57373}
+        .card-msg-item.disabled .card-msg-item-x{background:#F8D7DA;border-color:#e57373;color:#A0626B}
+        .card-msg-empty{text-align:center;padding:16px;color:var(--muted);font-size:12px}
         /* 碳水循環排程 */
         .cycle-schedule{display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:nowrap;overflow-x:auto}
         .cycle-day{display:flex;flex-direction:column;align-items:center;min-width:0;flex-shrink:0}
@@ -399,6 +410,25 @@
                     <div id="fastDietBody" class="diet-body collapsed">
                         <div class="diet-summary-text" id="fastDietSummaryText"></div>
                         <div id="fastDietMeals"></div>
+                    </div>
+                </div>
+                <!-- ★ 小卡內容（LINE 推播附加文字）-->
+                <div class="diet-day-section" id="cardMsgSection">
+                    <div class="diet-day-header" onclick="toggleCardMsg()" style="background:#EDE8E0">
+                        💬 小卡內容
+                        <span class="diet-mode" id="cardMsgBadge" style="color:var(--muted);font-size:10px"></span>
+                        <span class="diet-toggle" id="cardMsgToggle">▶</span>
+                    </div>
+                    <div id="cardMsgBody" class="diet-body collapsed" style="padding:10px 14px">
+                        <div class="card-msg-scripts" id="cardMsgScripts">
+                            <span class="card-msg-script-btn" data-key="mid" onclick="insertScript('mid')">🟡 中碳日</span>
+                            <span class="card-msg-script-btn" data-key="high" onclick="insertScript('high')">🔴 高碳日</span>
+                            <span class="card-msg-script-btn" data-key="low" onclick="insertScript('low')">🟢 低碳日</span>
+                            <span class="card-msg-script-btn" data-key="fast" onclick="insertScript('fast')">⚪ 斷食日</span>
+                            <span class="card-msg-script-btn" data-key="general" onclick="insertScript('general')">📌 通用</span>
+                        </div>
+                        <div id="cardMsgItems"></div>
+                        <div class="card-msg-empty" id="cardMsgEmpty">點擊上方劇本新增內容</div>
                     </div>
                 </div>
             </div>
@@ -1475,6 +1505,87 @@
         if (tog) tog.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
     }
 
+    // ====== 小卡內容（LINE 推播附加文字）======
+    var cardMsgScripts = {
+        mid: ['⚠️ 排糖包與排油包務必在高碳日用掉，才會瘦更快！'],
+        high: ['⚠️ 排糖包與排油包務必在高碳日用掉，才會瘦更快！'],
+        low: [],
+        fast: [],
+        general: ['⚠️ 排糖包與排油包務必在高碳日用掉，才會瘦更快！']
+    };
+    var cardMsgList = []; // [{text, enabled}]
+
+    function toggleCardMsg() {
+        var body = document.getElementById('cardMsgBody');
+        var tog = document.getElementById('cardMsgToggle');
+        if (!body) return;
+        body.classList.toggle('collapsed');
+        if (tog) tog.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
+    }
+
+    function insertScript(key) {
+        var texts = cardMsgScripts[key] || [];
+        if (texts.length === 0) return;
+        for (var i = 0; i < texts.length; i++) {
+            // 避免重複插入相同文字
+            var exists = false;
+            for (var j = 0; j < cardMsgList.length; j++) {
+                if (cardMsgList[j].text === texts[i]) { exists = true; break; }
+            }
+            if (!exists) {
+                cardMsgList.push({ text: texts[i], enabled: true });
+            }
+        }
+        renderCardMsgItems();
+    }
+
+    function toggleCardMsgItem(idx) {
+        if (cardMsgList[idx]) {
+            cardMsgList[idx].enabled = !cardMsgList[idx].enabled;
+            renderCardMsgItems();
+        }
+    }
+
+    function removeCardMsgItem(idx) {
+        cardMsgList.splice(idx, 1);
+        renderCardMsgItems();
+    }
+
+    function renderCardMsgItems() {
+        var container = document.getElementById('cardMsgItems');
+        var empty = document.getElementById('cardMsgEmpty');
+        var badge = document.getElementById('cardMsgBadge');
+        if (!container) return;
+        if (cardMsgList.length === 0) {
+            container.innerHTML = '';
+            if (empty) empty.style.display = '';
+            if (badge) badge.textContent = '';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        var enabledCount = 0;
+        var html = '';
+        for (var i = 0; i < cardMsgList.length; i++) {
+            var item = cardMsgList[i];
+            if (item.enabled) enabledCount++;
+            html += '<div class="card-msg-item' + (item.enabled ? '' : ' disabled') + '">';
+            html += '<div class="card-msg-item-text">' + esc(item.text) + '</div>';
+            html += '<div class="card-msg-item-x" onclick="toggleCardMsgItem(' + i + ')" title="' + (item.enabled ? '點擊排除' : '點擊恢復') + '">' + (item.enabled ? '✕' : '↩') + '</div>';
+            html += '</div>';
+        }
+        container.innerHTML = html;
+        if (badge) badge.textContent = enabledCount + '/' + cardMsgList.length + ' 則';
+    }
+
+    // 取得啟用的小卡文字（供 buildDietLineMessage 使用）
+    function getEnabledCardMsgTexts() {
+        var result = [];
+        for (var i = 0; i < cardMsgList.length; i++) {
+            if (cardMsgList[i].enabled) result.push(cardMsgList[i].text);
+        }
+        return result;
+    }
+
     function recalcDietProtein(p) {
         var totalPacks = 0, totalFood = 0, qbPacks = 0;
         for (var m = 0; m < MEAL_COUNT; m++) {
@@ -1630,9 +1741,14 @@
             {type:'separator',margin:'lg'},
             {type:'text',text:'📦 共 ' + cycleWeeks + ' 週',weight:'bold',size:'sm',color:'#7B8FA1',margin:'lg'},
             {type:'text',text:weeklyText,size:'sm',color:'#7B8FA1',wrap:true,margin:'xs'},
-            {type:'separator',margin:'lg'},
-            {type:'text',text:'⚠️ 排糖包與排油包務必在高碳日用掉，才會瘦更快！',weight:'bold',size:'sm',color:'#4A4A4A',wrap:true,margin:'lg'}
+            {type:'separator',margin:'lg'}
         ];
+
+        // ── 小卡內容（啟用的劇本文字）──
+        var cardTexts = getEnabledCardMsgTexts();
+        for (var ci = 0; ci < cardTexts.length; ci++) {
+            bodyContents.push({type:'text',text:cardTexts[ci],weight:'bold',size:'sm',color:'#4A4A4A',wrap:true,margin:'lg'});
+        }
 
         // ── 「查看詳細報告」按鈕（取代各碳日明細）──
         var recordsUrl = 'https://floatingbubblejesse-bit.github.io/liff/my-records.html?id=' + encodeURIComponent(patientSn);
