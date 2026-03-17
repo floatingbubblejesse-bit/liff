@@ -4,6 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
     <title>居家體重紀錄</title>
+    <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
+    <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <script>
+    (function() {
+        var _origReplace = history.replaceState.bind(history);
+        var _origPush = history.pushState.bind(history);
+        history.replaceState = function(s, t, u) {
+            try { _origReplace(s, t, u); } catch(e) { console.warn('[iOS patch] replaceState suppressed:', e && e.message); }
+        };
+        history.pushState = function(s, t, u) {
+            try { _origPush(s, t, u); } catch(e) { console.warn('[iOS patch] pushState suppressed:', e && e.message); }
+        };
+    })();
+    </script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
@@ -101,6 +116,8 @@
         .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:40vh;gap:14px}
         .spinner{width:40px;height:40px;border:4px solid #E8E4DC;border-top-color:var(--blue);border-radius:50%;animation:spin .9s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
+        #loadingOverlay{transition:opacity 0.3s ease}
+        #loadingOverlay.fade-out{opacity:0;pointer-events:none}
     </style>
 </head>
 <body>
@@ -153,8 +170,9 @@
     var LIFF_ID = '2009326025-0pbHTZa7';
     var MEALS_GAS = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
     var N8N = 'https://huangcs.app.n8n.cloud/webhook';
-    // 預熱 GAS（並行，不等結果）
+    // 預熱兩個 GAS（並行，不等結果）
     try { fetch(MEALS_GAS + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
+    try { fetch('https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
 
     var CYCLE_OPTS = [
         {key:'high', label:'高', short:'高', cls:'t-high'},
@@ -184,6 +202,21 @@
             return c.data;
         } catch(e) { return null; }
     }
+    // ====== Profile 快取（姓名/頭像秒開）======
+    var PROFILE_CACHE_KEY = 'wc_profile';
+    function saveProfileCache(sn, name, pic) {
+        try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({ sn: sn, name: name, pic: pic })); } catch(e) {}
+    }
+    function loadProfileCache(sn) {
+        try {
+            var raw = localStorage.getItem(PROFILE_CACHE_KEY);
+            if (!raw) return null;
+            var c = JSON.parse(raw);
+            if (c.sn !== sn) return null;
+            return c;
+        } catch(e) { return null; }
+    }
+
     var visitDate = null;
     var scheduleStart = null; // 排程開始日（看診日+1）
     var scheduleEnd = null;   // 排程結束日
@@ -201,8 +234,29 @@
         patientUid = params.get('uid') || '';
 
         if (patientSn) {
+            // 有院區病歷號 → 立即載入資料，不等 LIFF
+            // 先從 profile cache 秒顯示姓名/頭像
+            var pCache = loadProfileCache(patientSn);
+            if (pCache) {
+                if (pCache.name) { patientName = pCache.name; document.getElementById('headerSub').textContent = pCache.name; }
+                if (pCache.pic) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + pCache.pic + '" alt="">'; }
+            }
             loadData();
+            // LIFF init 背景執行（取頭像用，不阻塞資料載入）
+            liff.init({ liffId: LIFF_ID }).then(function() {
+                if (!liff.isLoggedIn()) return;
+                return liff.getProfile();
+            }).then(function(profile) {
+                if (!profile) return;
+                patientUid = profile.userId;
+                patientName = profile.displayName;
+                document.getElementById('headerSub').textContent = profile.displayName;
+                if (profile.pictureUrl) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + profile.pictureUrl + '" alt="">'; }
+                saveProfileCache(patientSn, profile.displayName, profile.pictureUrl);
+                if (profile.displayName) { fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(patientSn) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){}); }
+            }).catch(function(){});
         } else {
+            // 沒有 URL 參數 → 走 LIFF init 流程
             liff.init({ liffId: LIFF_ID }).then(function() {
                 if (!liff.isLoggedIn()) { liff.login(); return; }
                 return liff.getProfile();
@@ -221,6 +275,7 @@
                 }
                 // 同步 LINE 名稱到客戶清單（背景執行，不影響載入）
                 if (patientSn && patientName) {
+                    saveProfileCache(patientSn, patientName, '');
                     fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(patientSn) + '&dName=' + encodeURIComponent(patientName)).catch(function(){});
                 }
                 loadData();
@@ -242,7 +297,7 @@
         loadLocalWeights();
         if (!patientSn) { onDataReady(); return; }
 
-        // cache-first：用上次的 API 快取立即渲染
+        // cache-first：用上次的 API 快取立即渲染（秒開核心）
         var cached = wcLoadCache(patientSn);
         if (cached) {
             if (cached.dietPlan && cached.dietPlan.schedule) {
@@ -257,6 +312,11 @@
                 scheduleStart = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate() + 1);
                 scheduleEnd = new Date(scheduleStart.getFullYear(), scheduleStart.getMonth(), scheduleStart.getDate() + (weeks * 7) - 1);
                 scheduleWeeks = weeks;
+            }
+            // 還原快取的目標體重
+            if (cached.targetWeight && cached.targetWeight > 0) {
+                document.getElementById('targetWeightVal').textContent = cached.targetWeight;
+                document.getElementById('targetWeightBadge').style.display = '';
             }
             onDataReady(); // 秒開
         } else if (Object.keys(weightData).length > 0) {
@@ -321,6 +381,11 @@
                 if (data.ok && data.patientTargetWeight > 0) {
                     document.getElementById('targetWeightVal').textContent = data.patientTargetWeight;
                     document.getElementById('targetWeightBadge').style.display = '';
+                    // 將目標體重存入 wc_cache
+                    try {
+                        var raw = localStorage.getItem(WC_CACHE_KEY);
+                        if (raw) { var c = JSON.parse(raw); c.data.targetWeight = data.patientTargetWeight; localStorage.setItem(WC_CACHE_KEY, JSON.stringify(c)); }
+                    } catch(e) {}
                 }
             }).catch(function(){});
     }
@@ -344,25 +409,33 @@
         } catch(e) {}
     }
 
+    var _dataReadyDone = false;
     function onDataReady() {
-        document.getElementById('loadingOverlay').style.display = 'none';
+        var overlay = document.getElementById('loadingOverlay');
+        if (overlay && overlay.style.display !== 'none') {
+            overlay.classList.add('fade-out');
+            setTimeout(function(){ overlay.style.display = 'none'; }, 300);
+        }
         if (patientName) {
             document.getElementById('headerSub').textContent = patientName;
         } else if (patientSn) {
             document.getElementById('headerSub').textContent = patientSn;
-            // 嘗試從 GAS 取得姓名
-            fetch(GAS_URL + '?id=' + encodeURIComponent(patientSn))
-                .then(function(r){ return r.json(); })
-                .then(function(data){
-                    if (data && data.name) {
-                        patientName = data.name;
-                        document.getElementById('headerSub').textContent = data.name;
-                    }
-                }).catch(function(){});
+            // 嘗試從 GAS 取得姓名（只在第一次沒有 profile cache 時）
+            if (!loadProfileCache(patientSn)) {
+                fetch(GAS_URL + '?id=' + encodeURIComponent(patientSn))
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        if (data && data.name) {
+                            patientName = data.name;
+                            document.getElementById('headerSub').textContent = data.name;
+                            saveProfileCache(patientSn, data.name, '');
+                        }
+                    }).catch(function(){});
+            }
         }
         renderScheduleBar();
         renderTable();
-        initInfiniteScroll();
+        if (!_dataReadyDone) { initInfiniteScroll(); _dataReadyDone = true; }
     }
 
     // ====== Infinite scroll ======
