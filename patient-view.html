@@ -1282,8 +1282,27 @@
         ['mid','high','low','fast'].forEach(function(d){ generateDietPlan(d); });
         // 6. 高亮按鈕
         highlightScriptBtn('ditto');
-        // 7. 套用小卡
+        // 7. 套用小卡（從上次紀錄帶入）
+        if (rec.cardMsg && rec.cardMsg.length > 0) {
+            cardMsgScripts.ditto = rec.cardMsg;
+        }
         applyCardMsgForScript('ditto');
+        // 8. 套用食物表（從上次紀錄帶入）
+        if (rec.foodTable && rec.foodTable.length > 0) {
+            for (var fti = 0; fti < foodTableData.length; fti++) {
+                foodTableData[fti].enabled = false; // 先全部關閉
+            }
+            for (var ftj = 0; ftj < rec.foodTable.length; ftj++) {
+                var ftRec = rec.foodTable[ftj];
+                for (var ftk = 0; ftk < foodTableData.length; ftk++) {
+                    if (foodTableData[ftk].cat === ftRec.cat) {
+                        foodTableData[ftk].enabled = true;
+                        break;
+                    }
+                }
+            }
+            renderFoodTable();
+        }
     }
 
     function saveTargetWeight() {
