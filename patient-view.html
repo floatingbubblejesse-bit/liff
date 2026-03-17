@@ -1625,11 +1625,13 @@
     function buildDietLineMessage() {
         var dayLabels = {high:'高碳日', low:'低碳日', mid:'中碳日', fast:'斷食日'};
         var dayEmojis = {high:'🔴', low:'🟢', mid:'🟡', fast:'⚪'};
-        // 莫蘭迪文青配色
         var dayColors = {high:'#A0626B', low:'#6B8F71', mid:'#B8926A', fast:'#7B8B8B'};
         var dayBgColors = {high:'#F2E0E0', low:'#E0EBE0', mid:'#F0E8D8', fast:'#E8E8E8'};
 
-        // ── 排程 bubble ──
+        var now = new Date();
+        var dateStr = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日';
+
+        // ── 排程圓圈 ──
         var schDayBoxes = CYCLE_DAYS.map(function(d, i) {
             var opt = CYCLE_OPTS.find(function(o){ return o.key === cycleSchedule[i]; });
             return {type:'box',layout:'vertical',alignItems:'center',contents:[
@@ -1639,9 +1641,6 @@
                  contents:[{type:'text',text:opt.label,size:'sm',weight:'bold',color:dayColors[cycleSchedule[i]],align:'center'}]}
             ],flex:1};
         });
-
-        var now = new Date();
-        var dateStr = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日';
 
         // ── 計算一週所需包數 ──
         var weeklyMr = 0, weeklyQb = 0;
@@ -1657,32 +1656,26 @@
         var weeklyParts = [];
         if (weeklyMr > 0) weeklyParts.push('代餐 ' + weeklyMr + '包/週 × ' + cycleWeeks + '週 = ' + totalMr + '包');
         if (weeklyQb > 0) weeklyParts.push('Q寶 ' + weeklyQb + '包/週 × ' + cycleWeeks + '週 = ' + totalQb + '包');
-        var weeklyText = '📦 共 ' + cycleWeeks + ' 週\n' + weeklyParts.join('\n');
-
-        var scheduleBubble = {
-            type:'bubble', size:'giga',
-            header:{type:'box',layout:'vertical',backgroundColor:'#7B8FA1',paddingAll:'20px',contents:[
-                {type:'text',text:'📋 ' + dateStr + ' 看診',color:'#ffffff',weight:'bold',size:'xl'}
-            ]},
-            body:{type:'box',layout:'vertical',spacing:'md',paddingAll:'16px',contents:[
-                {type:'text',text:'📅 碳水循環排程',weight:'bold',size:'md',color:'#4A4A4A'},
-                {type:'box',layout:'horizontal',spacing:'xs',margin:'md',contents:schDayBoxes},
-                {type:'separator',margin:'lg'},
-                {type:'text',text:weeklyText,weight:'bold',size:'sm',color:'#7B8FA1',wrap:true,margin:'lg'},
-                {type:'separator',margin:'lg'},
-                {type:'text',text:'⚠️ 排糖包與排油包務必在高碳日用掉，才會瘦更快！',weight:'bold',size:'sm',color:'#4A4A4A',wrap:true,margin:'lg'}
-            ]}
-        };
+        var weeklyText = weeklyParts.join('\n');
 
         // ── 找出排程中用到的碳日類型（去重）──
         var usedTypes = [];
         cycleSchedule.forEach(function(t) { if (usedTypes.indexOf(t) === -1) usedTypes.push(t); });
 
-        // ── 每種碳日一個 bubble ──
-        var dayBubbles = [];
+        // ── body：排程 + 包數 + 各碳日餐食 全部合在一起 ──
+        var bodyContents = [
+            {type:'text',text:'📅 碳水循環排程',weight:'bold',size:'md',color:'#4A4A4A'},
+            {type:'box',layout:'horizontal',spacing:'xs',margin:'md',contents:schDayBoxes},
+            {type:'separator',margin:'lg'},
+            {type:'text',text:'📦 共 ' + cycleWeeks + ' 週',weight:'bold',size:'sm',color:'#7B8FA1',margin:'lg'},
+            {type:'text',text:weeklyText,size:'sm',color:'#7B8FA1',wrap:true,margin:'xs'},
+            {type:'separator',margin:'lg'},
+            {type:'text',text:'⚠️ 排糖包與排油包務必在高碳日用掉，才會瘦更快！',weight:'bold',size:'sm',color:'#4A4A4A',wrap:true,margin:'lg'}
+        ];
+
+        // ── 各碳日區塊 ──
         usedTypes.forEach(function(p) {
             var plan = getDietPlanData(p);
-            // 摘要計算
             var totalPacks = 0, totalFood = 0, qbPacks = 0;
             for (var m2 = 0; m2 < MEAL_COUNT; m2++) {
                 if (plan[m2][0] === '1') totalPacks++;
@@ -1691,12 +1684,21 @@
                 if (plan[m2][5] === '1') qbPacks++;
             }
             var total = totalPacks * 20 + totalFood;
-            var summaryText = '代餐' + totalPacks + '包×20g';
-            if (qbPacks > 0) summaryText += ' + Q寶' + qbPacks + '包';
-            if (totalFood > 0) summaryText += ' + 食物蛋白' + totalFood + 'g';
+            var summaryText = '代餐 ' + totalPacks + ' 包 × 20g';
+            if (qbPacks > 0) summaryText += ' ＋ Q寶 ' + qbPacks + ' 包';
+            if (totalFood > 0) summaryText += ' ＋ 食物蛋白 ' + totalFood + 'g';
 
-            // 餐食行（根據 DIET_COLS.sep 決定分隔符：→ 或 +）
-            var mealContents = [];
+            // 碳日標題區
+            bodyContents.push({type:'box',layout:'vertical',backgroundColor:dayBgColors[p],cornerRadius:'12px',paddingAll:'12px',margin:'lg',contents:[
+                {type:'box',layout:'horizontal',contents:[
+                    {type:'text',text:dayEmojis[p] + ' ' + dayLabels[p],weight:'bold',size:'lg',color:dayColors[p],flex:1},
+                    {type:'text',text:total + 'g',weight:'bold',size:'lg',color:dayColors[p],align:'end'}
+                ]},
+                {type:'text',text:summaryText,size:'xs',color:'#8B8B8B',margin:'xs'}
+            ]});
+            if (p === 'fast') bodyContents.push({type:'text',text:'☕ 隨時可補充茶、咖啡、清湯與雞蛋白',size:'xs',color:'#8B7B5E',wrap:true,margin:'sm'});
+
+            // 各餐明細
             for (var m = 0; m < MEAL_COUNT; m++) {
                 var row = plan[m];
                 var allDash = row.every(function(v){ return v === '-' || v === '0' || v === 0; });
@@ -1717,36 +1719,25 @@
                     if (fi > 0) mealText += ' ' + fSeps[fi-1] + ' ';
                     mealText += fParts[fi];
                 }
-                if (mealContents.length > 0) mealContents.push({type:'separator',margin:'sm'});
-                mealContents.push({type:'box',layout:'horizontal',spacing:'sm',margin:'sm',contents:[
-                    {type:'text',text:MEAL_ICONS[m]+MEAL_NAMES[m],size:'sm',weight:'bold',color:'#4A4A4A',flex:0,gravity:'top'},
+                bodyContents.push({type:'box',layout:'horizontal',spacing:'sm',margin:'sm',contents:[
+                    {type:'text',text:MEAL_ICONS[m] + ' ' + MEAL_NAMES[m],size:'sm',weight:'bold',color:'#4A4A4A',flex:0,gravity:'top'},
                     {type:'text',text:mealText,size:'xs',color:'#6B6B6B',wrap:true,flex:4}
                 ]});
             }
-
-            var bodyContents = [
-                {type:'box',layout:'horizontal',contents:[
-                    {type:'text',text:'蛋白質',size:'sm',color:'#8B8B8B',flex:0},
-                    {type:'text',text:total + 'g',size:'xl',weight:'bold',color:dayColors[p],align:'end'}
-                ]},
-                {type:'text',text:summaryText,size:'xs',color:'#8B8B8B',margin:'xs'}
-            ];
-            if (p === 'fast') bodyContents.push({type:'text',text:'☕ 隨時可補充茶、咖啡、清湯與雞蛋白',size:'xs',color:'#8B7B5E',wrap:true,margin:'sm'});
-            bodyContents.push({type:'separator',margin:'md'});
-            mealContents.forEach(function(c){ bodyContents.push(c); });
-
-            dayBubbles.push({
-                type:'bubble', size:'giga',
-                header:{type:'box',layout:'horizontal',backgroundColor:dayBgColors[p],paddingAll:'14px',contents:[
-                    {type:'text',text:dayEmojis[p]+' '+dayLabels[p],weight:'bold',size:'lg',color:dayColors[p],flex:1},
-                ]},
-                body:{type:'box',layout:'vertical',spacing:'sm',paddingAll:'16px',contents:bodyContents}
-            });
         });
+
+        // ── 單一大張 bubble ──
+        var bubble = {
+            type:'bubble', size:'giga',
+            header:{type:'box',layout:'vertical',backgroundColor:'#7B8FA1',paddingAll:'20px',contents:[
+                {type:'text',text:'📋 ' + dateStr + ' 看診',color:'#ffffff',weight:'bold',size:'xl'}
+            ]},
+            body:{type:'box',layout:'vertical',spacing:'sm',paddingAll:'16px',contents:bodyContents}
+        };
 
         return {
             type:'flex', altText:dateStr + ' 碳水循環計劃',
-            contents:{ type:'carousel', contents:[scheduleBubble].concat(dayBubbles) }
+            contents:bubble
         };
     }
 
