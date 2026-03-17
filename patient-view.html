@@ -2451,6 +2451,29 @@
             html += '</div>';
         }
 
+        // 小卡
+        if (rec.cardMsg && rec.cardMsg.length > 0) {
+            html += '<div class="hx-section">';
+            html += '<div class="hx-section-title">💬 小卡</div>';
+            for (var ci = 0; ci < rec.cardMsg.length; ci++) {
+                html += '<div style="background:#F9F7F3;border-radius:6px;padding:6px 10px;margin-bottom:4px;font-size:12px;line-height:1.6">' + esc(rec.cardMsg[ci]).replace(/\n/g, '<br>') + '</div>';
+            }
+            html += '</div>';
+        }
+
+        // 食物表
+        if (rec.foodTable && rec.foodTable.length > 0) {
+            html += '<div class="hx-section">';
+            html += '<div class="hx-section-title">🍽️ 食物表</div>';
+            html += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
+            for (var fi = 0; fi < rec.foodTable.length; fi++) {
+                var ft = rec.foodTable[fi];
+                html += '<tr><td style="padding:5px 8px;border-bottom:1px solid #EDE8E0;font-weight:700;white-space:nowrap;color:#7B8FA1;background:#F9F7F3;width:72px;vertical-align:top;font-size:10px">' + esc(ft.cat || '').replace(/\n/g, '<br>') + '</td>';
+                html += '<td style="padding:5px 8px;border-bottom:1px solid #EDE8E0;vertical-align:top;line-height:1.5">' + esc(ft.desc || '').replace(/\n/g, '<br>') + '</td></tr>';
+            }
+            html += '</table></div>';
+        }
+
         html += '</div></div>';
         return html;
     }

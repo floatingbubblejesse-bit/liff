@@ -347,6 +347,11 @@
                 var _ld2 = document.getElementById('loadingDiv');
                 if (_ld2 && _ld2.style.display !== 'none') { _ld2.classList.add('fade-out'); setTimeout(function(){ _ld2.style.display = 'none'; }, 300); }
                 var records = result.records || [];
+                // DEBUG: 檢查 API 回傳是否有 cardMsg / foodTable
+                if (records.length > 0) {
+                    var r0 = records[0];
+                    console.log('[DEBUG] record[0] cardMsg:', JSON.stringify(r0.cardMsg), 'foodTable:', JSON.stringify(r0.foodTable));
+                }
                 mrSaveCache(sn, records);
                 if (records.length === 0 && !alreadyRendered) {
                     document.getElementById('mainContent').innerHTML = '<div class="no-data">尚無看診紀錄<br><span style="font-size:12px;color:#bbb">看診後醫師儲存飲食計劃，紀錄會自動出現在這裡</span></div>';
