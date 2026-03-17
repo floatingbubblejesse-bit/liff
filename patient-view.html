@@ -24,6 +24,10 @@
         .tab-pane>*{margin-bottom:14px}
         .card{background:white;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
         .card-title{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+        /* ── 劇本按鈕 ── */
+        .script-btn{padding:8px 4px;border-radius:8px;border:1.5px solid #E8E4DC;background:#F5F3EF;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;transition:background .2s,border-color .2s}
+        .script-btn:hover{background:#E8E4DC;border-color:#C5BFB3}
+        .script-btn:active{background:#D5CFC3}
         /* ── 可編輯卡片：+/- 和更新按鈕預設隱藏 ── */
         .edit-row-adj{display:inline;opacity:0;max-width:0;overflow:hidden;transition:opacity .2s,max-width .2s}
         .edit-row-save{opacity:0;max-height:0;overflow:hidden;transition:opacity .2s,max-height .2s;margin-top:0}
@@ -320,7 +324,7 @@
         </div>
         <div id="tab-meals" class="tab-pane" style="display:none"></div>
         <div id="tab-note" class="tab-pane" style="display:none">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="proteinWeightRow">
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px" id="proteinWeightRow">
                 <!-- 左：蛋白質攝取建議 -->
                 <div class="card" id="proteinRecCard" onmouseenter="this.classList.add('editing')" onmouseleave="if(!this.querySelector(':focus'))this.classList.remove('editing')">
                     <div class="card-title">🥩 蛋白質攝取建議</div>
@@ -355,6 +359,18 @@
                             <span style="font-size:14px;color:#8B8B8B;font-weight:600">kg</span>
                         </div>
                         <button id="saveTargetWeightBtn" onclick="saveTargetWeight()" class="edit-row-save" style="width:100%;padding:8px;border-radius:8px;border:none;background:#A0626B;color:white;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(160,98,107,0.3)">更新</button>
+                    </div>
+                </div>
+                <!-- 右：劇本 -->
+                <div class="card" id="scriptCard">
+                    <div class="card-title">📋 劇本</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                        <button class="script-btn" onclick="applyScript('midCarb')">中碳週</button>
+                        <button class="script-btn" onclick="applyScript('lowCarb')">低碳週</button>
+                        <button class="script-btn" onclick="applyScript('fasting')">斷食週</button>
+                        <button class="script-btn" onclick="applyScript('carbCycle')">碳循環</button>
+                        <button class="script-btn" onclick="applyScript('lightFast')">輕斷食</button>
+                        <button class="script-btn" onclick="applyScript('beast')">猛健週</button>
                     </div>
                 </div>
             </div>
@@ -1138,6 +1154,12 @@
         input.value = val;
         updateTargetWeightPct();
         input.closest('.card').classList.add('editing');
+    }
+
+    function applyScript(scriptId) {
+        // TODO: 劇本邏輯待實作
+        console.log('applyScript:', scriptId);
+        alert('劇本「' + scriptId + '」功能開發中');
     }
 
     function saveTargetWeight() {
