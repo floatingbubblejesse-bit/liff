@@ -1403,8 +1403,7 @@
         var total = totalPacks * 20 + totalFood;
         if (total > 0) {
             if (p === 'mid') {
-                document.getElementById('proteinInput').value = total;
-                // 中碳日有變動，一律同步重新產生高碳日與低碳日
+                // 中碳日有變動，一律同步重新產生高碳日與低碳日（但不改醫師建議攝取量）
                 ['high', 'low'].forEach(function(other) { generateDietPlan(other); });
             }
             var badge = document.getElementById(p + 'DietModeBadge');
