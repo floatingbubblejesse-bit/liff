@@ -1739,16 +1739,11 @@
             {type:'separator',margin:'lg'},
             {type:'text',text:'📦 共 ' + cycleWeeks + ' 週',weight:'bold',size:'sm',color:'#7B8FA1',margin:'lg'},
             {type:'text',text:weeklyText,size:'sm',color:'#7B8FA1',wrap:true,margin:'xs'},
-            {type:'separator',margin:'lg'}
+            {type:'separator',margin:'lg'},
+            {type:'text',text:'⚠️ 排糖包與排油包務必在高碳日用掉，才會瘦更快！',weight:'bold',size:'sm',color:'#4A4A4A',wrap:true,margin:'lg'}
         ];
 
-        // ── 小卡內容（啟用的劇本文字）──
-        var cardTexts = getEnabledCardMsgTexts();
-        for (var ci = 0; ci < cardTexts.length; ci++) {
-            bodyContents.push({type:'text',text:cardTexts[ci],weight:'bold',size:'sm',color:'#4A4A4A',wrap:true,margin:'lg'});
-        }
-
-        // ── 「查看詳細報告」按鈕（取代各碳日明細）──
+        // ── 「查看詳細報告」按鈕 ──
         var recordsUrl = 'https://floatingbubblejesse-bit.github.io/liff/my-records.html?id=' + encodeURIComponent(patientSn);
         bodyContents.push({type:'box',layout:'vertical',margin:'xl',contents:[
             {type:'button',style:'primary',color:'#7B8FA1',height:'md',
