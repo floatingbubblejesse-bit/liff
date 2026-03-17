@@ -1181,15 +1181,17 @@
     var currentScript = 'midCarb'; // 預設劇本
 
     function applyScript(scriptId) {
+        if (scriptId === 'ditto') { applyDitto(); return; }
         var cfg = SCRIPT_CONFIGS[scriptId];
         if (!cfg) return;
         currentScript = scriptId;
-        // 1. 設定排程
         cycleSchedule = cfg.schedule.slice();
         renderCycleSchedule();
-        // 2. 重新生成所有碳日餐食（generateDietPlan 會套用 formula）
         ['mid','high','low','fast'].forEach(function(d){ generateDietPlan(d); });
-        // 3. 高亮被選中的劇本按鈕
+        highlightScriptBtn(scriptId);
+    }
+
+    function highlightScriptBtn(scriptId) {
         var btns = document.querySelectorAll('.script-btn');
         for (var i = 0; i < btns.length; i++) {
             btns[i].style.boxShadow = '';
@@ -1200,6 +1202,75 @@
             activeBtn.style.boxShadow = '0 0 0 2px ' + activeBtn.style.borderColor;
             activeBtn.style.borderWidth = '2px';
         }
+    }
+
+    // ── Ditto 上一次：從上次看診紀錄抓排程與配方 ──
+    function applyDitto() {
+        // 先嘗試快取
+        if (dietHistoryCache && dietHistoryCache.length > 0) {
+            var prev = _findPrevRecord(dietHistoryCache);
+            if (prev) { _applyDittoFromRecord(prev); return; }
+        }
+        // 無快取 → 從 API 取
+        var dittoBtn = document.querySelector('.script-btn[onclick*="ditto"]');
+        var origText = dittoBtn ? dittoBtn.textContent : '';
+        if (dittoBtn) dittoBtn.textContent = '載入中…';
+        fetch(MEALS_GAS + '?dietHistory=' + encodeURIComponent(patientSn))
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            var records = data.records || [];
+            dietHistoryCache = records; // 順便更新快取
+            var prev = _findPrevRecord(records);
+            if (!prev) { alert('找不到上一次看診紀錄'); return; }
+            _applyDittoFromRecord(prev);
+        })
+        .catch(function(){ alert('載入看診紀錄失敗'); })
+        .then(function(){ if (dittoBtn) dittoBtn.textContent = origText; });
+    }
+
+    function _findPrevRecord(records) {
+        if (!records || records.length === 0) return null;
+        var sorted = records.slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+        // 如果最新一筆是今天，跳過取上一筆
+        var today = new Date();
+        var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+        if (sorted[0].date === todayStr && sorted.length > 1) return sorted[1];
+        return sorted[0];
+    }
+
+    function _applyDittoFromRecord(rec) {
+        // 1. 套用排程
+        if (rec.schedule && rec.schedule.length === 7) {
+            cycleSchedule = rec.schedule.slice();
+            renderCycleSchedule();
+        }
+        // 2. 從 dayPlans 的 meals items 解析配方 pattern
+        var DITTO_MEALS = ['早餐','早午餐','午餐','下午茶','晚餐','宵夜'];
+        var formulaPatterns = {};
+        ['mid','high','low','fast'].forEach(function(dt) {
+            var pattern = ['-','-','-','-','-','-'];
+            var dp = rec.dayPlans && rec.dayPlans[dt];
+            if (dp && dp.meals) {
+                dp.meals.forEach(function(meal) {
+                    var idx = DITTO_MEALS.indexOf(meal.name);
+                    if (idx >= 0 && meal.items && meal.items.indexOf('配方') !== -1) {
+                        pattern[idx] = '1';
+                    }
+                });
+            }
+            formulaPatterns[dt] = pattern;
+        });
+        // 3. 註冊為 ditto 劇本（動態）
+        currentScript = 'ditto';
+        SCRIPT_CONFIGS.ditto = {
+            label: 'Ditto 上一次',
+            schedule: cycleSchedule.slice(),
+            formula: formulaPatterns
+        };
+        // 4. 重新生成所有碳日
+        ['mid','high','low','fast'].forEach(function(d){ generateDietPlan(d); });
+        // 5. 高亮按鈕
+        highlightScriptBtn('ditto');
     }
 
     function saveTargetWeight() {
