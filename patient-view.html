@@ -1480,8 +1480,8 @@
         var html = '';
         for (var m = 0; m < MEAL_COUNT; m++) {
             var allDash = plan[m] && plan[m].every(function(v){ return v === '-' || v === '0' || v === 0; });
-            var cls = 'diet-meal-card' + (allDash ? ' inactive' : '');
-            html += '<div class="' + cls + '" id="' + p + '-meal-' + m + '" onclick="toggleDietMeal(\'' + p + '\',' + m + ')">';
+            if (allDash) continue; // 全空的餐完全不渲染
+            html += '<div class="diet-meal-card" id="' + p + '-meal-' + m + '">';
             html += '<div class="diet-meal-title">' + MEAL_ICONS[m] + ' ' + MEAL_NAMES[m] + '</div><div class="diet-flow">';
             var visCount = 0;
             for (var f = 0; f < DIET_COLS.length; f++) {
