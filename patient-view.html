@@ -1634,58 +1634,12 @@
             {type:'text',text:'⚠️ 排糖包與排油包務必在高碳日用掉，才會瘦更快！',weight:'bold',size:'sm',color:'#4A4A4A',wrap:true,margin:'lg'}
         ];
 
-        // ── 各碳日區塊 ──
-        usedTypes.forEach(function(p) {
-            var plan = getDietPlanData(p);
-            var totalPacks = 0, totalFood = 0, qbPacks = 0;
-            for (var m2 = 0; m2 < MEAL_COUNT; m2++) {
-                if (plan[m2][0] === '1') totalPacks++;
-                var fv = plan[m2][3] === '-' ? 0 : (parseInt(plan[m2][3]) || 0);
-                totalFood += fv;
-                if (plan[m2][5] === '1') qbPacks++;
-            }
-            var total = totalPacks * 20 + totalFood;
-            var summaryText = '代餐 ' + totalPacks + ' 包 × 20g';
-            if (qbPacks > 0) summaryText += ' ＋ Q寶 ' + qbPacks + ' 包';
-            if (totalFood > 0) summaryText += ' ＋ 食物蛋白 ' + totalFood + 'g';
-
-            // 碳日標題區
-            bodyContents.push({type:'box',layout:'vertical',backgroundColor:dayBgColors[p],cornerRadius:'12px',paddingAll:'12px',margin:'lg',contents:[
-                {type:'box',layout:'horizontal',contents:[
-                    {type:'text',text:dayEmojis[p] + ' ' + dayLabels[p],weight:'bold',size:'lg',color:dayColors[p],flex:1},
-                    {type:'text',text:total + 'g',weight:'bold',size:'lg',color:dayColors[p],align:'end'}
-                ]},
-                {type:'text',text:summaryText,size:'xs',color:'#8B8B8B',margin:'xs'}
-            ]});
-            if (p === 'fast') bodyContents.push({type:'text',text:'☕ 隨時可補充茶、咖啡、清湯與雞蛋白',size:'xs',color:'#8B7B5E',wrap:true,margin:'sm'});
-
-            // 各餐明細
-            for (var m = 0; m < MEAL_COUNT; m++) {
-                var row = plan[m];
-                var allDash = row.every(function(v){ return v === '-' || v === '0' || v === 0; });
-                if (allDash) continue;
-                var fParts = [], fSeps = [];
-                for (var f = 0; f < DIET_COLS.length; f++) {
-                    var val = row[f];
-                    if (val === '-' || val === '0' || val === 0) continue;
-                    var col = DIET_COLS[f];
-                    var unit = col.unit.replace(/[()]/g, '');
-                    if (fParts.length > 0) fSeps.push(col.sep || '→');
-                    if (col.type === 'number') { fParts.push(col.label + val + unit); }
-                    else if (val === '1') { fParts.push(col.label + (unit ? '1'+unit : '')); }
-                    else { fParts.push(col.label + val); }
-                }
-                var mealText = '';
-                for (var fi = 0; fi < fParts.length; fi++) {
-                    if (fi > 0) mealText += ' ' + fSeps[fi-1] + ' ';
-                    mealText += fParts[fi];
-                }
-                bodyContents.push({type:'box',layout:'horizontal',spacing:'sm',margin:'sm',contents:[
-                    {type:'text',text:MEAL_ICONS[m] + ' ' + MEAL_NAMES[m],size:'sm',weight:'bold',color:'#4A4A4A',flex:0,gravity:'top'},
-                    {type:'text',text:mealText,size:'xs',color:'#6B6B6B',wrap:true,flex:4}
-                ]});
-            }
-        });
+        // ── 「查看詳細報告」按鈕（取代各碳日明細）──
+        var recordsUrl = 'https://floatingbubblejesse-bit.github.io/liff/my-records.html?id=' + encodeURIComponent(patientSn);
+        bodyContents.push({type:'box',layout:'vertical',margin:'xl',contents:[
+            {type:'button',style:'primary',color:'#7B8FA1',height:'md',
+             action:{type:'uri',label:'📋 查看詳細報告',uri:recordsUrl}}
+        ]});
 
         // ── 單一大張 bubble ──
         var bubble = {
