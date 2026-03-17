@@ -323,7 +323,7 @@
                 <div class="card" id="proteinRecCard" onmouseenter="this.classList.add('editing')" onmouseleave="if(!this.querySelector(':focus'))this.classList.remove('editing')">
                     <div class="card-title">🥩 蛋白質攝取建議</div>
                     <div>
-                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px">公式攝取量（體重＋40）</div>
+                        <div style="font-size:11px;color:#8B8B8B;margin-bottom:4px" id="proteinFormulaLabel">公式攝取量（體重＋40）</div>
                         <div style="font-size:24px;font-weight:700;color:#7B8FA1;margin-bottom:12px" id="currentProtein">— g</div>
                     </div>
                     <div>
@@ -972,6 +972,10 @@
         if (!isNaN(current) && !currentProteinFilled) {
             document.getElementById('currentProtein').textContent = current + ' g';
             currentProteinFilled = true;
+            var wt2 = findField(cust, ['體重','weight']);
+            if (!isNaN(wt2) && wt2 > 0) {
+                document.getElementById('proteinFormulaLabel').textContent = '公式攝取量（體重（' + wt2 + '）＋40）';
+            }
         }
         // 輸入框：優先 I 欄，I 欄空 → 用 H 欄（= 體重+40，上限140）
         if (!proteinFilled) {
@@ -1000,6 +1004,9 @@
         if (!isNaN(hCol) && !currentProteinFilled) {
             document.getElementById('currentProtein').textContent = hCol + ' g';
             currentProteinFilled = true;
+            if (!isNaN(wt) && wt > 0) {
+                document.getElementById('proteinFormulaLabel').textContent = '公式攝取量（體重（' + wt + '）＋40）';
+            }
         }
         console.log('[蛋白質] fillProteinFromMeals: hCol=' + hCol + ', iCol=' + iCol + ', proteinFilled=' + proteinFilled);
         // I 欄有值 → 強制覆蓋；I 欄空 → 用 H 欄
