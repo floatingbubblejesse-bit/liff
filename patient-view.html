@@ -1092,25 +1092,27 @@
         .then(function(r){ return r.json(); })
         .then(function(res){
             btn.disabled = false;
-            btn.style.opacity = '1';
             if (res.ok || res.success) {
                 btn.textContent = '已儲存';
                 btn.style.background = '#6B8F71';
+                btn.style.opacity = '1';
                 ['mid','high','low','fast'].forEach(function(d){ generateDietPlan(d); });
                 setTimeout(function(){
                     btn.textContent = '儲存';
-                    btn.style.background = '#8B9D83';
-                    var card = document.getElementById('proteinRecCard');
-                    if (!card.querySelector(':focus')) card.classList.remove('editing');
+                    btn.style.background = '';
+                    btn.style.opacity = '';
+                    btn.blur();
+                    document.getElementById('proteinRecCard').classList.remove('editing');
                 }, 2500);
             } else {
                 btn.textContent = '儲存';
+                btn.style.opacity = '';
                 alert('儲存失敗：' + (res.error || JSON.stringify(res)));
             }
         })
         .catch(function(err){
             btn.disabled = false;
-            btn.style.opacity = '1';
+            btn.style.opacity = '';
             btn.textContent = '儲存';
             alert('儲存失敗：' + err.message);
         });
@@ -1190,24 +1192,26 @@
         .then(function(r){ return r.json(); })
         .then(function(res){
             btn.disabled = false;
-            btn.style.opacity = '1';
             if (res.ok || res.success) {
                 btn.textContent = '已儲存';
                 btn.style.background = '#6B8F71';
+                btn.style.opacity = '1';
                 setTimeout(function(){
                     btn.textContent = '儲存';
-                    btn.style.background = '#A0626B';
-                    var card = document.getElementById('targetWeightCard');
-                    if (!card.querySelector(':focus')) card.classList.remove('editing');
+                    btn.style.background = '';
+                    btn.style.opacity = '';
+                    btn.blur();
+                    document.getElementById('targetWeightCard').classList.remove('editing');
                 }, 2500);
             } else {
                 btn.textContent = '儲存';
+                btn.style.opacity = '';
                 alert('儲存失敗：' + (res.error || JSON.stringify(res)));
             }
         })
         .catch(function(err){
             btn.disabled = false;
-            btn.style.opacity = '1';
+            btn.style.opacity = '';
             btn.textContent = '儲存';
             alert('儲存失敗：' + err.message);
         });
