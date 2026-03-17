@@ -996,14 +996,7 @@
     }
 
     function renderChart() {
-        var allKeys = Object.keys(weightData).filter(function(k){ return weightData[k].weight; }).sort();
-        if (allKeys.length === 0) return;
-        var keys = allKeys;
-        if (scheduleStart && scheduleEnd) {
-            var sStr = formatDate(scheduleStart);
-            var eStr = formatDate(scheduleEnd);
-            keys = allKeys.filter(function(k){ return k >= sStr && k <= eStr; });
-        }
+        var keys = Object.keys(weightData).filter(function(k){ return weightData[k].weight; }).sort();
         if (keys.length === 0) return;
 
         _chartKeys = keys;
