@@ -378,13 +378,10 @@
                 </div>
             </div>
             <div class="card" id="dietPlanCard">
-                <div class="card-title">🔄 碳水循環計劃</div>
+                <div class="card-title" style="justify-content:space-between;align-items:center"><span>🔄 碳水循環計劃</span><button class="diet-btn-save" id="saveAllDietBtn" onclick="saveAllDietPlans()" style="font-size:11px;padding:4px 10px;border-radius:6px;white-space:nowrap">儲存並發送</button></div>
                 <div class="cycle-top-layout">
                     <div class="cycle-weeks-packs-row" id="cycleWeeksSummary"></div>
                     <div class="cycle-schedule" id="cycleSchedule"></div>
-                </div>
-                <div class="diet-btn-row" style="margin-bottom:12px">
-                    <button class="diet-btn-save" id="saveAllDietBtn" onclick="saveAllDietPlans()" style="width:100%">儲存並發送給客戶</button>
                 </div>
                 <div class="diet-day-section" id="midDietSection">
                     <div class="diet-day-header" onclick="toggleDietBody('mid')">🟡 中碳日 <span class="diet-mode" id="midDietModeBadge"></span><span class="diet-toggle" id="midDietToggle">▶</span></div>
@@ -1678,10 +1675,10 @@
                 dietHistoryCache = null; // 清掉快取，讓看診紀錄 tab 重新載入
                 var pBtn = document.getElementById('saveProteinBtn');
                 if (pBtn) { pBtn.textContent = '已同步'; pBtn.style.background = '#6B8F71'; setTimeout(function(){ pBtn.textContent = '更新'; pBtn.style.background = '#8B9D83'; }, 2500); }
-                setTimeout(function() { btn.textContent = '儲存並發送給客戶'; btn.style.background = ''; }, 2500);
-            } else { btn.textContent = '儲存並發送給客戶'; alert('LINE 推播失敗：' + (res.error || JSON.stringify(res))); }
+                setTimeout(function() { btn.textContent = '儲存並發送'; btn.style.background = ''; }, 2500);
+            } else { btn.textContent = '儲存並發送'; alert('LINE 推播失敗：' + (res.error || JSON.stringify(res))); }
         })
-        .catch(function(err) { btn.disabled = false; btn.textContent = '儲存並發送給客戶'; alert('儲存失敗：' + err.message); });
+        .catch(function(err) { btn.disabled = false; btn.textContent = '儲存並發送'; alert('儲存失敗：' + err.message); });
     }
 
     function fixPlanData(plan) {
