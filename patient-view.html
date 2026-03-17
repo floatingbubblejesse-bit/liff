@@ -275,7 +275,6 @@
         <button class="tab-btn" id="tabBtn-weight" onclick="switchTab('weight')">⚖️ 居家體重</button>
         <button class="tab-btn" id="tabBtn-meals" onclick="switchTab('meals')">🍱 餐食記錄</button>
         <button class="tab-btn" id="tabBtn-note" onclick="switchTab('note')">📋 醫生建議</button>
-        <button class="tab-btn" id="tabBtn-history" onclick="switchTab('history')">📊 看診紀錄</button>
     </div>
     <div class="main">
         <div id="loadingDiv" class="loading" style="position:absolute;top:0;left:0;right:0;bottom:0">
@@ -403,9 +402,10 @@
                     </div>
                 </div>
             </div>
-        </div>
-        <div id="tab-history" class="tab-pane" style="display:none">
-            <div id="historyContent"><div class="no-history">載入資料後即可查看看診紀錄</div></div>
+            <div class="card" id="historyCard" style="margin-top:12px">
+                <div class="card-title">📊 看診紀錄</div>
+                <div id="historyContent"><div class="no-history">載入資料後即可查看看診紀錄</div></div>
+            </div>
         </div>
     </div>
 
@@ -449,7 +449,7 @@
     if (cachedUid) patientLineUid = cachedUid;
     // 從 hash 讀取上次的 tab（重新整理時維持在同一頁）
     var initTab = (location.hash || '').replace('#','') || 'body';
-    if (['body','weight','meals','note','history'].indexOf(initTab) === -1) initTab = 'body';
+    if (['body','weight','meals','note'].indexOf(initTab) === -1) initTab = 'body';
 
     // ★ 初始化程式碼已搬到 script 最底部，確保所有 var 賦值完成後才執行
 
@@ -491,7 +491,7 @@
             .catch(function(err){ if (!cached) showError('資料載入失敗：'+err.message); });
     }
 
-    var TAB_NAMES = ['body','weight','meals','note','history'];
+    var TAB_NAMES = ['body','weight','meals','note'];
     function switchTab(name){
         activeTab=name;
         location.hash = name;
@@ -500,7 +500,7 @@
         });
         if(name==='weight') loadHomeWeight();
         if(name==='meals') loadMeals();
-        if(name==='history') renderHistoryTab();
+        if(name==='note') renderHistoryTab();
         showTab(name);
     }
 
@@ -1919,7 +1919,7 @@
         var cached = pvLoadCache('pv_hist', patientSn);
         if (cached && cached.length > 0) {
             dietHistoryCache = cached;
-            if (activeTab === 'history') renderHistoryCards(document.getElementById('historyContent'), cached);
+            if (activeTab === 'note') renderHistoryCards(document.getElementById('historyContent'), cached);
         }
         _histPrefetchPromise = fetch(MEALS_GAS + '?dietHistory=' + encodeURIComponent(patientSn))
             .then(function(r) { return r.json(); })
@@ -1928,7 +1928,7 @@
                 if (records.length > 0) {
                     pvSaveCache('pv_hist', patientSn, records);
                     dietHistoryCache = records;
-                    if (activeTab === 'history') renderHistoryCards(document.getElementById('historyContent'), records);
+                    if (activeTab === 'note') renderHistoryCards(document.getElementById('historyContent'), records);
                 }
             })
             .catch(function() {});
