@@ -195,7 +195,7 @@
         .diet-day-header:hover{background:#F5F3EF}
         .diet-day-header .diet-mode{font-size:10px}
         .diet-day-header .diet-toggle{margin-left:auto}
-        /* 小卡內容 */
+        /* 小卡 */
         .card-msg-send-btn{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.15s;flex-shrink:0;user-select:none;-webkit-tap-highlight-color:transparent}
         .card-msg-send-btn.on{background:#D4EDDA;border:2px solid #81c784;color:#2A4A34}
         .card-msg-send-btn.off{background:#F8D7DA;border:2px solid #e57373;color:#A0626B}
@@ -208,6 +208,18 @@
         .card-msg-item-x:active{background:#F8D7DA;border-color:#e57373}
         .card-msg-item.disabled .card-msg-item-x{background:#F8D7DA;border-color:#e57373;color:#A0626B}
         .card-msg-empty{text-align:center;padding:16px;color:var(--muted);font-size:12px}
+        /* 食物表 */
+        #foodTableSection.send-off .diet-day-header{opacity:0.45}
+        #foodTableSection.send-off #foodTableBody{opacity:0.3;pointer-events:none}
+        .food-tbl{width:100%;border-collapse:collapse;font-size:11px;line-height:1.6}
+        .food-tbl th{background:#EDE8E0;padding:7px 8px;text-align:left;font-weight:700;color:var(--text);font-size:11px;white-space:nowrap;border-bottom:2px solid #D5CFC3;position:static}
+        .food-tbl td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:top;font-size:11px}
+        .food-tbl td:first-child{font-weight:700;white-space:nowrap;color:#7B8FA1;background:#F9F7F3;width:80px}
+        .food-tbl tr.ft-disabled{opacity:0.25;text-decoration:line-through}
+        .food-tbl tr:last-child td{border-bottom:none}
+        .ft-x-btn{width:20px;height:20px;border-radius:50%;border:1px solid var(--border);background:white;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent;vertical-align:middle}
+        .ft-x-btn:active{background:#F8D7DA;border-color:#e57373}
+        .food-tbl tr.ft-disabled .ft-x-btn{background:#F8D7DA;border-color:#e57373;color:#A0626B}
         /* 碳水循環排程 */
         .cycle-schedule{display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:nowrap;overflow-x:auto}
         .cycle-day{display:flex;flex-direction:column;align-items:center;min-width:0;flex-shrink:0}
@@ -414,16 +426,27 @@
                         <div id="fastDietMeals"></div>
                     </div>
                 </div>
-                <!-- ★ 小卡內容（LINE 推播附加文字）-->
+                <!-- ★ 小卡（LINE 推播附加文字）-->
                 <div class="diet-day-section" id="cardMsgSection">
                     <div class="diet-day-header" style="background:#EDE8E0">
                         <span onclick="toggleCardMsgSend(event)" id="cardMsgSendBtn" class="card-msg-send-btn on" title="點擊切換發送/不發送">✓</span>
-                        <span onclick="toggleCardMsg()" style="flex:1;cursor:pointer">💬 小卡內容 <span class="diet-mode" id="cardMsgBadge" style="color:var(--muted);font-size:10px"></span></span>
+                        <span onclick="toggleCardMsg()" style="flex:1;cursor:pointer">💬 小卡 <span class="diet-mode" id="cardMsgBadge" style="color:var(--muted);font-size:10px"></span></span>
                         <span class="diet-toggle" id="cardMsgToggle" onclick="toggleCardMsg()" style="cursor:pointer">▶</span>
                     </div>
                     <div id="cardMsgBody" class="diet-body collapsed" style="padding:10px 14px">
                         <div id="cardMsgItems"></div>
                         <div class="card-msg-empty" id="cardMsgEmpty">點擊上方劇本自動帶入內容</div>
+                    </div>
+                </div>
+                <!-- ★ 食物表 -->
+                <div class="diet-day-section" id="foodTableSection">
+                    <div class="diet-day-header" style="background:#EDE8E0">
+                        <span onclick="toggleFoodTableSend(event)" id="foodTableSendBtn" class="card-msg-send-btn on" title="點擊切換發送/不發送">✓</span>
+                        <span onclick="toggleFoodTable()" style="flex:1;cursor:pointer">🍽️ 食物表 <span class="diet-mode" id="foodTableBadge" style="color:var(--muted);font-size:10px"></span></span>
+                        <span class="diet-toggle" id="foodTableToggle" onclick="toggleFoodTable()" style="cursor:pointer">▶</span>
+                    </div>
+                    <div id="foodTableBody" class="diet-body collapsed" style="padding:6px 8px;overflow-x:auto">
+                        <table class="food-tbl" id="foodTblEl"></table>
                     </div>
                 </div>
             </div>
@@ -1170,7 +1193,7 @@
         renderCycleSchedule();
         ['mid','high','low','fast'].forEach(function(d){ generateDietPlan(d); });
         highlightScriptBtn(scriptId);
-        // ★ 套用劇本時自動帶入小卡內容
+        // ★ 套用劇本時自動帶入小卡
         applyCardMsgForScript(scriptId);
     }
 
@@ -1259,7 +1282,7 @@
         ['mid','high','low','fast'].forEach(function(d){ generateDietPlan(d); });
         // 6. 高亮按鈕
         highlightScriptBtn('ditto');
-        // 7. 套用小卡內容
+        // 7. 套用小卡
         applyCardMsgForScript('ditto');
     }
 
@@ -1504,7 +1527,7 @@
         if (tog) tog.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
     }
 
-    // ====== 小卡內容（LINE 推播附加文字）======
+    // ====== 小卡（LINE 推播附加文字）======
     // key 對應上方劇本按鈕的 scriptId（midCarb, lowCarb, carbCycle, lightFast, beast, ditto）
     var cardMsgScripts = {
         midCarb: [
@@ -1624,7 +1647,7 @@
             cardMsgList.push({ text: texts[i], enabled: true });
         }
         renderCardMsgItems();
-        // 自動展開小卡內容
+        // 自動展開小卡
         var body = document.getElementById('cardMsgBody');
         var tog = document.getElementById('cardMsgToggle');
         if (body && body.classList.contains('collapsed')) {
@@ -1680,6 +1703,74 @@
         }
         return result;
     }
+
+    // ====== 食物表 ======
+    var foodTableData = [
+        { cat: '輕斷食食物', desc: '茶、咖啡、清湯、高纖蛋白餐(飲)、MCT油、MCT防彈Q飽飲、雞蛋白', enabled: true },
+        { cat: '低碳水食物\n(增肌減脂)', desc: '蛋白質：雞蛋一顆(7g)、嫩豆腐一盒(14g)、瘦肉海鮮100g(20g)、高纖蛋白餐(20g)、無糖豆漿(一天<300cc)\n膳食纖維：蔬菜一碗(3g)、便利商店沙拉一盒(6g)、高纖蛋白餐(10g+)\n低碳高纖蔬菜 葉菜類：葉菜、青椒、高麗菜、花椰菜、菇類、櫛瓜、小黃瓜\n筍類：竹筍、茭白筍、蘆筍', enabled: true },
+        { cat: '中碳水食物', desc: '優質原型碳水：地瓜、南瓜、蓮藕、蓮子、鋼切燕麥、綠豆、紅豆、糙米\n低糖水果(一天不超過拳頭大小)：蘋果、芭樂、莓果\n奶製品：希臘優格(一天<200g)', enabled: true },
+        { cat: '高碳水食物\n(+排糖包)', desc: '高升糖碳水：白飯、馬鈴薯、芋頭、玉米、麵條、麵包、燕麥片、燕麥奶、牛奶等\n高糖水果：荔枝、葡萄、芒果、香蕉、鳳梨、西瓜、木瓜、果汁', enabled: true },
+        { cat: '高糖高油食物\n(+排糖排油包)', desc: '精緻加工碳水：餅乾、泡麵、麵線、蛋糕、酥皮點心、炒麵、洋芋片、薯條等\n高油脂食物：豬肉、牛肉、炸物等', enabled: true }
+    ];
+    var foodTableSendEnabled = true;
+
+    function renderFoodTable() {
+        var tbl = document.getElementById('foodTblEl');
+        var html = '<thead><tr><th>分類</th><th>食物內容</th><th></th></tr></thead><tbody>';
+        var enabledCount = 0;
+        for (var i = 0; i < foodTableData.length; i++) {
+            var row = foodTableData[i];
+            if (row.enabled) enabledCount++;
+            html += '<tr class="' + (row.enabled ? '' : 'ft-disabled') + '">'
+                + '<td>' + esc(row.cat).replace(/\n/g, '<br>') + '</td>'
+                + '<td>' + esc(row.desc).replace(/\n/g, '<br>') + '</td>'
+                + '<td style="text-align:center;width:32px"><span class="ft-x-btn" onclick="toggleFoodTableRow(' + i + ')">' + (row.enabled ? '✕' : '↩') + '</span></td>'
+                + '</tr>';
+        }
+        html += '</tbody>';
+        tbl.innerHTML = html;
+        var badge = document.getElementById('foodTableBadge');
+        if (badge) badge.textContent = enabledCount < foodTableData.length ? '(' + enabledCount + '/' + foodTableData.length + ')' : '';
+    }
+
+    function toggleFoodTableRow(idx) {
+        foodTableData[idx].enabled = !foodTableData[idx].enabled;
+        renderFoodTable();
+    }
+
+    function toggleFoodTable() {
+        var body = document.getElementById('foodTableBody');
+        var tog = document.getElementById('foodTableToggle');
+        var isOpen = !body.classList.contains('collapsed');
+        body.classList.toggle('collapsed');
+        tog.textContent = isOpen ? '▶' : '▼';
+    }
+
+    function toggleFoodTableSend(e) {
+        e.stopPropagation();
+        foodTableSendEnabled = !foodTableSendEnabled;
+        var btn = document.getElementById('foodTableSendBtn');
+        var section = document.getElementById('foodTableSection');
+        if (foodTableSendEnabled) {
+            btn.textContent = '✓'; btn.className = 'card-msg-send-btn on';
+            section.classList.remove('send-off');
+        } else {
+            btn.textContent = '✕'; btn.className = 'card-msg-send-btn off';
+            section.classList.add('send-off');
+        }
+    }
+
+    function getEnabledFoodTableRows() {
+        if (!foodTableSendEnabled) return [];
+        var result = [];
+        for (var i = 0; i < foodTableData.length; i++) {
+            if (foodTableData[i].enabled) result.push(foodTableData[i]);
+        }
+        return result;
+    }
+
+    // 頁面載入時初始渲染食物表
+    renderFoodTable();
 
     function recalcDietProtein(p) {
         var totalPacks = 0, totalFood = 0, qbPacks = 0;
