@@ -116,6 +116,21 @@
     var lineUid = '';
     var patientSn = '';
 
+    // ====== uid→sn 快取（跳過 loadPatientData API）======
+    var MR_UID_SN_KEY = 'mr_uid_sn';
+    function mrSaveUidSn(uid, sn) {
+        try { localStorage.setItem(MR_UID_SN_KEY, JSON.stringify({ uid: uid, sn: sn })); } catch(e) {}
+    }
+    function mrLoadUidSn(uid) {
+        try {
+            var raw = localStorage.getItem(MR_UID_SN_KEY);
+            if (!raw) return null;
+            var c = JSON.parse(raw);
+            if (c.uid !== uid) return null;
+            return c.sn || null;
+        } catch(e) { return null; }
+    }
+
     // ====== Profile 快取（姓名/頭像秒開）======
     var MR_PROFILE_KEY = 'mr_profile';
     function mrSaveProfile(sn, name, pic) {
@@ -170,8 +185,41 @@
                 lineUid = profile.userId;
                 document.getElementById('headerSub').textContent = profile.displayName;
                 if (profile.pictureUrl) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + profile.pictureUrl + '" alt="">'; }
-                if (profile.displayName) { fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(lineUid) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){}); }
-                loadPatientData();
+
+                // ★ 秒開核心：先查 uid→sn 快取，有的話跳過 loadPatientData API
+                var cachedSn = mrLoadUidSn(lineUid);
+                if (cachedSn) {
+                    patientSn = cachedSn;
+                    var pCache = mrLoadProfile(patientSn);
+                    if (pCache && pCache.name) document.getElementById('headerSub').textContent = pCache.name;
+                    if (pCache && pCache.pic) document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + pCache.pic + '" alt="">';
+                    loadDietPlan(patientSn); // 直接進 cache-first 秒開
+                }
+
+                // 背景驗證/更新 uid→sn 映射
+                var param = 'uid=' + encodeURIComponent(lineUid);
+                fetch(GAS_URL + '?' + param)
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data && !data.error && data.customer) {
+                            var freshSn = data.customer.sn;
+                            mrSaveUidSn(lineUid, freshSn);
+                            mrSaveProfile(freshSn, profile.displayName, profile.pictureUrl);
+                            if (profile.displayName) { fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(freshSn) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){}); }
+                            if (!cachedSn) {
+                                patientSn = freshSn;
+                                loadDietPlan(patientSn);
+                            } else if (freshSn !== cachedSn) {
+                                patientSn = freshSn;
+                                loadDietPlan(patientSn);
+                            }
+                        } else if (!cachedSn) {
+                            showError('找不到病患資料');
+                        }
+                    })
+                    .catch(function(err) {
+                        if (!cachedSn) showError('載入病患資料失敗：' + err.message);
+                    });
             })
             .catch(function(err) {
                 if (_urlUid) {

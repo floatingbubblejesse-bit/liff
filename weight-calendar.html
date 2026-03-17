@@ -202,6 +202,21 @@
             return c.data;
         } catch(e) { return null; }
     }
+    // ====== uid→sn 快取（跳過 lookupUid API）======
+    var UID_SN_KEY = 'wc_uid_sn';
+    function saveUidSnCache(uid, sn) {
+        try { localStorage.setItem(UID_SN_KEY, JSON.stringify({ uid: uid, sn: sn })); } catch(e) {}
+    }
+    function loadUidSnCache(uid) {
+        try {
+            var raw = localStorage.getItem(UID_SN_KEY);
+            if (!raw) return null;
+            var c = JSON.parse(raw);
+            if (c.uid !== uid) return null;
+            return c.sn || null;
+        } catch(e) { return null; }
+    }
+
     // ====== Profile 快取（姓名/頭像秒開）======
     var PROFILE_CACHE_KEY = 'wc_profile';
     function saveProfileCache(sn, name, pic) {
@@ -266,19 +281,43 @@
                 patientName = profile.displayName;
                 document.getElementById('headerSub').textContent = profile.displayName;
                 if (profile.pictureUrl) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + profile.pictureUrl + '" alt="">'; }
-                return fetch(MEALS_GAS + '?lookupUid=' + encodeURIComponent(patientUid))
-                    .then(function(r){ return r.json(); });
-            }).then(function(result) {
-                if (!result) return;
-                if (result.patientSn) {
-                    patientSn = result.patientSn;
+
+                // ★ 秒開核心：先查 uid→sn 快取，有的話直接 loadData 不等 API
+                var cachedSn = loadUidSnCache(patientUid);
+                if (cachedSn) {
+                    patientSn = cachedSn;
+                    var pCache = loadProfileCache(patientSn);
+                    if (pCache && pCache.name) { patientName = pCache.name; document.getElementById('headerSub').textContent = pCache.name; }
+                    if (pCache && pCache.pic) { document.getElementById('avatarWrap').innerHTML = '<img class="avatar" src="' + pCache.pic + '" alt="">'; }
+                    loadData(); // 立即進 cache-first 秒開
                 }
-                // 同步 LINE 名稱到客戶清單（背景執行，不影響載入）
-                if (patientSn && patientName) {
-                    saveProfileCache(patientSn, patientName, '');
-                    fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(patientSn) + '&dName=' + encodeURIComponent(patientName)).catch(function(){});
-                }
-                loadData();
+
+                // 背景驗證/更新 uid→sn 映射
+                fetch(MEALS_GAS + '?lookupUid=' + encodeURIComponent(patientUid))
+                    .then(function(r){ return r.json(); })
+                    .then(function(result) {
+                        if (result && result.patientSn) {
+                            var freshSn = result.patientSn;
+                            saveUidSnCache(patientUid, freshSn);
+                            if (!cachedSn) {
+                                // 第一次沒快取，現在才拿到 sn
+                                patientSn = freshSn;
+                                loadData();
+                            } else if (freshSn !== cachedSn) {
+                                // sn 變了，重新載入
+                                patientSn = freshSn;
+                                loadData();
+                            }
+                        } else if (!cachedSn) {
+                            loadData(); // 沒拿到 sn 也要顯示空頁面
+                        }
+                        if (patientSn && patientName) {
+                            saveProfileCache(patientSn, patientName, profile.pictureUrl || '');
+                            fetch(MEALS_GAS + '?setLineName=' + encodeURIComponent(patientSn) + '&dName=' + encodeURIComponent(patientName)).catch(function(){});
+                        }
+                    }).catch(function() {
+                        if (!cachedSn) loadData();
+                    });
             }).catch(function(err) {
                 loadData();
             });
