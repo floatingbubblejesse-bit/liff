@@ -4,6 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>病患資料｜診間醫生</title>
+    <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <script>
+    // ★ 秒開核心：<head> 提前發 API + 偵測快取
+    (function(){
+        var GAS='https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
+        var MGAS='https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
+        var p=new URLSearchParams(window.location.search);
+        var sn=p.get('id')||'';
+        if(!sn) return;
+        // 提前發主 API（體組成）
+        window._pvEarlyBody=fetch(GAS+'?id='+encodeURIComponent(sn)).then(function(r){return r.json();}).catch(function(){return null;});
+        // 提前預熱 MEALS_GAS
+        try{fetch(MGAS+'?preheat=1',{mode:'no-cors'}).catch(function(){});}catch(e){}
+        // 偵測 cache
+        try{
+            var raw=localStorage.getItem('pv_body');
+            if(raw){var c=JSON.parse(raw);if(c.key===sn&&Date.now()-c.ts<1800000){window._pvCacheHit=true;}}
+        }catch(e){}
+    })();
+    </script>
     <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         :root { --blue: #7B8FA1; --blue-light: #EDE8E0; --green: #8B9D83; --green-light: #E8EDE6; --red: #A0626B; --orange: #C4A882; --bg: #F5F3EF; --card: #FDFBF7; --text: #4A4A4A; --muted: #8B8B8B; --border: #E8E4DC; }
@@ -306,6 +326,7 @@
             <div class="spinner"></div>
             <p style="color:#888;font-size:13px">載入資料中...</p>
         </div>
+        <script>if(window._pvCacheHit){document.getElementById('loadingDiv').style.display='none';}</script>
         <div id="errorDiv" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0"></div>
         <div id="tab-body" class="tab-pane" style="display:none"></div>
         <div id="tab-weight" class="tab-pane" style="display:none">
@@ -462,9 +483,7 @@
     var MEALS_GAS = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
     var IMAGE_PROXY = 'https://huangcs.app.n8n.cloud/webhook/meal-photo';
     var N8N = 'https://huangcs.app.n8n.cloud/webhook';
-    // 預熱兩個 GAS（並行，不等結果）
-    try { fetch(GAS_URL + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
-    try { fetch(MEALS_GAS + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
+    // 預熱已移至 <head>（GAS_URL 的 early fetch 取代預熱，MEALS_GAS 在 <head> 預熱）
 
     // ====== Cache-first（localStorage 快取）======
     var PV_CACHE_TTL = 1800000; // 30 分鐘
@@ -529,10 +548,11 @@
         if (cached) {
             _applyBodyData(cached);
         }
-        fetch(GAS_URL + '?id=' + encodeURIComponent(patientSn))
-            .then(function(r){return r.json();})
-            .then(function(data){
-                if (data.error){ if (!cached) showError(data.error); return; }
+        // ★ 重用 <head> 已發出的 early fetch（避免重複請求）
+        var p = window._pvEarlyBody || fetch(GAS_URL + '?id=' + encodeURIComponent(patientSn)).then(function(r){return r.json();});
+        window._pvEarlyBody = null;
+        p.then(function(data){
+                if (!data || data.error){ if (!cached) showError(data ? data.error : '無回應'); return; }
                 pvSaveCache('pv_body', patientSn, data);
                 _applyBodyData(data);
             })
