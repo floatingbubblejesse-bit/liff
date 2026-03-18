@@ -5,9 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>醫生數據總覽｜金鶯減重</title>
     <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/versions/2.24.0/sdk.js" async></script>
     <script>
-    // 提前檢測 cache + 提前發 API（跟 HTML 解析並行）
+    // ★ 提前檢測已登入快取 + 提前發 API
     (function() {
+        var MGAS = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
+        var API = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
+        // 檢測 auth 快取
+        try {
+            var authRaw = localStorage.getItem('doc_auth');
+            if (authRaw) {
+                var a = JSON.parse(authRaw);
+                if (a.authorized && Date.now() - a.ts < 86400000) { // 24 小時有效
+                    window._docAuthHit = true;
+                }
+            }
+        } catch(e) {}
+        // 檢測 data 快取
         try {
             var raw = localStorage.getItem('doc_cache');
             if (raw) {
@@ -17,14 +32,28 @@
                 }
             }
         } catch(e) {}
-        // ★ 秒開核心：在 <head> 就發 API，不等 body 渲染完
-        var API = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
-        window._docEarlyFetch = fetch(API + '?all=true').then(function(r){ return r.json(); }).catch(function(){ return null; });
+        // 已登入 → 提前發資料 API
+        if (window._docAuthHit) {
+            window._docEarlyFetch = fetch(API + '?all=true').then(function(r){ return r.json(); }).catch(function(){ return null; });
+        }
+        // 預熱 MEALS_GAS
+        try { fetch(MGAS + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
     })();
     </script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-serif; background: #F5F3EF; color: #4A4A4A; min-height: 100vh; }
+        /* 登入閘門 */
+        .auth-gate{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center}
+        .auth-logo{font-size:48px;margin-bottom:12px}
+        .auth-title{font-size:20px;font-weight:700;color:#4A4A4A;margin-bottom:4px}
+        .auth-sub{font-size:13px;color:#8B8B8B;margin-bottom:24px}
+        .auth-btn{display:inline-flex;align-items:center;gap:8px;background:#06C755;color:white;border:none;padding:14px 32px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:background 0.2s}
+        .auth-btn:hover{background:#05B34C}
+        .auth-btn:disabled{background:#ccc;cursor:not-allowed}
+        .auth-status{margin-top:16px;font-size:13px;color:#8B8B8B}
+        .auth-error{margin-top:16px;font-size:13px;color:#A0626B;background:#FDF5F5;padding:12px 16px;border-radius:10px;border:1px solid #E8D5D8}
+        .auth-staff-info{font-size:12px;color:#8B8B8B;margin-top:8px}
 
         .header { background: linear-gradient(135deg, #7B8FA1, #6A7D8E); color: white; padding: 18px 16px 24px; }
         .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
@@ -87,13 +116,33 @@
     </style>
 </head>
 <body>
+    <!-- ★ 登入閘門 -->
+    <div id="authGate" class="auth-gate">
+        <div class="auth-logo">🏥</div>
+        <div class="auth-title">金鶯減重管理系統</div>
+        <div class="auth-sub">請使用 LINE 帳號登入</div>
+        <button class="auth-btn" id="authBtn" onclick="startLineLogin()" disabled>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 5.82 2 10.5c0 3.57 2.89 6.6 6.96 7.75-.1.35-.63 2.24-.66 2.38 0 0-.01.08.04.11.05.03.11.01.11.01.15-.02 1.77-1.16 2.58-1.7.63.09 1.28.14 1.97.14 5.52 0 10-3.82 10-8.5S17.52 2 12 2z"/></svg>
+            LINE 登入
+        </button>
+        <div id="authStatus" class="auth-status"></div>
+    </div>
+    <script>
+    // 已有 auth 快取 → 直接隱藏登入閘門
+    if(window._docAuthHit){document.getElementById('authGate').style.display='none';}
+    </script>
+
+    <div id="appWrap" style="display:none">
     <div class="header">
         <div class="header-top">
             <div>
                 <h1>🏥 醫生數據總覽</h1>
-                <p>金鶯減重 — 體組成管理系統</p>
+                <p id="headerSubtitle">金鶯減重 — 體組成管理系統</p>
             </div>
-            <button class="refresh-btn" onclick="loadData(true)">↻ 更新</button>
+            <div style="display:flex;gap:6px;align-items:center">
+                <button class="refresh-btn" onclick="loadData(true)">↻ 更新</button>
+                <button class="refresh-btn" onclick="doLogout()" title="登出">🚪</button>
+            </div>
         </div>
     </div>
 
@@ -118,14 +167,125 @@
         </div>
         <div class="bottom-space"></div>
     </div>
+    </div><!-- /appWrap -->
 
     <script>
+    // ★ 已有 auth 快取 → 直接顯示 app
+    if (window._docAuthHit) { document.getElementById('appWrap').style.display = 'block'; }
+
+    var LIFF_ID = '2009326025-XAQhb1rA'; // doctor 用的 LIFF ID（需在 LINE Developers 設定）
     var API_URL = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
     var MEALS_GAS = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
     var PATIENT_URL = './patient-view.html';
     var allPatients = [];
-    // 預熱 MEALS_GAS（進入 patient-view 時會用到）
-    try { fetch(MEALS_GAS + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
+    var staffLineUid = '';
+
+    // ====== LIFF 登入 + 白名單驗證 ======
+    function waitForLiff(cb) {
+        if (typeof liff !== 'undefined') { cb(); return; }
+        var tries = 0;
+        var iv = setInterval(function() {
+            tries++;
+            if (typeof liff !== 'undefined') { clearInterval(iv); cb(); return; }
+            if (tries > 100) { clearInterval(iv); showAuthError('LIFF SDK 載入逾時，請重新整理頁面'); }
+        }, 100);
+    }
+
+    function startLineLogin() {
+        var btn = document.getElementById('authBtn');
+        btn.disabled = true; btn.textContent = '登入中…';
+        document.getElementById('authStatus').textContent = '正在連接 LINE…';
+        waitForLiff(function() {
+            liff.init({ liffId: LIFF_ID }).then(function() {
+                if (!liff.isLoggedIn()) {
+                    liff.login({ redirectUri: window.location.href });
+                    return;
+                }
+                var profile = liff.getDecodedIDToken();
+                if (!profile || !profile.sub) {
+                    showAuthError('無法取得 LINE 身份，請重試');
+                    return;
+                }
+                verifyStaff(profile.sub, profile.name || '');
+            }).catch(function(err) {
+                showAuthError('LINE 登入失敗：' + (err.message || err));
+            });
+        });
+    }
+
+    function verifyStaff(uid, name) {
+        document.getElementById('authStatus').textContent = '驗證身份中…';
+        fetch(MEALS_GAS + '?checkStaff=' + encodeURIComponent(uid))
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                if (res.authorized) {
+                    // 儲存 auth 快取（24 小時）
+                    staffLineUid = uid;
+                    try {
+                        localStorage.setItem('doc_auth', JSON.stringify({
+                            authorized: true, uid: uid, role: res.role, name: res.name || name, ts: Date.now()
+                        }));
+                    } catch(e) {}
+                    showApp(res.name || name, res.role);
+                } else {
+                    showAuthError('你的 LINE 帳號不在「醫師清單」中。\n只有醫師才能登入後台，請聯繫管理員。');
+                }
+            })
+            .catch(function(err) { showAuthError('驗證失敗：' + err.message); });
+    }
+
+    function showAuthError(msg) {
+        var btn = document.getElementById('authBtn');
+        btn.disabled = false; btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 5.82 2 10.5c0 3.57 2.89 6.6 6.96 7.75-.1.35-.63 2.24-.66 2.38 0 0-.01.08.04.11.05.03.11.01.11.01.15-.02 1.77-1.16 2.58-1.7.63.09 1.28.14 1.97.14 5.52 0 10-3.82 10-8.5S17.52 2 12 2z"/></svg> LINE 登入';
+        document.getElementById('authStatus').innerHTML = '<div class="auth-error">' + esc(msg).replace(/\n/g,'<br>') + '</div>';
+    }
+
+    function showApp(name, role) {
+        document.getElementById('authGate').style.display = 'none';
+        document.getElementById('appWrap').style.display = 'block';
+        document.getElementById('headerSubtitle').textContent = '登入：' + name + '（👨‍⚕️ 醫師）';
+        // 開始載入資料
+        if (!window._docEarlyFetch) {
+            window._docEarlyFetch = fetch(API_URL + '?all=true').then(function(r){ return r.json(); }).catch(function(){ return null; });
+        }
+        loadData();
+    }
+
+    function doLogout() {
+        try { localStorage.removeItem('doc_auth'); } catch(e) {}
+        try { localStorage.removeItem('doc_cache'); } catch(e) {}
+        waitForLiff(function() {
+            liff.init({ liffId: LIFF_ID }).then(function() {
+                if (liff.isLoggedIn()) liff.logout();
+                location.reload();
+            }).catch(function() { location.reload(); });
+        });
+    }
+
+    // 頁面載入：已有 auth 快取就直接進入
+    (function() {
+        if (window._docAuthHit) {
+            try {
+                var a = JSON.parse(localStorage.getItem('doc_auth'));
+                showApp(a.name || '', a.role || 'staff');
+            } catch(e) {}
+            return;
+        }
+        // 未登入 → 啟用登入按鈕（等 LIFF SDK ready）
+        waitForLiff(function() {
+            var btn = document.getElementById('authBtn');
+            if (btn) { btn.disabled = false; }
+            // 檢查是否從 LINE login redirect 回來
+            liff.init({ liffId: LIFF_ID }).then(function() {
+                if (liff.isLoggedIn()) {
+                    var profile = liff.getDecodedIDToken();
+                    if (profile && profile.sub) {
+                        verifyStaff(profile.sub, profile.name || '');
+                    }
+                }
+            }).catch(function() {});
+        });
+    })();
 
     // ====== Cache-first（localStorage 快取）======
     var DOC_CACHE_KEY = 'doc_cache';
@@ -287,7 +447,6 @@
 
     function fmtNum(v) { var n = parseFloat(v); return isNaN(n) ? null : n; }
     function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-    loadData();
     </script>
 </body>
 </html>
