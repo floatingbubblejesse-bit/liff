@@ -630,9 +630,17 @@
             html+='<div class="metrics-grid">';
             METRICS.forEach(function(meta){
                 var curr=parseFloat(latest[meta[0]]);
+                var prevRow=prev;
+                // 如果最新測量缺少此項，往前找最近有數據的那筆
+                if(isNaN(curr)){
+                    for(var fi=m.length-2;fi>=0;fi--){
+                        var fv=parseFloat(m[fi][meta[0]]);
+                        if(!isNaN(fv)){curr=fv; prevRow=(fi>0)?m[fi-1]:null; break;}
+                    }
+                }
                 if(isNaN(curr)) return;
                 var diffHtml='';
-                if(prev){var pv=parseFloat(prev[meta[0]]); if(!isNaN(pv)){var diff=curr-pv;var good=(meta[3]&&diff<0)||(!meta[3]&&diff>0);
+                if(prevRow){var pv=parseFloat(prevRow[meta[0]]); if(!isNaN(pv)){var diff=curr-pv;var good=(meta[3]&&diff<0)||(!meta[3]&&diff>0);
                 var cls=diff===0?'diff-same':(good?'diff-good':'diff-warn');
                 diffHtml='<div class="metric-diff '+cls+'">'+(diff>0?'↑+':(diff<0?'↓':'→'))+diff.toFixed(1)+meta[2]+'</div>';}}
                 var rangeHtml='';
@@ -652,7 +660,7 @@
             });
             html+='</div></div>';
         }
-        if(m.length>1){
+        if(m.length>=1){
             html+='<div class="card"><div class="card-title">📈 趨勢圖</div><div class="chart-tabs">';
             METRICS.forEach(function(meta,idx){
                 if(!m.some(function(r){return !isNaN(parseFloat(r[meta[0]]));})){ return; }
@@ -678,7 +686,7 @@
             html+='</table></div></div>';
         }
         document.getElementById('tab-body').innerHTML=html;
-        if(m.length>1){
+        if(m.length>=1){
             setTimeout(function(){
                 for(var i=0;i<METRICS.length;i++){
                     if(m.some(function(row){return !isNaN(parseFloat(row[METRICS[i][0]]));})){renderChart(METRICS[i][0]);break;}
@@ -694,6 +702,8 @@
         var canvas=document.getElementById('trendChart');
         if(!canvas) return;
         if(chartInstance) chartInstance.destroy();
+        // 單一數據點時補一個空白點，讓範圍線可以畫出來
+        if(labels.length===1){labels.push(''); values.push(values[0]);}
         var datasets=[{label:meta[1],data:values,borderColor:'#7B8FA1',backgroundColor:'rgba(123,143,161,0.07)',tension:0.3,pointBackgroundColor:'#7B8FA1',pointRadius:4,fill:true,order:1}];
         var range=getNormalRange(key, allData.customer);
         var yMin, yMax;

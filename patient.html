@@ -219,7 +219,15 @@
         let gridHtml = '';
         const availMetrics = [];
         BC_METRICS.forEach(meta => {
-            const curr = parseFloat(latest[meta[0]]);
+            let curr = parseFloat(latest[meta[0]]);
+            let prevRow = prev;
+            // 如果最新測量缺少此項，往前找最近有數據的那筆
+            if (isNaN(curr)) {
+                for (let fi = m.length - 2; fi >= 0; fi--) {
+                    const fv = parseFloat(m[fi][meta[0]]);
+                    if (!isNaN(fv)) { curr = fv; prevRow = (fi > 0) ? m[fi - 1] : null; break; }
+                }
+            }
             if (isNaN(curr)) return;
             availMetrics.push(meta);
             const rng = getBcNormalRange(meta[0], cust);
@@ -230,8 +238,8 @@
                 else if (hi !== null) dot = (curr <= hi) ? '<span style="color:#8B9D83;font-size:8px;margin-left:2px">●</span>' : '<span style="color:#A0626B;font-size:8px;margin-left:2px">●</span>';
             }
             let diffHtml = '';
-            if (prev) {
-                const pv = parseFloat(prev[meta[0]]);
+            if (prevRow) {
+                const pv = parseFloat(prevRow[meta[0]]);
                 if (!isNaN(pv)) {
                     const diff = curr - pv;
                     const good = (meta[3] && diff < 0) || (!meta[3] && diff > 0);
@@ -249,7 +257,7 @@
             tabsHtml += `<button class="bc-tab${idx === 0 ? ' active' : ''}" onclick="switchBcChart('${meta[0]}',this)">${escHtml(meta[1])}</button>`;
         });
         document.getElementById('bc-tabs').innerHTML = tabsHtml;
-        if (availMetrics.length > 0 && m.length > 1) {
+        if (availMetrics.length > 0 && m.length >= 1) {
             const drawFirst = () => { if (typeof Chart === 'undefined') { setTimeout(drawFirst, 100); return; } renderBcChart(availMetrics[0][0]); };
             drawFirst();
         }
@@ -264,6 +272,8 @@
         const labels = [], values = [];
         m.forEach(row => { const v = parseFloat(row[key]); if (!isNaN(v)) { labels.push((row['測量日期/時間'] || '').substring(0, 10)); values.push(v); } });
         if (labels.length === 0) return;
+        // 單一數據點時補一個空白點，讓範圍線可以畫出來
+        if (labels.length === 1) { labels.push(''); values.push(values[0]); }
         const canvas = document.getElementById('bc-chart');
         if (!canvas) return;
         if (bcChartInstance) bcChartInstance.destroy();
