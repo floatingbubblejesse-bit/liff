@@ -1008,7 +1008,7 @@
         if (!cust) return;
         var current = findField(cust, ['蛋白質攝取量','proteinIntake','protein','蛋白質']);
         var doctorRec = findField(cust, ['醫師建議蛋白質攝取量','doctorProtein','doctorRecommendedProtein']);
-        if (isNaN(current)) {
+        if (isNaN(current) || current <= 0) {
             var wt = findField(cust, ['體重','weight']);
             if (!isNaN(wt) && wt > 0) current = ceilProtein(wt + 40);
         } else {
