@@ -1035,6 +1035,8 @@
                     if (opts[oi] > current) { prefill = opts[oi]; break; }
                 }
                 if (isNaN(prefill)) prefill = 140;
+                // I 欄空，自動算值後背景存到 Sheet
+                fetch(MEALS_GAS + '?saveProtein=' + encodeURIComponent(patientSn) + '&value=' + encodeURIComponent(prefill)).catch(function(){});
             }
             if (!isNaN(prefill)) {
                 document.getElementById('proteinInput').value = prefill;
@@ -1078,6 +1080,9 @@
             }
             document.getElementById('proteinInput').value = autoVal;
             proteinFilled = true;
+            // I 欄空時自動算出值後，背景存到 Sheet（讓患者端也能讀到目標）
+            fetch(MEALS_GAS + '?saveProtein=' + encodeURIComponent(patientSn) + '&value=' + encodeURIComponent(autoVal)).catch(function(){});
+            console.log('[蛋白質] 自動算值 ' + autoVal + ' 已背景存到 Sheet');
         }
         initDietPlan();
     }
