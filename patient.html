@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
-    <title>飲食記錄</title>
+    <title>身體組成</title>
     <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
     <link rel="preconnect" href="https://huangcs.app.n8n.cloud" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
@@ -108,6 +108,16 @@
         #error-screen h2 { font-size: 18px; margin-bottom: 8px; }
         #error-screen p { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
         #main { display: none; }
+        .bc-section { padding: 0 12px 8px; }
+        .bc-card { background: var(--card); border-radius: 14px; padding: 14px 12px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        .bc-card-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+        .bc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .bc-item { text-align: center; padding: 8px 4px; background: #F0EDE6; border-radius: 10px; }
+        .bc-val { font-size: 18px; font-weight: 700; color: #6B7F91; }
+        .bc-lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+        .bc-chart-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .bc-tab { padding: 4px 10px; border-radius: 99px; border: 1px solid var(--border); background: var(--card); font-size: 12px; color: var(--text-muted); cursor: pointer; }
+        .bc-tab.active { background: #7B8FA1; color: white; border-color: #7B8FA1; }
     </style>
 </head>
 <body>
@@ -144,6 +154,17 @@
             <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日蛋白質 g</div></div>
             <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日餐數</div></div>
         </div>
+        <div id="bc-section" class="bc-section" style="display:none">
+            <div class="bc-card">
+                <div class="bc-card-title">📋 最新身體組成</div>
+                <div class="bc-grid" id="bc-grid"></div>
+            </div>
+            <div class="bc-card">
+                <div class="bc-card-title">📈 趨勢圖</div>
+                <div class="bc-chart-tabs" id="bc-tabs"></div>
+                <div style="position:relative;height:200px"><canvas id="bc-chart"></canvas></div>
+            </div>
+        </div>
         <div class="section-title">蛋白質趨勢</div>
         <div class="chart-card"><canvas id="protein-chart" height="160"></canvas></div>
         <div class="section-title">每日紀錄</div>
@@ -156,6 +177,129 @@
     const LIFF_ID = '2009326025-d6EV7T42';
     const API_URL = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
     const IMAGE_PROXY = 'https://huangcs.app.n8n.cloud/webhook/meal-photo';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
+
+    const BC_METRICS = [
+        ['體重','體重','kg',true],['體脂率','體脂率','%',true],['肌肉量','肌肉量','kg',false],
+        ['蛋白質','蛋白質','kg',false],
+        ['水分比率','水分','%',false],['內臟脂肪指數','內臟脂肪','',true],
+        ['身體質量參數 (BMI)','BMI','',true],['基礎代謝 (BMR)','BMR','kcal',false],
+        ['腰圍','腰圍','cm',true],['臀圍','臀圍','cm',true],
+    ];
+
+    function getBcNormalRange(key, cust) {
+        const h = parseFloat(cust && cust.height) || 0;
+        const g = String(cust && cust.gender || '').trim();
+        const isMale = (g === '男');
+        const h2 = (h / 100) * (h / 100);
+        switch (key) {
+            case '體重': if (!h) return null; { const sw = h2 * (isMale ? 22 : 20); return [sw * 0.85, sw * 1.15]; }
+            case '體脂率': return isMale ? [10, 20] : [18, 28];
+            case '肌肉量': if (!h) return null; { const sm = h2 * (isMale ? 10.53 : 8.47); return [sm * 0.90, sm * 1.10]; }
+            case '蛋白質': if (!h) return null; { const sp = h2 * (isMale ? 3.72 : 3.08); return [sp * 0.85, sp * 1.15]; }
+            case '水分比率': return isMale ? [56, 69] : [50, 62];
+            case '內臟脂肪指數': return [0.5, 5];
+            case '身體質量參數 (BMI)': return [18.5, 24.9];
+            case '腰圍': return isMale ? [null, 90] : [null, 80];
+            default: return null;
+        }
+    }
+
+    let bcChartInstance = null;
+    let bcData = null;
+
+    function renderBcSection(data) {
+        bcData = data;
+        const m = data.measurements || [];
+        const cust = data.customer || {};
+        if (m.length === 0) return;
+        document.getElementById('bc-section').style.display = 'block';
+        const latest = m[m.length - 1];
+        const prev = m.length > 1 ? m[m.length - 2] : null;
+        let gridHtml = '';
+        const availMetrics = [];
+        BC_METRICS.forEach(meta => {
+            const curr = parseFloat(latest[meta[0]]);
+            if (isNaN(curr)) return;
+            availMetrics.push(meta);
+            const rng = getBcNormalRange(meta[0], cust);
+            let dot = '';
+            if (rng) {
+                const lo = rng[0], hi = rng[1];
+                if (lo !== null && hi !== null) dot = (curr >= lo && curr <= hi) ? '<span style="color:#8B9D83;font-size:8px;margin-left:2px">●</span>' : '<span style="color:#A0626B;font-size:8px;margin-left:2px">●</span>';
+                else if (hi !== null) dot = (curr <= hi) ? '<span style="color:#8B9D83;font-size:8px;margin-left:2px">●</span>' : '<span style="color:#A0626B;font-size:8px;margin-left:2px">●</span>';
+            }
+            let diffHtml = '';
+            if (prev) {
+                const pv = parseFloat(prev[meta[0]]);
+                if (!isNaN(pv)) {
+                    const diff = curr - pv;
+                    const good = (meta[3] && diff < 0) || (!meta[3] && diff > 0);
+                    const cls = diff === 0 ? 'color:#8B8B8B' : (good ? 'color:#8B9D83' : 'color:#A0626B');
+                    diffHtml = `<div style="font-size:10px;${cls}">${diff > 0 ? '↑+' : (diff < 0 ? '↓' : '→')}${diff.toFixed(1)}</div>`;
+                }
+            }
+            gridHtml += `<div class="bc-item"><div class="bc-val">${curr}</div><div class="bc-lbl">${escHtml(meta[1])}${dot} ${escHtml(meta[2])}</div>${diffHtml}</div>`;
+        });
+        document.getElementById('bc-grid').innerHTML = gridHtml;
+        // render tabs
+        let tabsHtml = '';
+        availMetrics.forEach((meta, idx) => {
+            if (!m.some(r => !isNaN(parseFloat(r[meta[0]])))) return;
+            tabsHtml += `<button class="bc-tab${idx === 0 ? ' active' : ''}" onclick="switchBcChart('${meta[0]}',this)">${escHtml(meta[1])}</button>`;
+        });
+        document.getElementById('bc-tabs').innerHTML = tabsHtml;
+        if (availMetrics.length > 0 && m.length > 1) {
+            const drawFirst = () => { if (typeof Chart === 'undefined') { setTimeout(drawFirst, 100); return; } renderBcChart(availMetrics[0][0]); };
+            drawFirst();
+        }
+    }
+
+    function renderBcChart(key) {
+        if (!bcData) return;
+        const m = bcData.measurements || [];
+        const cust = bcData.customer || {};
+        const meta = BC_METRICS.find(x => x[0] === key);
+        if (!meta) return;
+        const labels = [], values = [];
+        m.forEach(row => { const v = parseFloat(row[key]); if (!isNaN(v)) { labels.push((row['測量日期/時間'] || '').substring(0, 10)); values.push(v); } });
+        if (labels.length === 0) return;
+        const canvas = document.getElementById('bc-chart');
+        if (!canvas) return;
+        if (bcChartInstance) bcChartInstance.destroy();
+        const datasets = [{ label: meta[1], data: values, borderColor: '#7B8FA1', backgroundColor: 'rgba(123,143,161,0.07)', tension: 0.3, pointBackgroundColor: '#7B8FA1', pointRadius: 4, fill: true, order: 1 }];
+        const range = getBcNormalRange(key, cust);
+        let yMin, yMax;
+        if (range) {
+            const lo = range[0], hi = range[1];
+            if (lo !== null && hi !== null) {
+                datasets.push({ label: '正常上限', data: Array(labels.length).fill(hi), borderColor: 'rgba(139,157,131,0.5)', borderWidth: 1, borderDash: [4, 4], pointRadius: 0, fill: false, order: 2 });
+                datasets.push({ label: '正常下限', data: Array(labels.length).fill(lo), borderColor: 'rgba(139,157,131,0.5)', borderWidth: 1, borderDash: [4, 4], pointRadius: 0, fill: '-1', backgroundColor: 'rgba(139,157,131,0.10)', order: 2 });
+            } else if (hi !== null) {
+                datasets.push({ label: '正常上限', data: Array(labels.length).fill(hi), borderColor: 'rgba(160,98,107,0.5)', borderWidth: 1, borderDash: [4, 4], pointRadius: 0, fill: false, order: 2 });
+            } else if (lo !== null) {
+                datasets.push({ label: '正常下限', data: Array(labels.length).fill(lo), borderColor: 'rgba(139,157,131,0.5)', borderWidth: 1, borderDash: [4, 4], pointRadius: 0, fill: false, order: 2 });
+            }
+            const dataMin = Math.min(...values), dataMax = Math.max(...values);
+            let allMin = dataMin, allMax = dataMax;
+            if (lo !== null) allMin = Math.min(allMin, lo);
+            if (hi !== null) allMax = Math.max(allMax, hi);
+            const pad = (allMax - allMin) * 0.15 || 1;
+            yMin = allMin - pad; yMax = allMax + pad;
+        }
+        const scaleOpts = { x: { ticks: { font: { size: 10 }, maxRotation: 45 } }, y: { ticks: { font: { size: 10 } } } };
+        if (yMin !== undefined) { scaleOpts.y.min = Math.floor(yMin * 10) / 10; scaleOpts.y.max = Math.ceil(yMax * 10) / 10; }
+        bcChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'line', data: { labels, datasets },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: scaleOpts }
+        });
+    }
+
+    function switchBcChart(key, btn) {
+        document.querySelectorAll('.bc-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderBcChart(key);
+    }
 
     // 預熱兩個 GAS（並行，不等結果）
     try { fetch(API_URL + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
@@ -462,6 +606,12 @@
             }
             document.getElementById('main').style.display = 'block';
             const loadingEl = document.getElementById('loading');
+
+            // 並行載入身體組成資料
+            fetch(GAS_URL + '?uid=' + encodeURIComponent(userId))
+                .then(r => r.json())
+                .then(bcResult => { if (bcResult && bcResult.measurements) renderBcSection(bcResult); })
+                .catch(e => console.warn('身體組成載入失敗:', e));
 
             // 快取秒開：先用上次的資料立即渲染
             var cached = loadCache(userId);

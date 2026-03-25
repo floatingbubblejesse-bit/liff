@@ -503,10 +503,45 @@
     var MEALS_WH = N8N + '/patient-meals';
     var METRICS = [
         ['體重','體重','kg',true],['體脂率','體脂率','%',true],['肌肉量','肌肉量','kg',false],
+        ['蛋白質','蛋白質','kg',false],
         ['水分比率','水分','%',false],['內臟脂肪指數','內臟脂肪','',true],
         ['身體質量參數 (BMI)','BMI','',true],['基礎代謝 (BMR)','BMR','kcal',false],
         ['腰圍','腰圍','cm',true],['臀圍','臀圍','cm',true],
     ];
+
+    // ── 正常範圍計算（依身高/性別）──
+    function getNormalRange(key, cust) {
+        var h = parseFloat(cust && cust.height) || 0;
+        var g = String(cust && cust.gender || '').trim();
+        var isMale = (g === '男');
+        var h2 = (h / 100) * (h / 100); // m²
+        switch (key) {
+            case '體重':
+                if (!h) return null;
+                var sw = h2 * (isMale ? 22 : 20);
+                return [sw * 0.85, sw * 1.15];
+            case '體脂率':
+                return isMale ? [10, 20] : [18, 28];
+            case '肌肉量':
+                if (!h) return null;
+                var sm = h2 * (isMale ? 10.53 : 8.47);
+                return [sm * 0.90, sm * 1.10];
+            case '蛋白質':
+                if (!h) return null;
+                var sp = h2 * (isMale ? 3.72 : 3.08);
+                return [sp * 0.85, sp * 1.15];
+            case '水分比率':
+                return isMale ? [56, 69] : [50, 62];
+            case '內臟脂肪指數':
+                return [0.5, 5];
+            case '身體質量參數 (BMI)':
+                return [18.5, 24.9];
+            case '腰圍':
+                return isMale ? [null, 90] : [null, 80];
+            default:
+                return null;
+        }
+    }
     var chartInstance=null, mealChartInstance=null, allData=null, patientSn='', patientName='', patientLineUid='', activeTab='body';
     var mealsData=null, mealsLoaded=false, mealsLoading=false;
     var params = new URLSearchParams(window.location.search);
@@ -600,7 +635,19 @@
                 if(prev){var pv=parseFloat(prev[meta[0]]); if(!isNaN(pv)){var diff=curr-pv;var good=(meta[3]&&diff<0)||(!meta[3]&&diff>0);
                 var cls=diff===0?'diff-same':(good?'diff-good':'diff-warn');
                 diffHtml='<div class="metric-diff '+cls+'">'+(diff>0?'↑+':(diff<0?'↓':'→'))+diff.toFixed(1)+meta[2]+'</div>';}}
-                html+='<div class="metric-item"><div class="metric-label">'+esc(meta[1])+'</div>';
+                var rangeHtml='';
+                var rng=getNormalRange(meta[0], allData.customer);
+                if(rng){
+                    var lo=rng[0], hi=rng[1];
+                    if(lo!==null && hi!==null){
+                        if(curr>=lo && curr<=hi) rangeHtml='<span style="color:#8B9D83;font-size:9px;margin-left:4px">●</span>';
+                        else rangeHtml='<span style="color:#A0626B;font-size:9px;margin-left:4px">●</span>';
+                    } else if(hi!==null){
+                        if(curr<=hi) rangeHtml='<span style="color:#8B9D83;font-size:9px;margin-left:4px">●</span>';
+                        else rangeHtml='<span style="color:#A0626B;font-size:9px;margin-left:4px">●</span>';
+                    }
+                }
+                html+='<div class="metric-item"><div class="metric-label">'+esc(meta[1])+rangeHtml+'</div>';
                 html+='<div class="metric-value">'+curr+'<span class="metric-unit">'+esc(meta[2])+'</span></div>'+diffHtml+'</div>';
             });
             html+='</div></div>';
@@ -647,10 +694,32 @@
         var canvas=document.getElementById('trendChart');
         if(!canvas) return;
         if(chartInstance) chartInstance.destroy();
+        var datasets=[{label:meta[1],data:values,borderColor:'#7B8FA1',backgroundColor:'rgba(123,143,161,0.07)',tension:0.3,pointBackgroundColor:'#7B8FA1',pointRadius:4,fill:true,order:1}];
+        var range=getNormalRange(key, allData.customer);
+        var yMin, yMax;
+        if(range){
+            var lo=range[0], hi=range[1];
+            if(lo!==null && hi!==null){
+                datasets.push({label:'正常上限',data:Array(labels.length).fill(hi),borderColor:'rgba(139,157,131,0.5)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false,order:2});
+                datasets.push({label:'正常下限',data:Array(labels.length).fill(lo),borderColor:'rgba(139,157,131,0.5)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:'-1',backgroundColor:'rgba(139,157,131,0.10)',order:2});
+            } else if(hi!==null){
+                datasets.push({label:'正常上限',data:Array(labels.length).fill(hi),borderColor:'rgba(160,98,107,0.5)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false,order:2});
+            } else if(lo!==null){
+                datasets.push({label:'正常下限',data:Array(labels.length).fill(lo),borderColor:'rgba(139,157,131,0.5)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false,order:2});
+            }
+            var dataMin=Math.min.apply(null,values), dataMax=Math.max.apply(null,values);
+            var allMin=dataMin, allMax=dataMax;
+            if(lo!==null) allMin=Math.min(allMin, lo);
+            if(hi!==null) allMax=Math.max(allMax, hi);
+            var pad=(allMax-allMin)*0.15||1;
+            yMin=allMin-pad; yMax=allMax+pad;
+        }
+        var scaleOpts={x:{ticks:{font:{size:10},maxRotation:45}},y:{ticks:{font:{size:10}}}};
+        if(yMin!==undefined){scaleOpts.y.min=Math.floor(yMin*10)/10; scaleOpts.y.max=Math.ceil(yMax*10)/10;}
         chartInstance=new Chart(canvas.getContext('2d'),{
             type:'line',
-            data:{labels:labels,datasets:[{label:meta[1],data:values,borderColor:'#7B8FA1',backgroundColor:'rgba(123,143,161,0.07)',tension:0.3,pointBackgroundColor:'#7B8FA1',pointRadius:4,fill:true}]},
-            options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},maxRotation:45}},y:{ticks:{font:{size:10}}}}}
+            data:{labels:labels,datasets:datasets},
+            options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:scaleOpts}
         });
     }
 
