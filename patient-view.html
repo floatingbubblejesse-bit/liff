@@ -775,7 +775,15 @@
         if (!mealsData) return;
         var recs = mealsData.records || [];
         var patient = mealsData.patient || {};
-        var recProtein = parseFloat(patient.doctorRecommendedProtein) || parseFloat(patient.doctorProtein) || parseFloat(patient['醫師建議蛋白質攝取量']) || patient.recommendedProtein || 0;
+        // 優先用醫生建議 tab 的 proteinInput 當前值（即時同步），fallback 到 API 回傳值
+        var piEl = document.getElementById('proteinInput');
+        var piVal = piEl ? parseInt(piEl.value, 10) : 0;
+        var recProtein = (piVal > 0 ? piVal : 0)
+            || parseFloat(patient.doctorRecommendedProtein)
+            || parseFloat(patient.doctorProtein)
+            || parseFloat(patient['醫師建議蛋白質攝取量'])
+            || patient.recommendedProtein
+            || 0;
         var weight = patient.weight || 0;
         var el = document.getElementById('tab-meals');
 
@@ -1104,6 +1112,10 @@
         if (isNaN(val) || val <= 0) return;
         // 立即重新產生所有碳日計劃（不等 API 回傳）
         ['mid','high','low','fast'].forEach(function(d){ generateDietPlan(d); });
+        // 同步更新 mealsData 的蛋白質目標（讓餐食 tab 即時反映）
+        if (mealsData && mealsData.patient) {
+            mealsData.patient.doctorRecommendedProtein = val;
+        }
         // 背景儲存到 I 欄（fire-and-forget，最快速）
         var status = document.getElementById('proteinSaveStatus');
         status.textContent = '儲存中…';
