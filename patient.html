@@ -134,7 +134,7 @@
             </div>
             <div class="protein-card">
                 <div class="protein-header">
-                    <span class="protein-label">今日蛋白質進度</span>
+                    <span class="protein-label" id="protein-label">今日蛋白質進度</span>
                     <span class="protein-value" id="protein-text">—</span>
                 </div>
                 <div class="progress-bar-bg">
@@ -251,6 +251,47 @@
         const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         const days = ['日','一','二','三','四','五','六'];
         return `${parseInt(parts[1])}月${parseInt(parts[2])}日（週${days[d.getDay()]}）`;
+    }
+
+    /* ── 碳日查詢（與居家體重日曆相同邏輯） ── */
+    const CARB_LABELS = { high: '高碳日', mid: '中碳日', low: '低碳日', fast: '斷食日' };
+    const CARB_COLORS_MAP = { high: '#A0626B', mid: '#B8926A', low: '#6B8F71', fast: '#4A4A4A' };
+    function computeTodayCarbDay(dietData, hwData) {
+        const today = getTaipeiToday();
+        // 1. homeWeight manual override first
+        if (hwData && hwData.records) {
+            const todayRec = hwData.records.find(function(r){ return r.date === today; });
+            if (todayRec && todayRec.dayType) return todayRec.dayType;
+        }
+        // 2. Compute from diet plan schedule
+        if (!dietData || !dietData.schedule || dietData.schedule.length !== 7) return 'none';
+        const parts = String(dietData.date || '').split('-');
+        if (parts.length < 3) return 'none';
+        const visitDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        const weeks = dietData.weeks || 4;
+        const startDate = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate() + 1);
+        const tp = today.split('-');
+        const todayDate = new Date(parseInt(tp[0]), parseInt(tp[1]) - 1, parseInt(tp[2]));
+        const diffDays = Math.floor((todayDate - startDate) / 86400000);
+        if (diffDays < 0 || diffDays >= weeks * 7) return 'none';
+        const jsDay = todayDate.getDay();
+        const schIdx = jsDay === 0 ? 1 : jsDay === 6 ? 0 : jsDay + 1;
+        return dietData.schedule[schIdx] || 'none';
+    }
+    function fetchAndShowCarbDay(patientSn) {
+        if (!patientSn) return;
+        Promise.all([
+            fetch(API_URL + '?dietPlan=' + encodeURIComponent(patientSn)).then(function(r){ return r.json(); }).catch(function(){ return null; }),
+            fetch(API_URL + '?homeWeight=' + encodeURIComponent(patientSn)).then(function(r){ return r.json(); }).catch(function(){ return null; })
+        ]).then(function(results) {
+            const carbDay = computeTodayCarbDay(results[0], results[1]);
+            const label = CARB_LABELS[carbDay];
+            if (label) {
+                const el = document.getElementById('protein-label');
+                el.textContent = '今日（' + label + '）蛋白質進度';
+                el.style.color = CARB_COLORS_MAP[carbDay] || '';
+            }
+        });
     }
 
     function renderProteinProgress(records, recommended, weight) {
@@ -534,6 +575,7 @@
                 saveCache(userId, data);
                 if (!cached) { loadingEl.classList.add('fade-out'); setTimeout(function(){ loadingEl.style.display = 'none'; }, 300); }
                 if (data.patient?.name) { document.getElementById('patient-name').textContent = data.patient.name; }
+                if (data.patient?.id) { fetchAndShowCarbDay(data.patient.id); }
                 var recs = data.records || [];
                 var rec = data.patient?.doctorRecommendedProtein || data.patient?.recommendedProtein || 0;
                 var wt = data.patient?.weight || 0;
