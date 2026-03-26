@@ -90,7 +90,10 @@
         th{background:#F5F3EF;padding:7px 5px;text-align:center;font-weight:700;color:#4A4A4A;white-space:nowrap;position:sticky;top:0}
         td{padding:7px 5px;text-align:center;border-bottom:1px solid #EDE8E0}
         tr:last-child td{border-bottom:none}
-        .date-col{font-size:10px;color:#888}
+        .date-col{font-size:10px;color:#888;position:relative;white-space:nowrap}
+        .del-btn{display:none;background:#A0626B;color:white;border:none;border-radius:4px;font-size:9px;padding:2px 5px;cursor:pointer;margin-right:4px;vertical-align:middle}
+        .del-btn:active{opacity:0.7}
+        .date-col.show-del .del-btn{display:inline-block}
         .no-data{text-align:center;color:#aaa;padding:24px;font-size:13px}
 
         /* ====== 居家體重 stats row ====== */
@@ -630,6 +633,7 @@
         if(patientLineUid) html+='<span class="line-badge">LINE ✓</span>';
         html+='</div><div class="profile-sub">院區病歷號：'+esc(patientSn)+'</div>';
         html+='</div></div></div>';
+        var _pvMetricKeys=[];
         if(latest){
             var d=(latest['測量日期/時間']||'').substring(0,10);
             html+='<div class="card"><div class="card-title">📋 最新測量 <span style="font-weight:400;color:#aaa;font-size:10px">'+esc(d)+'</span></div>';
@@ -661,7 +665,8 @@
                         else rangeHtml='<span style="color:#A0626B;font-size:9px;margin-right:3px">●</span>';
                     }
                 }
-                html+='<div class="metric-item" data-key="'+esc(meta[0])+'" onclick="switchChartFromGrid(this,\''+meta[0]+'\')"><div class="metric-label">'+rangeHtml+esc(meta[1])+'</div>';
+                var mIdx=_pvMetricKeys.length; _pvMetricKeys.push(meta[0]);
+                html+='<div class="metric-item" data-midx="'+mIdx+'" onclick="switchChartFromGrid(this,'+mIdx+')"><div class="metric-label">'+rangeHtml+esc(meta[1])+'</div>';
                 html+='<div class="metric-value">'+curr+'<span class="metric-unit">'+esc(meta[2])+'</span></div>'+diffHtml+'</div>';
             });
             html+='</div></div>';
@@ -670,13 +675,14 @@
             html+='<div class="card"><div class="card-title">📈 趨勢圖</div><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>';
         }
         if(m.length>0){
-            html+='<div class="card"><div class="card-title">📄 測量歷史</div><div class="table-wrap"><table><tr><th>日期</th>';
+            html+='<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">📄 測量歷史 <button style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid #E8E4DC;background:white;color:#A0626B;cursor:pointer" onclick="toggleMeasureDel()">編輯</button></div><div class="table-wrap"><table id="measureHistTable"><tr><th></th><th>日期</th>';
             METRICS.forEach(function(meta){
                 if(m.some(function(r){return !isNaN(parseFloat(r[meta[0]]));})){ html+='<th>'+esc(meta[1])+'</th>'; }
             });
             html+='</tr>';
-            m.slice().reverse().forEach(function(row){
-                html+='<tr><td class="date-col">'+esc((row['測量日期/時間']||'').substring(0,10))+'</td>';
+            m.slice().reverse().forEach(function(row,ri){
+                var dt=esc((row['測量日期/時間']||'').substring(0,10));
+                html+='<tr><td class="date-col"><button class="del-btn" onclick="deleteMeasurement(\''+esc(dt)+'\',this)">刪除</button></td><td class="date-col">'+dt+'</td>';
                 METRICS.forEach(function(meta){
                     if(!m.some(function(r){return !isNaN(parseFloat(r[meta[0]]));})){return;}
                     var v=parseFloat(row[meta[0]]);
@@ -687,8 +693,10 @@
             html+='</table></div></div>';
         }
         document.getElementById('tab-body').innerHTML=html;
+        // 儲存指標 key 供點擊用
+        window._pvMetricKeysRef=_pvMetricKeys;
         // 預設選中第一格
-        var firstMetric=document.querySelector('.metric-item[data-key]');
+        var firstMetric=document.querySelector('.metric-item[data-midx]');
         if(firstMetric) firstMetric.classList.add('active');
         if(m.length>=1){
             setTimeout(function(){
@@ -742,10 +750,35 @@
         btn.classList.add('active');
         renderChart(key);
     }
-    function switchChartFromGrid(el,key){
+    // ── 測量歷史：刪除功能 ──
+    var _delMode=false;
+    function toggleMeasureDel(){
+        _delMode=!_delMode;
+        document.querySelectorAll('#measureHistTable .date-col').forEach(function(td){
+            if(_delMode) td.classList.add('show-del');
+            else td.classList.remove('show-del');
+        });
+    }
+    function deleteMeasurement(dateStr,btn){
+        if(!confirm('確定刪除 '+dateStr+' 的測量紀錄？此操作無法復原。')) return;
+        btn.disabled=true; btn.textContent='刪除中…';
+        var url=GAS_URL+'?deleteMeasurement='+encodeURIComponent(patientSn)+'&date='+encodeURIComponent(dateStr);
+        fetch(url).then(function(r){return r.json();}).then(function(res){
+            if(res.ok){
+                // 從 allData 移除該筆，重新渲染
+                allData.measurements=allData.measurements.filter(function(row){
+                    return (row['測量日期/時間']||'').substring(0,10)!==dateStr;
+                });
+                renderBodyTab(allData);
+            } else { alert('刪除失敗：'+(res.error||'未知錯誤')); btn.disabled=false; btn.textContent='刪除'; }
+        }).catch(function(e){ alert('刪除失敗：'+e.message); btn.disabled=false; btn.textContent='刪除'; });
+    }
+
+    function switchChartFromGrid(el,idx){
         document.querySelectorAll('.metric-item').forEach(function(b){b.classList.remove('active');});
         el.classList.add('active');
-        renderChart(key);
+        var key=window._pvMetricKeysRef?window._pvMetricKeysRef[idx]:null;
+        if(key) renderChart(key);
         var cv=document.getElementById('trendChart');
         if(cv) cv.scrollIntoView({behavior:'smooth',block:'center'});
     }

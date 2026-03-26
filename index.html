@@ -67,11 +67,10 @@
         .bc-val { font-size: 18px; font-weight: 700; color: #6B7F91; }
         .bc-lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
         /* tabs removed — grid items are clickable */
-        .bc-history { margin-top: 12px; }
-        .bc-history-title { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; }
-        .bc-history-list { display: flex; flex-wrap: wrap; gap: 6px; }
-        .bc-history-item { font-size: 12px; color: var(--text); background: #F0EDE6; border-radius: 8px; padding: 4px 10px; }
-        .bc-history-item.latest { background: #7B8FA1; color: white; }
+        .bc-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .bc-table th { background: #F0EDE6; color: var(--text-muted); font-size: 10px; font-weight: 600; padding: 6px 5px; white-space: nowrap; text-align: center; }
+        .bc-table td { padding: 6px 5px; text-align: center; border-top: 1px solid var(--border); white-space: nowrap; }
+        .bc-table tr:first-child td { font-weight: 600; color: var(--primary-dark); }
     </style>
 </head>
 <body>
@@ -104,8 +103,8 @@
                 <div style="position:relative;height:200px"><canvas id="bc-chart"></canvas></div>
             </div>
             <div class="bc-card">
-                <div class="bc-card-title">📅 歷次報告日期</div>
-                <div class="bc-history-list" id="bc-history-list"></div>
+                <div class="bc-card-title">📄 測量歷史</div>
+                <div style="overflow-x:auto" id="bc-history-table"></div>
             </div>
         </div>
         <!-- meal section removed — body composition only -->
@@ -183,25 +182,32 @@
                     diffHtml = `<div style="font-size:10px;${cls}">${diff > 0 ? '↑+' : (diff < 0 ? '↓' : '→')}${diff.toFixed(1)}</div>`;
                 }
             }
-            gridHtml += `<div class="bc-item" data-key="${escHtml(meta[0])}" onclick="switchBcFromGrid(this,'${meta[0]}')"><div class="bc-val">${curr}</div><div class="bc-lbl">${dot}${escHtml(meta[1])} ${escHtml(meta[2])}</div>${diffHtml}</div>`;
+            const keyIdx = availMetrics.length - 1;
+            gridHtml += `<div class="bc-item" data-key-idx="${keyIdx}" onclick="switchBcFromGrid(this,${keyIdx})"><div class="bc-val">${curr}</div><div class="bc-lbl">${dot}${escHtml(meta[1])} ${escHtml(meta[2])}</div>${diffHtml}</div>`;
         });
         document.getElementById('bc-grid').innerHTML = gridHtml;
+        // 儲存可用指標，供點擊使用
+        window._bcAvailMetrics = availMetrics;
         // 預設選中第一格
-        const firstItem = document.querySelector('.bc-item[data-key]');
+        const firstItem = document.querySelector('.bc-item[data-key-idx]');
         if (firstItem) firstItem.classList.add('active');
         if (availMetrics.length > 0 && m.length >= 1) {
             const drawFirst = () => { if (typeof Chart === 'undefined') { setTimeout(drawFirst, 100); return; } renderBcChart(availMetrics[0][0]); };
             drawFirst();
         }
-        // 歷次報告日期
-        let histHtml = '';
+        // 測量歷史表格
+        let tblHtml = '<table class="bc-table"><tr><th>日期</th>';
+        const usedMetrics = BC_METRICS.filter(meta => m.some(r => !isNaN(parseFloat(r[meta[0]]))));
+        usedMetrics.forEach(meta => { tblHtml += `<th>${escHtml(meta[1])}</th>`; });
+        tblHtml += '</tr>';
         for (let hi = m.length - 1; hi >= 0; hi--) {
             const dt = (m[hi]['測量日期/時間'] || '').substring(0, 10);
-            if (!dt) continue;
-            const cls = hi === m.length - 1 ? 'bc-history-item latest' : 'bc-history-item';
-            histHtml += `<span class="${cls}">${escHtml(dt)}</span>`;
+            tblHtml += `<tr><td>${escHtml(dt)}</td>`;
+            usedMetrics.forEach(meta => { const v = parseFloat(m[hi][meta[0]]); tblHtml += `<td>${isNaN(v) ? '-' : v}</td>`; });
+            tblHtml += '</tr>';
         }
-        document.getElementById('bc-history-list').innerHTML = histHtml || '<span style="color:var(--text-muted);font-size:12px">尚無報告</span>';
+        tblHtml += '</table>';
+        document.getElementById('bc-history-table').innerHTML = tblHtml;
     }
 
     function renderBcChart(key) {
@@ -246,11 +252,11 @@
         });
     }
 
-    function switchBcFromGrid(el, key) {
+    function switchBcFromGrid(el, idx) {
         document.querySelectorAll('.bc-item').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
+        const key = window._bcAvailMetrics[idx][0];
         renderBcChart(key);
-        // 滾動到趨勢圖
         const chartCard = document.getElementById('bc-chart');
         if (chartCard) chartCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
