@@ -346,7 +346,7 @@
         if (carbDay === 'low')  { lo = 0;          hi = weight * 1; }
         if (carbDay === 'mid')  { lo = weight * 1;  hi = weight * 2; }
         if (carbDay === 'high') { lo = weight * 2;  hi = weight * 3; }
-        if (netCarbs < lo) return 'color:#999';       // 低於範圍：灰
+        if (netCarbs < lo) return 'color:#ccc';       // 低於範圍：淡灰
         if (netCarbs > hi) return 'color:#c0392b';    // 高於範圍：紅
         return 'color:#27ae60';                        // 正常範圍：綠
     }
