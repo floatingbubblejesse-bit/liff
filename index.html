@@ -191,7 +191,7 @@
         const firstItem = document.querySelector('.bc-item[data-key-idx]');
         if (firstItem) firstItem.classList.add('active');
         if (availMetrics.length > 0 && m.length >= 1) {
-            document.getElementById('bc-chart-title').textContent = '📈 ' + availMetrics[0][1] + ' 趨勢圖';
+            document.getElementById('bc-chart-title').textContent = '📈 ' + availMetrics[0][1];
             const drawFirst = () => { if (typeof Chart === 'undefined') { setTimeout(drawFirst, 100); return; } renderBcChart(availMetrics[0][0]); };
             drawFirst();
         }
@@ -257,7 +257,7 @@
         el.classList.add('active');
         const meta = window._bcAvailMetrics[idx];
         const key = meta[0];
-        document.getElementById('bc-chart-title').textContent = '📈 ' + meta[1] + ' 趨勢圖';
+        document.getElementById('bc-chart-title').textContent = '📈 ' + meta[1];
         renderBcChart(key);
     }
 

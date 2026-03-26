@@ -703,7 +703,7 @@
                 for(var i=0;i<METRICS.length;i++){
                     if(m.some(function(row){return !isNaN(parseFloat(row[METRICS[i][0]]));})){
                         var titleEl=document.getElementById('pvChartTitle');
-                        if(titleEl) titleEl.textContent='📈 '+METRICS[i][1]+' 趨勢圖';
+                        if(titleEl) titleEl.textContent='📈 '+METRICS[i][1]+'';
                         renderChart(METRICS[i][0]);
                         break;
                     }
@@ -786,7 +786,7 @@
         if(key){
             var meta=METRICS.find(function(x){return x[0]===key;});
             var titleEl=document.getElementById('pvChartTitle');
-            if(titleEl&&meta) titleEl.textContent='📈 '+meta[1]+' 趨勢圖';
+            if(titleEl&&meta) titleEl.textContent='📈 '+meta[1]+'';
             renderChart(key);
         }
     }
