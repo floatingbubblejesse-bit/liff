@@ -120,6 +120,7 @@
         ['身體質量參數 (BMI)','BMI','',true],['基礎代謝 (BMR)','基礎代謝','kcal',false],
         ['日耗熱量','日耗熱量','kcal',false],
         ['腰圍','腰圍','cm',true],['臀圍','臀圍','cm',true],
+        ['腰臀比','腰臀比','',true],
     ];
 
     function getBcNormalRange(key, cust) {
@@ -136,6 +137,7 @@
             case '內臟脂肪指數': return [0.5, 5];
             case '身體質量參數 (BMI)': return [18.5, 24.9];
             case '腰圍': return isMale ? [null, 90] : [null, 80];
+            case '腰臀比': return isMale ? [null, 0.9] : [null, 0.85];
             default: return null;
         }
     }
@@ -148,8 +150,11 @@
         const m = data.measurements || [];
         const cust = data.customer || {};
         if (m.length === 0) return;
-        // 計算日耗熱量 = BMR × 1.2
-        m.forEach(row => { const bmr = parseFloat(row['基礎代謝 (BMR)']); if (!isNaN(bmr)) row['日耗熱量'] = Math.round(bmr * 1.2); });
+        // 計算日耗熱量 = BMR × 1.2，腰臀比 = 腰圍 / 臀圍
+        m.forEach(row => {
+            const bmr = parseFloat(row['基礎代謝 (BMR)']); if (!isNaN(bmr)) row['日耗熱量'] = Math.round(bmr * 1.2);
+            const w = parseFloat(row['腰圍']), hip = parseFloat(row['臀圍']); if (!isNaN(w) && !isNaN(hip) && hip > 0) row['腰臀比'] = Math.round((w / hip) * 100) / 100;
+        });
         document.getElementById('bc-section').style.display = 'block';
         const latest = m[m.length - 1];
         const prev = m.length > 1 ? m[m.length - 2] : null;
