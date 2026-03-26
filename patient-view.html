@@ -969,7 +969,8 @@
         }
         var _pvDeficit = _pvTdee > 0 ? Math.round(todayCal - _pvTdee) : null;
         var _pvDeficitStr = _pvDeficit !== null ? String(_pvDeficit) : '—';
-        var _pvDeficitColor = _pvDeficit !== null && _pvDeficit < 0 ? 'color:#c0392b' : '';
+        var _pvDeficitColor = _pvDeficit !== null ? (_pvDeficit < 0 ? 'color:#c0392b' : 'color:#27ae60') : '';
+        var _pvDeficitFormula = _pvTdee > 0 ? ' / ' + Math.round(todayCal) + '−' + Math.round(_pvTdee) : '';
 
         var _pvNetCarbs = todayRecs.reduce(function(s,r){ return s + (r.netCarbs||0); }, 0);
         var _pvNcColor = '';
@@ -993,7 +994,7 @@
         }
 
         html += '<div class="meal-stats-row">';
-        html += '<div class="meal-stat-card"><div class="meal-stat-value" style="' + _pvDeficitColor + '">' + _pvDeficitStr + '</div><div class="meal-stat-label">熱量赤字 kcal</div></div>';
+        html += '<div class="meal-stat-card"><div class="meal-stat-value" style="' + _pvDeficitColor + '">' + _pvDeficitStr + '</div><div class="meal-stat-label">熱量赤字 kcal' + _pvDeficitFormula + '</div></div>';
         html += '<div class="meal-stat-card"><div class="meal-stat-value" style="' + _pvNcColor + '">' + Math.round(_pvNetCarbs) + '</div><div class="meal-stat-label">淨碳水 g' + _pvNcRange + '</div></div>';
         html += '<div class="meal-stat-card"><div class="meal-stat-value">' + todayRecs.length + '</div><div class="meal-stat-label">今日張數</div></div>';
         html += '</div>';

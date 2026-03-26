@@ -357,7 +357,8 @@
         /* 熱量赤字 */
         const deficit = _patientTdee > 0 ? Math.round(cal - _patientTdee) : null;
         const deficitStr = deficit !== null ? String(deficit) : '—';
-        const deficitColor = deficit !== null && deficit < 0 ? 'color:#c0392b' : '';
+        const deficitColor = deficit !== null ? (deficit < 0 ? 'color:#c0392b' : 'color:#27ae60') : '';
+        const deficitFormula = _patientTdee > 0 ? ' / ' + Math.round(cal) + '−' + Math.round(_patientTdee) : '';
 
         /* 淨碳水 + 正常範圍 */
         const ncStr = Math.round(netCarbs);
@@ -372,7 +373,7 @@
         }
 
         document.getElementById('stats-row').innerHTML = `
-            <div class="stat-card"><div class="stat-value" style="${deficitColor}">${deficitStr}</div><div class="stat-label">熱量赤字 kcal</div></div>
+            <div class="stat-card"><div class="stat-value" style="${deficitColor}">${deficitStr}</div><div class="stat-label">熱量赤字 kcal${deficitFormula}</div></div>
             <div class="stat-card"><div class="stat-value" style="${ncColor}">${ncStr}</div><div class="stat-label">淨碳水 g${ncRange}</div></div>
             <div class="stat-card"><div class="stat-value">${todayRecs.length}</div><div class="stat-label">今日張數</div></div>
         `;
