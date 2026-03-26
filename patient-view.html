@@ -65,7 +65,13 @@
         .profile-sub{font-size:12px;color:var(--muted);margin-top:2px}
         .line-badge{font-size:11px;background:var(--green-light);color:#6B8F71;padding:2px 7px;border-radius:10px;margin-left:6px}
         .metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-        .metric-item{background:#F5F3EF;border-radius:10px;padding:10px 8px;text-align:center}
+        .metric-item{background:#F5F3EF;border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background 0.15s}
+        .metric-item:active{background:#E4DFD5}
+        .metric-item.active{background:#7B8FA1}
+        .metric-item.active .metric-value{color:white}
+        .metric-item.active .metric-label{color:rgba(255,255,255,0.85)}
+        .metric-item.active .metric-unit{color:rgba(255,255,255,0.7)}
+        .metric-item.active .metric-diff{color:rgba(255,255,255,0.9)!important}
         .metric-label{font-size:10px;color:var(--muted);margin-bottom:4px}
         .metric-value{font-size:17px;font-weight:700}
         .metric-unit{font-size:10px;color:#aaa}
@@ -648,25 +654,20 @@
                 if(rng){
                     var lo=rng[0], hi=rng[1];
                     if(lo!==null && hi!==null){
-                        if(curr>=lo && curr<=hi) rangeHtml='<span style="color:#8B9D83;font-size:9px;margin-left:4px">●</span>';
-                        else rangeHtml='<span style="color:#A0626B;font-size:9px;margin-left:4px">●</span>';
+                        if(curr>=lo && curr<=hi) rangeHtml='<span style="color:#8B9D83;font-size:9px;margin-right:3px">●</span>';
+                        else rangeHtml='<span style="color:#A0626B;font-size:9px;margin-right:3px">●</span>';
                     } else if(hi!==null){
-                        if(curr<=hi) rangeHtml='<span style="color:#8B9D83;font-size:9px;margin-left:4px">●</span>';
-                        else rangeHtml='<span style="color:#A0626B;font-size:9px;margin-left:4px">●</span>';
+                        if(curr<=hi) rangeHtml='<span style="color:#8B9D83;font-size:9px;margin-right:3px">●</span>';
+                        else rangeHtml='<span style="color:#A0626B;font-size:9px;margin-right:3px">●</span>';
                     }
                 }
-                html+='<div class="metric-item"><div class="metric-label">'+esc(meta[1])+rangeHtml+'</div>';
+                html+='<div class="metric-item" data-key="'+esc(meta[0])+'" onclick="switchChartFromGrid(this,\''+meta[0]+'\')"><div class="metric-label">'+rangeHtml+esc(meta[1])+'</div>';
                 html+='<div class="metric-value">'+curr+'<span class="metric-unit">'+esc(meta[2])+'</span></div>'+diffHtml+'</div>';
             });
             html+='</div></div>';
         }
         if(m.length>=1){
-            html+='<div class="card"><div class="card-title">📈 趨勢圖</div><div class="chart-tabs">';
-            METRICS.forEach(function(meta,idx){
-                if(!m.some(function(r){return !isNaN(parseFloat(r[meta[0]]));})){ return; }
-                html+='<button class="ctab'+(idx===0?' active':'')+'" onclick="switchChart(\''+meta[0]+'\',this)">'+esc(meta[1])+'</button>';
-            });
-            html+='</div><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>';
+            html+='<div class="card"><div class="card-title">📈 趨勢圖</div><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>';
         }
         if(m.length>0){
             html+='<div class="card"><div class="card-title">📄 測量歷史</div><div class="table-wrap"><table><tr><th>日期</th>';
@@ -686,6 +687,9 @@
             html+='</table></div></div>';
         }
         document.getElementById('tab-body').innerHTML=html;
+        // 預設選中第一格
+        var firstMetric=document.querySelector('.metric-item[data-key]');
+        if(firstMetric) firstMetric.classList.add('active');
         if(m.length>=1){
             setTimeout(function(){
                 for(var i=0;i<METRICS.length;i++){
@@ -710,12 +714,12 @@
         if(range){
             var lo=range[0], hi=range[1];
             if(lo!==null && hi!==null){
-                datasets.push({label:'正常上限',data:Array(labels.length).fill(hi),borderColor:'rgba(139,157,131,0.5)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false,order:2});
-                datasets.push({label:'正常下限',data:Array(labels.length).fill(lo),borderColor:'rgba(139,157,131,0.5)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:'-1',backgroundColor:'rgba(139,157,131,0.10)',order:2});
+                datasets.push({label:'正常上限',data:Array(labels.length).fill(hi),borderColor:'rgba(107,143,113,0.8)',borderWidth:1.5,borderDash:[4,4],pointRadius:0,fill:false,order:2});
+                datasets.push({label:'正常下限',data:Array(labels.length).fill(lo),borderColor:'rgba(107,143,113,0.8)',borderWidth:1.5,borderDash:[4,4],pointRadius:0,fill:'-1',backgroundColor:'rgba(107,143,113,0.15)',order:2});
             } else if(hi!==null){
-                datasets.push({label:'正常上限',data:Array(labels.length).fill(hi),borderColor:'rgba(160,98,107,0.5)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false,order:2});
+                datasets.push({label:'正常上限',data:Array(labels.length).fill(hi),borderColor:'rgba(160,98,107,0.8)',borderWidth:1.5,borderDash:[4,4],pointRadius:0,fill:false,order:2});
             } else if(lo!==null){
-                datasets.push({label:'正常下限',data:Array(labels.length).fill(lo),borderColor:'rgba(139,157,131,0.5)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false,order:2});
+                datasets.push({label:'正常下限',data:Array(labels.length).fill(lo),borderColor:'rgba(107,143,113,0.8)',borderWidth:1.5,borderDash:[4,4],pointRadius:0,fill:false,order:2});
             }
             var dataMin=Math.min.apply(null,values), dataMax=Math.max.apply(null,values);
             var allMin=dataMin, allMax=dataMax;
@@ -737,6 +741,13 @@
         document.querySelectorAll('.ctab').forEach(function(b){b.classList.remove('active');});
         btn.classList.add('active');
         renderChart(key);
+    }
+    function switchChartFromGrid(el,key){
+        document.querySelectorAll('.metric-item').forEach(function(b){b.classList.remove('active');});
+        el.classList.add('active');
+        renderChart(key);
+        var cv=document.getElementById('trendChart');
+        if(cv) cv.scrollIntoView({behavior:'smooth',block:'center'});
     }
 
     function getDisplayName(cust) {
