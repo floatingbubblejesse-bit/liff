@@ -287,9 +287,7 @@
             const carbDay = computeTodayCarbDay(results[0], results[1]);
             const label = CARB_LABELS[carbDay];
             if (label) {
-                const el = document.getElementById('protein-label');
-                el.textContent = '今日（' + label + '）蛋白質進度';
-                el.style.color = CARB_COLORS_MAP[carbDay] || '';
+                document.getElementById('protein-label').textContent = '今日（' + label + '）蛋白質進度';
             }
         });
     }
