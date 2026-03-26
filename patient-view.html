@@ -515,6 +515,7 @@
         ['蛋白質','蛋白質','kg',false],
         ['水分比率','水分','%',false],['內臟脂肪指數','內臟脂肪','',true],
         ['身體質量參數 (BMI)','BMI','',true],['基礎代謝 (BMR)','基礎代謝','kcal',false],
+        ['日耗熱量','日耗熱量','kcal',false],
         ['腰圍','腰圍','cm',true],['臀圍','臀圍','cm',true],
     ];
 
@@ -625,6 +626,8 @@
 
     function renderBodyTab(data){
         var m=data.measurements||[], cust=data.customer||{};
+        // 計算日耗熱量 = BMR × 1.2
+        m.forEach(function(row){ var bmr=parseFloat(row['基礎代謝 (BMR)']); if(!isNaN(bmr)) row['日耗熱量']=Math.round(bmr*1.2); });
         var latest=m.length>0?m[m.length-1]:null, prev=m.length>1?m[m.length-2]:null;
         var html='';
         html+='<div class="card"><div class="profile-row">';
