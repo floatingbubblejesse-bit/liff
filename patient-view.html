@@ -983,10 +983,18 @@
             else if (_pvNetCarbs > _ncHi) _pvNcColor = 'color:#c0392b';
             else _pvNcColor = 'color:#27ae60';
         }
+        var _pvNcRange = '';
+        if (_pvW > 0 && _pvCarbDay && _pvCarbDay !== 'none' && _pvCarbDay !== 'fast') {
+            var _rLo = 0, _rHi = 0;
+            if (_pvCarbDay === 'low')  { _rLo = 0;              _rHi = Math.round(_pvW); }
+            if (_pvCarbDay === 'mid')  { _rLo = Math.round(_pvW);  _rHi = Math.round(_pvW * 2); }
+            if (_pvCarbDay === 'high') { _rLo = Math.round(_pvW * 2); _rHi = Math.round(_pvW * 3); }
+            _pvNcRange = ' / ' + _rLo + '~' + _rHi + 'g';
+        }
 
         html += '<div class="meal-stats-row">';
         html += '<div class="meal-stat-card"><div class="meal-stat-value" style="' + _pvDeficitColor + '">' + _pvDeficitStr + '</div><div class="meal-stat-label">熱量赤字 kcal</div></div>';
-        html += '<div class="meal-stat-card"><div class="meal-stat-value" style="' + _pvNcColor + '">' + Math.round(_pvNetCarbs) + '</div><div class="meal-stat-label">淨碳水 g</div></div>';
+        html += '<div class="meal-stat-card"><div class="meal-stat-value" style="' + _pvNcColor + '">' + Math.round(_pvNetCarbs) + '</div><div class="meal-stat-label">淨碳水 g' + _pvNcRange + '</div></div>';
         html += '<div class="meal-stat-card"><div class="meal-stat-value">' + todayRecs.length + '</div><div class="meal-stat-label">今日張數</div></div>';
         html += '</div>';
 
