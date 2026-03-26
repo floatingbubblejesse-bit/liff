@@ -145,7 +145,7 @@
         </header>
         <div class="stats-row" id="stats-row">
             <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">熱量赤字 kcal</div></div>
-            <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日蛋白質 g</div></div>
+            <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">淨碳水 g</div></div>
             <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日餐數</div></div>
         </div>
         <!-- bc-section removed — meal records only -->
@@ -278,21 +278,26 @@
         const schIdx = jsDay === 0 ? 1 : jsDay === 6 ? 0 : jsDay + 1;
         return dietData.schedule[schIdx] || 'none';
     }
+    var _todayCarbDay = 'none'; // 今日碳日類型，由 fetchAndShowCarbDay 設定
     function fetchAndShowCarbDay(patientSn) {
         if (!patientSn) return;
         Promise.all([
             fetch(API_URL + '?dietPlan=' + encodeURIComponent(patientSn)).then(function(r){ return r.json(); }).catch(function(){ return null; }),
             fetch(API_URL + '?homeWeight=' + encodeURIComponent(patientSn)).then(function(r){ return r.json(); }).catch(function(){ return null; })
         ]).then(function(results) {
-            const carbDay = computeTodayCarbDay(results[0], results[1]);
-            const label = CARB_LABELS[carbDay];
+            _todayCarbDay = computeTodayCarbDay(results[0], results[1]);
+            const label = CARB_LABELS[_todayCarbDay];
             if (label) {
                 document.getElementById('protein-label').textContent = '今日（' + label + '）蛋白質進度';
             }
+            // 碳日取得後重新渲染 stats，讓淨碳水顏色正確
+            refreshStatsRow();
         });
     }
 
     var _patientTdee = 0; // 日耗熱量，由 API patient.tdee 設定
+    var _latestWeight = 0; // 最新測量體重
+    var _lastRecords = []; // 最近一次 records，供 refreshStatsRow 用
     function renderProteinProgress(records, recommended, weight) {
         const todayRecs = records.filter(r => isToday(r.date));
         const total = todayRecs.reduce((s, r) => s + (r.protein || 0), 0);
@@ -311,14 +316,40 @@
             document.getElementById('protein-bar').style.width = '0%';
             document.getElementById('protein-status').textContent = '今日攝取：' + Math.round(total) + 'g';
         }
+        _lastRecords = records; // 存起來供 refreshStatsRow 用
+        refreshStatsRow();
+    }
+
+    /* 淨碳水顏色邏輯：依碳日 × 體重判斷正常範圍 */
+    function getNetCarbColor(netCarbs, carbDay, weight) {
+        if (!weight || weight <= 0 || carbDay === 'none' || carbDay === 'fast') return '';
+        var lo = 0, hi = 0;
+        if (carbDay === 'low')  { lo = 0;          hi = weight * 1; }
+        if (carbDay === 'mid')  { lo = weight * 1;  hi = weight * 2; }
+        if (carbDay === 'high') { lo = weight * 2;  hi = weight * 3; }
+        if (netCarbs < lo) return 'color:#999';       // 低於範圍：灰
+        if (netCarbs > hi) return 'color:#c0392b';    // 高於範圍：紅
+        return 'color:#27ae60';                        // 正常範圍：綠
+    }
+
+    function refreshStatsRow() {
+        const todayRecs = (_lastRecords || []).filter(r => isToday(r.date));
         const cal = todayRecs.reduce((s, r) => s + (r.calories || 0), 0);
-        /* 熱量赤字 = 餐食熱量 - 日耗熱量，負值代表赤字（好事） */
+        const totalProtein = todayRecs.reduce((s, r) => s + (r.protein || 0), 0);
+        const netCarbs = todayRecs.reduce((s, r) => s + (r.netCarbs || 0), 0);
+
+        /* 熱量赤字 */
         const deficit = _patientTdee > 0 ? Math.round(cal - _patientTdee) : null;
         const deficitStr = deficit !== null ? String(deficit) : '—';
         const deficitColor = deficit !== null && deficit < 0 ? 'color:#c0392b' : '';
+
+        /* 淨碳水 */
+        const ncStr = Math.round(netCarbs);
+        const ncColor = getNetCarbColor(netCarbs, _todayCarbDay, _latestWeight);
+
         document.getElementById('stats-row').innerHTML = `
             <div class="stat-card"><div class="stat-value" style="${deficitColor}">${deficitStr}</div><div class="stat-label">熱量赤字 kcal</div></div>
-            <div class="stat-card"><div class="stat-value">${Math.round(total)}</div><div class="stat-label">今日蛋白質 g</div></div>
+            <div class="stat-card"><div class="stat-value" style="${ncColor}">${ncStr}</div><div class="stat-label">淨碳水 g</div></div>
             <div class="stat-card"><div class="stat-value">${todayRecs.length}</div><div class="stat-label">今日餐數</div></div>
         `;
     }
@@ -563,6 +594,7 @@
                 setTimeout(() => { loadingEl.style.display = 'none'; }, 300);
                 if (cached.patient?.name) { document.getElementById('patient-name').textContent = cached.patient.name; }
                 if (cached.patient?.tdee) { _patientTdee = cached.patient.tdee; }
+                if (cached.patient?.weight) { _latestWeight = cached.patient.weight; }
                 var cRecs = cached.records || [];
                 var cRec = cached.patient?.doctorRecommendedProtein || cached.patient?.recommendedProtein || 0;
                 var cWt = cached.patient?.weight || 0;
@@ -580,6 +612,7 @@
                 if (!cached) { loadingEl.classList.add('fade-out'); setTimeout(function(){ loadingEl.style.display = 'none'; }, 300); }
                 if (data.patient?.name) { document.getElementById('patient-name').textContent = data.patient.name; }
                 if (data.patient?.tdee) { _patientTdee = data.patient.tdee; }
+                if (data.patient?.weight) { _latestWeight = data.patient.weight; }
                 if (data.patient?.id) { fetchAndShowCarbDay(data.patient.id); }
                 var recs = data.records || [];
                 var rec = data.patient?.doctorRecommendedProtein || data.patient?.recommendedProtein || 0;
