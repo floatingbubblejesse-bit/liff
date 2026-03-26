@@ -2,313 +2,670 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
     <title>身體組成</title>
+    <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
+    <link rel="preconnect" href="https://huangcs.app.n8n.cloud" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <script>
+    (function() {
+        var _origReplace = history.replaceState.bind(history);
+        var _origPush = history.pushState.bind(history);
+        history.replaceState = function(s, t, u) {
+            try { _origReplace(s, t, u); } catch(e) { console.warn('[iOS patch] replaceState suppressed:', e && e.message); }
+        };
+        history.pushState = function(s, t, u) {
+            try { _origPush(s, t, u); } catch(e) { console.warn('[iOS patch] pushState suppressed:', e && e.message); }
+        };
+    })();
+    </script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-serif; background: #F5F3EF; color: #4A4A4A; min-height: 100vh; }
-        .header { background: linear-gradient(135deg, #6B7F91, #7B8FA1); color: white; padding: 20px 16px 24px; }
-        .header h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-        .header p { font-size: 13px; opacity: 0.85; }
-        .header-top { display: flex; align-items: center; gap: 12px; }
-        .header-avatar { width: 48px; height: 48px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); object-fit: cover; background: rgba(255,255,255,0.3); }
-        .header-avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 22px; }
-        .header-info h2 { font-size: 18px; font-weight: 600; }
-        .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; gap: 16px; }
-        .spinner { width: 44px; height: 44px; border: 4px solid #e0e0e0; border-top-color: #7B8FA1; border-radius: 50%; animation: spin 0.9s linear infinite; }
+        :root {
+            --primary: #7B8FA1;
+            --primary-dark: #6B7F91;
+            --primary-light: #EDE8E0;
+            --warning: #C4A882;
+            --danger: #A0626B;
+            --success: #6B8F71;
+            --text: #4A4A4A;
+            --text-muted: #8B8B8B;
+            --border: #E8E4DC;
+            --bg: #F5F3EF;
+            --card: #FDFBF7;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 32px; }
+        #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--primary-light); z-index: 999; gap: 16px; transition: opacity 0.3s ease; }
+        #loading.fade-out { opacity: 0; pointer-events: none; }
+        .spinner { width: 48px; height: 48px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .error-box { margin: 32px 16px; padding: 20px; background: #FFF3F3; border: 1px solid #E8C4C4; border-radius: 12px; text-align: center; color: #A0626B; white-space: pre-line; }
-        .content { padding: 12px 12px 32px; }
-        .card { background: #FDFBF7; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-        .card-title { font-size: 13px; font-weight: 700; color: #6B6B6B; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
-        .profile { display: flex; align-items: center; gap: 12px; }
-        .avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #7B8FA1, #6B7F91); display: flex; align-items: center; justify-content: center; font-size: 22px; color: white; font-weight: 700; flex-shrink: 0; }
-        .profile-info h2 { font-size: 17px; font-weight: 700; }
-        .profile-info p { font-size: 12px; color: #8B8B8B; margin-top: 2px; }
-        .badge { display: inline-block; background: #E8EDE6; color: #6B8F71; font-size: 11px; padding: 2px 8px; border-radius: 20px; margin-top: 4px; font-weight: 600; }
-        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-        .metric-item { background: #f8fafb; border-radius: 10px; padding: 10px 8px; text-align: center; }
-        .metric-label { font-size: 10px; color: #8B8B8B; margin-bottom: 4px; }
-        .metric-value { font-size: 18px; font-weight: 700; color: #4A4A4A; }
-        .metric-unit { font-size: 10px; color: #B0B0B0; }
-        .metric-diff { font-size: 11px; margin-top: 3px; }
-        .diff-good { color: #6B8F71; }
-        .diff-warn { color: #A0626B; }
-        .diff-same { color: #8B8B8B; }
-        .chart-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
-        .tab-btn { padding: 5px 12px; border-radius: 20px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; background: #f0f0f0; color: #555; transition: all 0.2s; }
-        .tab-btn.active { background: #7B8FA1; color: white; }
-        .chart-wrap { position: relative; height: 200px; }
-        .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th { background: #F0EDE6; padding: 8px 6px; text-align: center; font-weight: 700; color: #6B6B6B; white-space: nowrap; position: sticky; top: 0; }
-        td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #f0f0f0; }
-        tr:last-child td { border-bottom: none; }
-        tr:hover td { background: #f9f9f9; }
-        .date-col { font-size: 11px; color: #8B8B8B; }
-        .no-data { text-align: center; color: #aaa; padding: 32px; font-size: 14px; }
+        #loading p { color: var(--text-muted); font-size: 14px; }
+        header { background: linear-gradient(135deg, #6B7F91 0%, #7B8FA1 100%); padding: 20px 16px 24px; color: white; }
+        .header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .avatar { width: 48px; height: 48px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); object-fit: cover; background: rgba(255,255,255,0.3); }
+        .avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        .header-info h1 { font-size: 18px; font-weight: 600; }
+        .header-info p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+        .protein-card { background: rgba(255,255,255,0.18); border-radius: 12px; padding: 14px; }
+        .protein-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .protein-label { font-size: 13px; opacity: 0.9; }
+        .protein-value { font-size: 13px; font-weight: 600; }
+        .progress-bar-bg { background: rgba(255,255,255,0.3); border-radius: 99px; height: 8px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; border-radius: 99px; background: white; transition: width 0.8s ease; }
+        .protein-status { margin-top: 8px; font-size: 12px; text-align: center; opacity: 0.95; }
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px 16px; }
+        .stat-card { background: var(--card); border-radius: 10px; padding: 10px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .stat-value { font-size: 20px; font-weight: 700; color: #6B7F91; }
+        .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .section-title { padding: 16px 16px 8px; font-size: 14px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .chart-card { background: var(--card); border-radius: 14px; margin: 0 12px 16px; padding: 14px 12px 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        .chart-card canvas { display: block; width: 100% !important; }
+        .day-accordion { background: var(--card); border-radius: 14px; margin: 0 12px 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .day-header { display: flex; align-items: center; padding: 13px 14px; cursor: pointer; user-select: none; gap: 10px; -webkit-tap-highlight-color: transparent; }
+        .day-header:active { background: #F0EDE6; }
+        .day-icon { font-size: 18px; flex-shrink: 0; }
+        .day-info { flex: 1; }
+        .day-date-label { font-size: 15px; font-weight: 700; color: var(--text); }
+        .day-summary { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .day-protein-badge { font-size: 13px; font-weight: 700; color: #6B7F91; background: #EDE8E0; border-radius: 99px; padding: 3px 10px; flex-shrink: 0; }
+        .day-arrow { font-size: 11px; color: var(--text-muted); transition: transform 0.25s ease; flex-shrink: 0; }
+        .day-accordion.open .day-arrow { transform: rotate(180deg); }
+        .day-body { display: none; border-top: 1px solid var(--border); padding: 8px 10px 10px; background: #FAFFFE; }
+        .day-accordion.open .day-body { display: block; }
+        .meal-card { background: var(--card); border-radius: 10px; margin-bottom: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid var(--border); }
+        .meal-card:last-child { margin-bottom: 0; }
+        .meal-card-header { display: flex; align-items: center; padding: 10px 12px; cursor: pointer; user-select: none; gap: 8px; -webkit-tap-highlight-color: transparent; }
+        .meal-card-header:active { background: #f8fffe; }
+        .meal-card-time { flex: 1; font-size: 13px; color: var(--text); font-weight: 500; }
+        .meal-card-protein { font-size: 12px; color: #6B7F91; font-weight: 600; }
+        .meal-card-arrow { font-size: 10px; color: var(--text-muted); transition: transform 0.2s ease; flex-shrink: 0; }
+        .meal-card.open .meal-card-arrow { transform: rotate(180deg); }
+        .meal-card-body { display: none; border-top: 1px solid var(--border); }
+        .meal-card.open .meal-card-body { display: block; }
+        .meal-image-wrap { width: 100%; height: 200px; overflow: hidden; background: #F5F3EF; position: relative; }
+        .meal-image-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .meal-image-wrap .img-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 48px; background: var(--primary-light); }
+        .meal-body { padding: 12px 14px; }
+        .foods-text { font-size: 14px; color: var(--text); line-height: 1.5; margin-bottom: 12px; }
+        .macros-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
+        .macro-item { text-align: center; padding: 6px 4px; background: #F0EDE6; border-radius: 8px; }
+        .macro-value { font-size: 15px; font-weight: 700; color: #6B7F91; }
+        .macro-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+        .ai-note { background: #F0EDE6; border-left: 3px solid #8B9D83; border-radius: 0 8px 8px 0; padding: 8px 10px; font-size: 13px; color: #5A6B5E; line-height: 1.5; margin-bottom: 10px; }
+        .ai-note-label { font-size: 11px; font-weight: 700; color: #8B9D83; margin-bottom: 4px; }
+        .nutrition-advice { background: #F5F0E5; border-left: 3px solid #C4A882; border-radius: 0 8px 8px 0; padding: 8px 10px; font-size: 13px; color: #7B6B4A; line-height: 1.5; }
+        .nutrition-advice-label { font-size: 11px; font-weight: 700; color: #C4A882; margin-bottom: 4px; }
+        .score-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+        .score-stars { color: #C4A882; font-size: 14px; }
+        .empty-state { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+        .empty-icon { font-size: 48px; margin-bottom: 12px; }
+        .loading-hint { text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px; }
+        .loading-hint .mini-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
+        #error-screen { display: none; padding: 32px 24px; text-align: center; }
+        #error-screen .error-icon { font-size: 56px; margin-bottom: 16px; }
+        #error-screen h2 { font-size: 18px; margin-bottom: 8px; }
+        #error-screen p { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+        #main { display: none; }
+        .bc-section { padding: 0 12px 8px; }
+        .bc-card { background: var(--card); border-radius: 14px; padding: 14px 12px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        .bc-card-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+        .bc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .bc-item { text-align: center; padding: 8px 4px; background: #F0EDE6; border-radius: 10px; }
+        .bc-val { font-size: 18px; font-weight: 700; color: #6B7F91; }
+        .bc-lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+        .bc-chart-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .bc-tab { padding: 4px 10px; border-radius: 99px; border: 1px solid var(--border); background: var(--card); font-size: 12px; color: var(--text-muted); cursor: pointer; }
+        .bc-tab.active { background: #7B8FA1; color: white; border-color: #7B8FA1; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-top">
-            <div id="headerAvatarWrap"><div class="header-avatar-placeholder">🧑</div></div>
-            <div class="header-info"><h2 id="headerName">載入中...</h2></div>
+    <div id="loading">
+        <div class="spinner"></div>
+        <p id="loading-text">正在連線…</p>
+    </div>
+    <div id="error-screen">
+        <div class="error-icon">🔒</div>
+        <h2>無法載入</h2>
+        <p id="error-msg">請在 LINE App 中開啟此頁面</p>
+    </div>
+    <div id="main">
+        <header>
+            <div class="header-top">
+                <div id="avatar-wrap"><div class="avatar-placeholder">🧑</div></div>
+                <div class="header-info">
+                    <h1 id="patient-name">載入中…</h1>
+                </div>
+            </div>
+            <div class="protein-card">
+                <div class="protein-header">
+                    <span class="protein-label">今日蛋白質進度</span>
+                    <span class="protein-value" id="protein-text">—</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="protein-bar" style="width:0%"></div>
+                </div>
+                <div class="protein-status" id="protein-status">載入資料中…</div>
+            </div>
+        </header>
+        <div class="stats-row" id="stats-row">
+            <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日熱量 kcal</div></div>
+            <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日蛋白質 g</div></div>
+            <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日餐數</div></div>
+        </div>
+        <div id="bc-section" class="bc-section" style="display:none">
+            <div class="bc-card">
+                <div class="bc-card-title">📋 最新身體組成</div>
+                <div class="bc-grid" id="bc-grid"></div>
+            </div>
+            <div class="bc-card">
+                <div class="bc-card-title">📈 趨勢圖</div>
+                <div class="bc-chart-tabs" id="bc-tabs"></div>
+                <div style="position:relative;height:200px"><canvas id="bc-chart"></canvas></div>
+            </div>
+        </div>
+        <div class="section-title">蛋白質趨勢</div>
+        <div class="chart-card"><canvas id="protein-chart" height="160"></canvas></div>
+        <div class="section-title">每日紀錄</div>
+        <div id="records-list">
+            <div class="loading-hint"><span class="mini-spinner"></span>載入飲食紀錄中…</div>
         </div>
     </div>
-    <div id="loading" class="loading">
-        <div class="spinner"></div>
-        <p id="loading-msg" style="color:#8B8B8B;font-size:14px;">連接中...</p>
-    </div>
-    <div id="error" style="display:none"></div>
-    <div id="content" style="display:none" class="content"></div>
 
     <script>
-    var LIFF_ID = '2009326025-XAQhb1rA';
-    var API_URL = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
-    var MEALS_GAS = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
-    // 預熱兩個 GAS（並行，不等結果）
-    try { fetch(API_URL + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
-    try { fetch(MEALS_GAS + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
+    const LIFF_ID = '2009326025-d6EV7T42';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
+    const IMAGE_PROXY = 'https://huangcs.app.n8n.cloud/webhook/meal-photo';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
 
-    var METRICS = [
-        ['體重', '體重', 'kg', true ],
-        ['體脂率', '體脂率', '%', true ],
-        ['肌肉量', '肌肉量', 'kg', false],
-        ['水分比率', '水分', '%', false],
-        ['內臟脂肪指數', '內臟脂肪','', true ],
-        ['身體質量參數 (BMI)','BMI', '', true ],
-        ['基礎代謝 (BMR)', 'BMR', 'kcal', false],
-        ['腰圍', '腰圍', 'cm', true ],
-        ['臀圍', '臀圍', 'cm', true ],
+    const BC_METRICS = [
+        ['體重','體重','kg',true],['體脂率','體脂率','%',true],['肌肉量','肌肉量','kg',false],
+        ['蛋白質','蛋白質','kg',false],
+        ['水分比率','水分','%',false],['內臟脂肪指數','內臟脂肪','',true],
+        ['身體質量參數 (BMI)','BMI','',true],['基礎代謝 (BMR)','BMR','kcal',false],
+        ['腰圍','腰圍','cm',true],['臀圍','臀圍','cm',true],
     ];
 
-    var chartInstance = null;
-    var allData = null;
-
-    function setMsg(t) { var el = document.getElementById('loading-msg'); if (el) el.textContent = t; }
-
-    function showError(msg) {
-        document.getElementById('loading').style.display = 'none';
-        var el = document.getElementById('error');
-        el.innerHTML = '<div class="error-box">⚠️ ' + esc(msg) + '</div>';
-        el.style.display = 'block';
+    function getBcNormalRange(key, cust) {
+        const h = parseFloat(cust && cust.height) || 0;
+        const g = String(cust && cust.gender || '').trim();
+        const isMale = (g === '男');
+        const h2 = (h / 100) * (h / 100);
+        switch (key) {
+            case '體重': if (!h) return null; { const sw = h2 * (isMale ? 22 : 20); return [sw * 0.85, sw * 1.15]; }
+            case '體脂率': return isMale ? [10, 20] : [18, 28];
+            case '肌肉量': if (!h) return null; { const sm = h2 * (isMale ? 10.53 : 8.47); return [sm * 0.90, sm * 1.10]; }
+            case '蛋白質': if (!h) return null; { const sp = h2 * (isMale ? 3.72 : 3.08); return [sp * 0.85, sp * 1.15]; }
+            case '水分比率': return isMale ? [56, 69] : [50, 62];
+            case '內臟脂肪指數': return [0.5, 5];
+            case '身體質量參數 (BMI)': return [18.5, 24.9];
+            case '腰圍': return isMale ? [null, 90] : [null, 80];
+            default: return null;
+        }
     }
 
-    // ====== Cache-first ======
-    var IDX_CACHE_KEY = 'idx_body_cache';
-    var IDX_CACHE_TTL = 1800000; // 30 分鐘
-    function idxSaveCache(key, data) {
-        try { localStorage.setItem(IDX_CACHE_KEY, JSON.stringify({ key: key, ts: Date.now(), data: data })); } catch(e) {}
+    let bcChartInstance = null;
+    let bcData = null;
+
+    function renderBcSection(data) {
+        bcData = data;
+        const m = data.measurements || [];
+        const cust = data.customer || {};
+        if (m.length === 0) return;
+        document.getElementById('bc-section').style.display = 'block';
+        const latest = m[m.length - 1];
+        const prev = m.length > 1 ? m[m.length - 2] : null;
+        let gridHtml = '';
+        const availMetrics = [];
+        BC_METRICS.forEach(meta => {
+            let curr = parseFloat(latest[meta[0]]);
+            let prevRow = prev;
+            // 如果最新測量缺少此項，往前找最近有數據的那筆
+            if (isNaN(curr)) {
+                for (let fi = m.length - 2; fi >= 0; fi--) {
+                    const fv = parseFloat(m[fi][meta[0]]);
+                    if (!isNaN(fv)) { curr = fv; prevRow = (fi > 0) ? m[fi - 1] : null; break; }
+                }
+            }
+            if (isNaN(curr)) return;
+            availMetrics.push(meta);
+            const rng = getBcNormalRange(meta[0], cust);
+            let dot = '';
+            if (rng) {
+                const lo = rng[0], hi = rng[1];
+                if (lo !== null && hi !== null) dot = (curr >= lo && curr <= hi) ? '<span style="color:#8B9D83;font-size:8px;margin-left:2px">●</span>' : '<span style="color:#A0626B;font-size:8px;margin-left:2px">●</span>';
+                else if (hi !== null) dot = (curr <= hi) ? '<span style="color:#8B9D83;font-size:8px;margin-left:2px">●</span>' : '<span style="color:#A0626B;font-size:8px;margin-left:2px">●</span>';
+            }
+            let diffHtml = '';
+            if (prevRow) {
+                const pv = parseFloat(prevRow[meta[0]]);
+                if (!isNaN(pv)) {
+                    const diff = curr - pv;
+                    const good = (meta[3] && diff < 0) || (!meta[3] && diff > 0);
+                    const cls = diff === 0 ? 'color:#8B8B8B' : (good ? 'color:#8B9D83' : 'color:#A0626B');
+                    diffHtml = `<div style="font-size:10px;${cls}">${diff > 0 ? '↑+' : (diff < 0 ? '↓' : '→')}${diff.toFixed(1)}</div>`;
+                }
+            }
+            gridHtml += `<div class="bc-item"><div class="bc-val">${curr}</div><div class="bc-lbl">${escHtml(meta[1])}${dot} ${escHtml(meta[2])}</div>${diffHtml}</div>`;
+        });
+        document.getElementById('bc-grid').innerHTML = gridHtml;
+        // render tabs
+        let tabsHtml = '';
+        availMetrics.forEach((meta, idx) => {
+            if (!m.some(r => !isNaN(parseFloat(r[meta[0]])))) return;
+            tabsHtml += `<button class="bc-tab${idx === 0 ? ' active' : ''}" onclick="switchBcChart('${meta[0]}',this)">${escHtml(meta[1])}</button>`;
+        });
+        document.getElementById('bc-tabs').innerHTML = tabsHtml;
+        if (availMetrics.length > 0 && m.length >= 1) {
+            const drawFirst = () => { if (typeof Chart === 'undefined') { setTimeout(drawFirst, 100); return; } renderBcChart(availMetrics[0][0]); };
+            drawFirst();
+        }
     }
-    function idxLoadCache(key) {
+
+    function renderBcChart(key) {
+        if (!bcData) return;
+        const m = bcData.measurements || [];
+        const cust = bcData.customer || {};
+        const meta = BC_METRICS.find(x => x[0] === key);
+        if (!meta) return;
+        const labels = [], values = [];
+        m.forEach(row => { const v = parseFloat(row[key]); if (!isNaN(v)) { labels.push((row['測量日期/時間'] || '').substring(0, 10)); values.push(v); } });
+        if (labels.length === 0) return;
+        // 單一數據點時補一個空白點，讓範圍線可以畫出來
+        if (labels.length === 1) { labels.push(''); values.push(values[0]); }
+        const canvas = document.getElementById('bc-chart');
+        if (!canvas) return;
+        if (bcChartInstance) bcChartInstance.destroy();
+        const datasets = [{ label: meta[1], data: values, borderColor: '#7B8FA1', backgroundColor: 'rgba(123,143,161,0.07)', tension: 0.3, pointBackgroundColor: '#7B8FA1', pointRadius: 4, fill: true, order: 1 }];
+        const range = getBcNormalRange(key, cust);
+        let yMin, yMax;
+        if (range) {
+            const lo = range[0], hi = range[1];
+            if (lo !== null && hi !== null) {
+                datasets.push({ label: '正常上限', data: Array(labels.length).fill(hi), borderColor: 'rgba(139,157,131,0.5)', borderWidth: 1, borderDash: [4, 4], pointRadius: 0, fill: false, order: 2 });
+                datasets.push({ label: '正常下限', data: Array(labels.length).fill(lo), borderColor: 'rgba(139,157,131,0.5)', borderWidth: 1, borderDash: [4, 4], pointRadius: 0, fill: '-1', backgroundColor: 'rgba(139,157,131,0.10)', order: 2 });
+            } else if (hi !== null) {
+                datasets.push({ label: '正常上限', data: Array(labels.length).fill(hi), borderColor: 'rgba(160,98,107,0.5)', borderWidth: 1, borderDash: [4, 4], pointRadius: 0, fill: false, order: 2 });
+            } else if (lo !== null) {
+                datasets.push({ label: '正常下限', data: Array(labels.length).fill(lo), borderColor: 'rgba(139,157,131,0.5)', borderWidth: 1, borderDash: [4, 4], pointRadius: 0, fill: false, order: 2 });
+            }
+            const dataMin = Math.min(...values), dataMax = Math.max(...values);
+            let allMin = dataMin, allMax = dataMax;
+            if (lo !== null) allMin = Math.min(allMin, lo);
+            if (hi !== null) allMax = Math.max(allMax, hi);
+            const pad = (allMax - allMin) * 0.15 || 1;
+            yMin = allMin - pad; yMax = allMax + pad;
+        }
+        const scaleOpts = { x: { ticks: { font: { size: 10 }, maxRotation: 45 } }, y: { ticks: { font: { size: 10 } } } };
+        if (yMin !== undefined) { scaleOpts.y.min = Math.floor(yMin * 10) / 10; scaleOpts.y.max = Math.ceil(yMax * 10) / 10; }
+        bcChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'line', data: { labels, datasets },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: scaleOpts }
+        });
+    }
+
+    function switchBcChart(key, btn) {
+        document.querySelectorAll('.bc-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderBcChart(key);
+    }
+
+    // 預熱兩個 GAS（並行，不等結果）
+    try { fetch(API_URL + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
+    try { fetch('https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
+
+    const CACHE_KEY = 'meal_records_cache';
+    const CACHE_TTL = 3600000; // 1 hour
+
+    function saveCache(userId, data) {
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ userId: userId, ts: Date.now(), data: data })); } catch(e) {}
+    }
+    function loadCache(userId) {
         try {
-            var raw = localStorage.getItem(IDX_CACHE_KEY);
+            var raw = localStorage.getItem(CACHE_KEY);
             if (!raw) return null;
             var c = JSON.parse(raw);
-            if (c.key !== key || Date.now() - c.ts > IDX_CACHE_TTL) return null;
+            if (c.userId !== userId) return null;
+            if (Date.now() - c.ts > CACHE_TTL) return null;
             return c.data;
         } catch(e) { return null; }
     }
 
-    function fetchData(paramName, paramValue) {
-        var cacheKey = paramName + ':' + paramValue;
-        // cache-first：先渲染快取
-        var cached = idxLoadCache(cacheKey);
-        if (cached) {
-            allData = cached;
-            renderDashboard(cached);
-        } else {
-            setMsg('載入資料中...');
-        }
-        // 背景更新
-        var url = API_URL + '?' + paramName + '=' + encodeURIComponent(paramValue);
-        fetch(url)
-            .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
-            .then(function(data) {
-                if (data.error) { if (!cached) showError(data.error); }
-                else if (!data.measurements || !data.customer) { if (!cached) showError('資料格式異常，請聯絡店家'); }
-                else { idxSaveCache(cacheKey, data); allData = data; renderDashboard(data); }
-            })
-            .catch(function(err) { if (!cached) showError('資料載入失敗：' + (err.message || err) + ' 請重試或聯絡店家'); });
+    async function fetchWithTimeout(url, timeoutMs) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+        try { const resp = await fetch(url, { signal: ctrl.signal }); clearTimeout(timer); return resp; }
+        catch(e) { clearTimeout(timer); throw e; }
     }
 
-    // ====== LINE Profile 快取（頭像秒顯）======
-    var IDX_PROFILE_KEY = 'idx_profile';
-    function _saveProfile(name, pic) {
-        try { localStorage.setItem(IDX_PROFILE_KEY, JSON.stringify({ name: name, pic: pic, ts: Date.now() })); } catch(e) {}
-    }
-    function _loadProfile() {
-        try {
-            var raw = localStorage.getItem(IDX_PROFILE_KEY);
-            if (!raw) return null;
-            var c = JSON.parse(raw);
-            if (Date.now() - c.ts > 86400000) return null; // 24 小時過期
-            return c;
-        } catch(e) { return null; }
-    }
-    function _applyProfile(name, pic) {
-        if (name) document.getElementById('headerName').textContent = name;
-        if (pic) document.getElementById('headerAvatarWrap').innerHTML = '<img class="header-avatar" src="' + pic + '" alt="">';
-    }
-    function _initLiffProfile() {
-        liff.init({ liffId: LIFF_ID }).then(function() {
-            if (!liff.isLoggedIn()) return;
-            return liff.getProfile();
-        }).then(function(profile) {
-            if (!profile) return;
-            _applyProfile(profile.displayName, profile.pictureUrl);
-            _saveProfile(profile.displayName || '', profile.pictureUrl || '');
-            if (profile.displayName) {
-                fetch('https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec?setLineName=' + encodeURIComponent(profile.userId) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){});
+    async function fetchRecords(userId) {
+        const url = `${API_URL}?userId=${encodeURIComponent(userId)}`;
+        const maxRetries = 2;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                const timeout = attempt === 1 ? 30000 : 25000;
+                if (attempt > 1) {
+                    document.getElementById('records-list').innerHTML = '<div class="loading-hint"><span class="mini-spinner"></span>重新連線中（第 ' + attempt + ' 次）…</div>';
+                }
+                const resp = await fetchWithTimeout(url, timeout);
+                const text = await resp.text();
+                if (!resp.ok) throw new Error('API error ' + resp.status);
+                if (!text || text.trim() === '') throw new Error('API 回傳空回應（n8n workflow 可能未啟動）');
+                return JSON.parse(text);
+            } catch(e) {
+                if (e.name === 'AbortError' && attempt < maxRetries) { console.warn('API timeout, retrying...'); continue; }
+                if (e.name === 'AbortError') throw new Error('API 回應逾時，請稍後重試或檢查 n8n workflow 是否啟動');
+                throw e;
             }
-        }).catch(function(){});
+        }
     }
 
-    var params = new URLSearchParams(window.location.search);
-    var urlId = params.get('id');
-
-    // 立即套用快取的頭像和名稱（不等 LIFF init）
-    var _cachedProfile = _loadProfile();
-    if (_cachedProfile) _applyProfile(_cachedProfile.name, _cachedProfile.pic);
-
-    if (urlId) {
-        if (!_cachedProfile) document.getElementById('headerName').textContent = urlId;
-        fetchData('id', urlId);
-        // 背景跑 LIFF init 更新頭像
-        _initLiffProfile();
-    } else {
-        setMsg('連接 LINE 中...');
-        liff.init({ liffId: LIFF_ID })
-            .then(function() {
-                setMsg('取得帳號中...');
-                if (!liff.isInClient()) { showError('請在 LINE 中開啟此連結：https://liff.line.me/' + LIFF_ID); return; }
-                return liff.getProfile();
-            })
-            .then(function(profile) {
-                if (!profile || !profile.userId) return;
-                _applyProfile(profile.displayName, profile.pictureUrl);
-                _saveProfile(profile.displayName || '', profile.pictureUrl || '');
-                if (profile.displayName) {
-                    fetch('https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec?setLineName=' + encodeURIComponent(profile.userId) + '&dName=' + encodeURIComponent(profile.displayName)).catch(function(){});
-                }
-                fetchData('uid', profile.userId);
-            })
-            .catch(function(err) { showError('LIFF 初始化失敗：' + (err.message || err) + ' 請在 LINE 中開啟：https://liff.line.me/' + LIFF_ID); });
-    }
-
-    function renderDashboard(data) {
-        var m = data.measurements;
-        var cust = data.customer;
-        var latest = m.length > 0 ? m[m.length - 1] : null;
-        var prev = m.length > 1 ? m[m.length - 2] : null;
-        var html = '';
-
-        // 更新 header 名稱（如果 LIFF 沒取到 profile）
-        if (cust.name) { document.getElementById('headerName').textContent = cust.name; }
-
-        if (latest) {
-            var latestDate = latest['測量日期/時間'] || '';
-            html += '<div class="card"><div class="card-title">📋 最新測量';
-            if (latestDate) html += ' <span style="font-weight:400;color:#aaa;font-size:11px;">' + latestDate + '</span>';
-            html += '</div><div class="metrics-grid">';
-            METRICS.forEach(function(meta) {
-                var key = meta[0], label = meta[1], unit = meta[2], lowerGood = meta[3];
-                var curr = parseFloat(latest[key]);
-                if (isNaN(curr)) return;
-                var diffHtml = '';
-                if (prev) {
-                    var pv = parseFloat(prev[key]);
-                    if (!isNaN(pv)) {
-                        var diff = curr - pv;
-                        var good = (lowerGood && diff < 0) || (!lowerGood && diff > 0);
-                        var cls = diff === 0 ? 'diff-same' : (good ? 'diff-good' : 'diff-warn');
-                        var sign = diff > 0 ? '+' : '';
-                        var arrow = diff === 0 ? '→' : (diff > 0 ? '↑' : '↓');
-                        diffHtml = '<div class="metric-diff ' + cls + '">' + arrow + ' ' + sign + diff.toFixed(1) + unit + '</div>';
-                    }
-                }
-                html += '<div class="metric-item">';
-                html += '<div class="metric-label">' + esc(label) + '</div>';
-                html += '<div class="metric-value">' + curr + '<span class="metric-unit">' + esc(unit) + '</span></div>';
-                html += diffHtml + '</div>';
-            });
-            html += '</div></div>';
-        }
-
-        if (m.length > 1) {
-            html += '<div class="card"><div class="card-title">📈 趨勢圖</div><div class="chart-tabs">';
-            METRICS.forEach(function(meta, idx) {
-                var hasData = m.some(function(row) { return !isNaN(parseFloat(row[meta[0]])); });
-                if (!hasData) return;
-                html += '<button class="tab-btn' + (idx === 0 ? ' active' : '') + '" onclick="switchChart(\'' + meta[0] + '\', this)">' + esc(meta[1]) + '</button>';
-            });
-            html += '</div><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>';
-        }
-
-        if (m.length > 0) {
-            html += '<div class="card"><div class="card-title">📄 測量歷史</div>';
-            html += '<div class="table-wrap"><table><tr><th>日期</th>';
-            METRICS.forEach(function(meta) {
-                if (m.some(function(r) { return !isNaN(parseFloat(r[meta[0]])); })) html += '<th>' + esc(meta[1]) + '</th>';
-            });
-            html += '</tr>';
-            m.slice().reverse().forEach(function(row) {
-                html += '<tr><td class="date-col">' + esc((row['測量日期/時間'] || '').substring(0, 10)) + '</td>';
-                METRICS.forEach(function(meta) {
-                    if (!m.some(function(r) { return !isNaN(parseFloat(r[meta[0]])); })) return;
-                    var val = parseFloat(row[meta[0]]);
-                    html += '<td>' + (isNaN(val) ? '-' : val) + '</td>';
-                });
-                html += '</tr>';
-            });
-            html += '</table></div></div>';
-        } else {
-            html += '<div class="card"><div class="no-data">尚無測量紀錄</div></div>';
-        }
-
+    function showError(msg) {
         document.getElementById('loading').style.display = 'none';
-        document.getElementById('content').innerHTML = html;
-        document.getElementById('content').style.display = 'block';
+        document.getElementById('main').style.display = 'none';
+        document.getElementById('error-screen').style.display = 'block';
+        document.getElementById('error-msg').textContent = msg || '請在 LINE App 中開啟此頁面';
+    }
 
-        if (m.length > 1) {
-            setTimeout(function() {
-                for (var i = 0; i < METRICS.length; i++) {
-                    if (m.some(function(row) { return !isNaN(parseFloat(row[METRICS[i][0]])); })) {
-                        renderChart(METRICS[i][0]); break;
+    function getTaipeiToday() { const now = new Date(Date.now() + 8 * 3600000); return now.toISOString().split('T')[0]; }
+
+    function isToday(dateStr) {
+        const today = getTaipeiToday();
+        const d = String(dateStr || '');
+        const year = today.split('-')[0];
+        const month = String(parseInt(today.split('-')[1]));
+        const day = String(parseInt(today.split('-')[2]));
+        return d.includes(today) || d.startsWith(year + '/' + month + '/' + day);
+    }
+
+    function scoreToStars(score) {
+        const n = parseFloat(score);
+        if (isNaN(n)) return '';
+        const full = Math.round(n);
+        return '★'.repeat(Math.min(full, 5)) + '☆'.repeat(Math.max(0, 5 - full));
+    }
+
+    function escHtml(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function toDateKey(dateStr) {
+        const m = String(dateStr).match(/(\d{4})\/(\d+)\/(\d+)/);
+        if (!m) return '';
+        return m[1] + '-' + String(m[2]).padStart(2,'0') + '-' + String(m[3]).padStart(2,'0');
+    }
+    function formatDateKey(key) { const parts = key.split('-'); return parseInt(parts[1]) + '/' + parseInt(parts[2]); }
+    function formatTimeOnly(dateStr) { const m = String(dateStr).match(/\d{4}\/\d+\/\d+\s*(.*)/); return m ? m[1].trim() : dateStr; }
+    function formatDayLabel(key) {
+        const parts = key.split('-');
+        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        const days = ['日','一','二','三','四','五','六'];
+        return `${parseInt(parts[1])}月${parseInt(parts[2])}日（週${days[d.getDay()]}）`;
+    }
+
+    function renderProteinProgress(records, recommended, weight) {
+        const todayRecs = records.filter(r => isToday(r.date));
+        const total = todayRecs.reduce((s, r) => s + (r.protein || 0), 0);
+        const excess = weight * 2;
+        const rec = recommended || 0;
+        document.getElementById('protein-text').textContent = Math.round(total) + 'g' + (rec ? ' / ' + Math.round(rec) + 'g' : '');
+        if (rec > 0) {
+            const pct = Math.min((total / excess) * 100, 100);
+            document.getElementById('protein-bar').style.width = pct + '%';
+            let msg = '';
+            if (total >= excess && excess > 0) msg = '🚨 蛋白質過量喔！今日已攝取 ' + Math.round(total) + 'g，超過上限 ' + Math.round(excess) + 'g';
+            else if (total >= rec) msg = '🎉 恭喜達標！今日蛋白質共 ' + Math.round(total) + 'g，目標 ' + Math.round(rec) + 'g）';
+            else msg = '💪 距離目標還有 ' + Math.round(rec - total) + 'g，加油！';
+            document.getElementById('protein-status').textContent = msg;
+        } else {
+            document.getElementById('protein-bar').style.width = '0%';
+            document.getElementById('protein-status').textContent = '今日攝取：' + Math.round(total) + 'g';
+        }
+        const cal = todayRecs.reduce((s, r) => s + (r.calories || 0), 0);
+        document.getElementById('stats-row').innerHTML = `
+            <div class="stat-card"><div class="stat-value">${Math.round(cal)}</div><div class="stat-label">今日熱量 kcal</div></div>
+            <div class="stat-card"><div class="stat-value">${Math.round(total)}</div><div class="stat-label">今日蛋白質 g</div></div>
+            <div class="stat-card"><div class="stat-value">${todayRecs.length}</div><div class="stat-label">今日餐數</div></div>
+        `;
+    }
+
+    function renderChart(records, recommended) {
+        const byDate = {};
+        records.forEach(r => { const key = toDateKey(r.date); if (!key) return; byDate[key] = (byDate[key] || 0) + (r.protein || 0); });
+        const keys = Object.keys(byDate).sort();
+        if (keys.length === 0) { document.querySelector('.chart-card').style.display = 'none'; return; }
+        const drawChart = () => {
+            if (typeof Chart === 'undefined') { setTimeout(drawChart, 100); return; }
+            const labels = keys.map(formatDateKey);
+            const values = keys.map(k => Math.round(byDate[k]));
+            const rec = recommended || 0;
+            const ctx = document.getElementById('protein-chart').getContext('2d');
+            const datasets = [{
+                label: '每日蛋白質 (g)', data: values,
+                borderColor: '#7B8FA1', backgroundColor: 'rgba(123,143,161,0.12)',
+                borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#7B8FA1',
+                fill: true, tension: 0.3,
+            }];
+            if (rec > 0) {
+                datasets.push({
+                    label: '醫師建議攝取量 ' + Math.round(rec) + 'g', data: keys.map(() => rec),
+                    borderColor: '#C4A882', borderWidth: 1.5, borderDash: [6, 4],
+                    pointRadius: 0, fill: false, tension: 0,
+                });
+            }
+            new Chart(ctx, {
+                type: 'line', data: { labels, datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: rec > 0, position: 'bottom', labels: { font: { size: 11 }, padding: 10, boxWidth: 14 } },
+                        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + 'g' } }
+                    },
+                    scales: {
+                        x: { ticks: { font: { size: 11 }, color: '#8B8B8B' }, grid: { display: false } },
+                        y: { ticks: { font: { size: 11 }, color: '#8B8B8B', callback: v => v + 'g' }, grid: { color: 'rgba(0,0,0,0.05)' }, beginAtZero: true }
                     }
                 }
-            }, 100);
+            });
+        };
+        drawChart();
+    }
+
+    function renderMealCardBody(r) {
+        const imgUrl = r.imageId ? `${IMAGE_PROXY}?id=${r.imageId}` : '';
+        const imgHtml = imgUrl ? `<img src="${imgUrl}" onerror="this.parentNode.innerHTML='<div class=img-placeholder>🍱</div>'" loading="lazy">` : `<div class="img-placeholder">🍱</div>`;
+        const aiNote = r.aiNote ? `<div class="ai-note"><div class="ai-note-label">🤖 AI 飲食建議</div>${escHtml(r.aiNote)}</div>` : '';
+        const stars = r.nutritionScore ? `<div class="score-row"><span class="score-stars">${scoreToStars(r.nutritionScore)}</span><span style="font-size:12px;color:#92400E">(${r.nutritionScore}分)</span></div>` : '';
+        const advice = r.nutritionistAdvice ? `<div>${escHtml(r.nutritionistAdvice)}</div>` : '<div>（無備註）</div>';
+        return `
+            <div class="meal-image-wrap">${imgHtml}</div>
+            <div class="meal-body">
+                <div class="foods-text">${escHtml(r.foods || '（無資料）')}</div>
+                <div class="macros-grid">
+                    <div class="macro-item"><div class="macro-value">${Math.round(r.calories || 0)}</div><div class="macro-label">熱量 kcal</div></div>
+                    <div class="macro-item"><div class="macro-value">${Math.round(r.protein || 0)}</div><div class="macro-label">蛋白質 g</div></div>
+                    <div class="macro-item"><div class="macro-value">${Math.round(r.carbs || 0)}</div><div class="macro-label">碳水 g</div></div>
+                    <div class="macro-item"><div class="macro-value">${Math.round(r.fat || 0)}</div><div class="macro-label">脂肪 g</div></div>
+                    <div class="macro-item"><div class="macro-value">${Math.round(r.fiber || 0)}</div><div class="macro-label">纖維 g</div></div>
+                </div>
+                ${aiNote}
+                <div class="nutrition-advice">
+                    <div class="nutrition-advice-label">👩‍⚕️ 營養師建議</div>
+                    ${stars}${advice}
+                </div>
+            </div>`;
+    }
+
+    var _targetMealId = null;
+
+    function renderRecords(records) {
+        const list = document.getElementById('records-list');
+        if (records.length === 0) { list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>尚無紀錄</p></div>`; return; }
+        const grouped = {};
+        records.forEach(r => { const key = toDateKey(r.date); if (!grouped[key]) grouped[key] = []; grouped[key].push(r); });
+        const sortedKeys = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+        let html = '';
+        let targetDayIdx = null;
+        let targetCardId = null;
+        sortedKeys.forEach((dateKey, di) => {
+            const dayRecs = grouped[dateKey];
+            const totalProtein = dayRecs.reduce((s, r) => s + (r.protein || 0), 0);
+            const totalCal = dayRecs.reduce((s, r) => s + (r.calories || 0), 0);
+            const proteinStr = Math.round(totalProtein) + 'g';
+            const dayLabel = formatDayLabel(dateKey);
+            const summary = `${dayRecs.length} 餐 · 熱量 ${Math.round(totalCal)} kcal`;
+            let mealsHtml = '';
+            dayRecs.forEach((r, mi) => {
+                const cardId = `meal-${di}-${mi}`;
+                const timeStr = formatTimeOnly(r.date) || '（無時間）';
+                const proteinMini = r.protein ? `${Math.round(r.protein)}g` : '';
+                if (_targetMealId && r.imageId === _targetMealId) {
+                    targetDayIdx = di;
+                    targetCardId = cardId;
+                }
+                mealsHtml += `
+                    <div class="meal-card" id="${cardId}" ${r.imageId ? 'data-meal-id="' + escHtml(r.imageId) + '"' : ''}>
+                        <div class="meal-card-header" onclick="toggleMealCard('${cardId}')">
+                            <div class="meal-card-time">🍽 ${escHtml(timeStr)}</div>
+                            ${proteinMini ? `<div class="meal-card-protein">蛋白質 ${proteinMini}</div>` : ''}
+                            <span class="meal-card-arrow">▼</span>
+                        </div>
+                        <div class="meal-card-body">${renderMealCardBody(r)}</div>
+                    </div>`;
+            });
+            html += `
+                <div class="day-accordion" id="day-${di}">
+                    <div class="day-header" onclick="toggleDayAccordion(${di})">
+                        <div class="day-icon">📅</div>
+                        <div class="day-info">
+                            <div class="day-date-label">${dayLabel}</div>
+                            <div class="day-summary">${summary}</div>
+                        </div>
+                        <div class="day-protein-badge">${proteinStr}</div>
+                        <span class="day-arrow">▼</span>
+                    </div>
+                    <div class="day-body">${mealsHtml}</div>
+                </div>`;
+        });
+        list.innerHTML = html;
+
+        if (targetDayIdx !== null && targetCardId) {
+            const dayEl = document.getElementById('day-' + targetDayIdx);
+            const cardEl = document.getElementById(targetCardId);
+            if (dayEl) dayEl.classList.add('open');
+            if (cardEl) cardEl.classList.add('open');
+            setTimeout(function() {
+                if (cardEl) cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 300);
         }
     }
 
-    function renderChart(metricKey) {
-        var m = allData.measurements;
-        var meta = METRICS.find(function(x) { return x[0] === metricKey; });
-        var labels = [], values = [];
-        m.forEach(function(row) {
-            var val = parseFloat(row[metricKey]);
-            if (!isNaN(val)) { labels.push((row['測量日期/時間'] || '').substring(0, 10)); values.push(val); }
-        });
-        var canvas = document.getElementById('trendChart');
-        if (!canvas) return;
-        if (chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(canvas.getContext('2d'), {
-            type: 'line',
-            data: { labels: labels, datasets: [{ label: meta[1] + (meta[2] ? '(' + meta[2] + ')' : ''), data: values, borderColor: '#7B8FA1', backgroundColor: 'rgba(123,143,161,0.08)', tension: 0.3, pointBackgroundColor: '#7B8FA1', pointRadius: 5, fill: true }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 10 }, maxRotation: 45 } }, y: { ticks: { font: { size: 11 } } } } }
-        });
-    }
+    function toggleDayAccordion(di) { const el = document.getElementById('day-' + di); if (el) el.classList.toggle('open'); }
+    function toggleMealCard(cardId) { const el = document.getElementById(cardId); if (el) el.classList.toggle('open'); }
 
-    function switchChart(metricKey, btn) {
-        document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        renderChart(metricKey);
-    }
+    async function init() {
+        const loadingText = document.getElementById('loading-text');
+        let _step = '啟動';
+        try {
+            _step = '讀取URL';
+            const urlParams = new URLSearchParams(location.search);
+            // iOS LIFF 會把 ?mealId=xxx 包進 liff.state，需要解出來
+            const liffState = urlParams.get('liff.state') || '';
+            if (liffState) {
+                var stateStr = liffState.charAt(0) === '?' ? liffState.substring(1) : liffState;
+                var stateParams = new URLSearchParams(stateStr);
+                stateParams.forEach(function(v, k) { if (!urlParams.has(k)) urlParams.set(k, v); });
+            }
+            const urlUserId = urlParams.get('userId');
+            _targetMealId = urlParams.get('mealId') || null;
+            if (urlParams.has('liff.state') && !sessionStorage.getItem('_liff_stripped')) {
+                sessionStorage.setItem('_liff_stripped', '1');
+                urlParams.delete('liff.state');
+                var merged = urlParams.toString();
+                try { const cleanUrl = (location.origin || '') + location.pathname + (merged ? '?' + merged : ''); window.location.replace(cleanUrl); return; }
+                catch (navErr) { console.warn('iOS redirect failed:', navErr && navErr.message); }
+            }
+            let userId = null, displayName = null, pictureUrl = null;
+            if (LIFF_ID && LIFF_ID !== 'YOUR_LIFF_ID_HERE' && !urlUserId) {
+                try {
+                    loadingText.textContent = '正在連線 LINE…';
+                    _step = 'liff.init';
+                    await liff.init({ liffId: LIFF_ID });
+                    _step = '檢查登入';
+                    if (!liff.isLoggedIn()) { liff.login(); return; }
+                    _step = 'getProfile';
+                    const profile = await liff.getProfile();
+                    userId = profile.userId; displayName = profile.displayName; pictureUrl = profile.pictureUrl;
+                } catch (liffErr) {
+                    const eMsg = (liffErr && liffErr.message) ? String(liffErr.message) : String(liffErr);
+                    const eName = (liffErr && liffErr.name) ? liffErr.name : 'Error';
+                    const eCode = (liffErr && liffErr.code) ? String(liffErr.code) : '';
+                    console.warn('LIFF failed [' + _step + ']:', eName, eCode, eMsg);
+                    if (!sessionStorage.getItem('_liff_retry')) { sessionStorage.setItem('_liff_retry', '1'); location.reload(); return; }
+                    if (eMsg.indexOf('did not match') !== -1 || eMsg.indexOf('pattern') !== -1 || eName === 'SyntaxError') { showError('iOS 相容性問題，請關閉後重新開啟'); return; }
+                    showError('LIFF 初始化失敗 [' + _step + ']\n' + eName + ': ' + eMsg); return;
+                }
+            }
+            if (!userId && urlUserId) { userId = urlUserId; displayName = '患者'; }
+            if (!userId) { showError('請在 LINE App 中開啟此頁面'); return; }
+            if (pictureUrl) { document.getElementById('avatar-wrap').innerHTML = `<img class="avatar" src="${pictureUrl}" alt="avatar">`; }
+            document.getElementById('patient-name').textContent = displayName || '您好';
+            // 同步 LINE 名稱到客戶清單（背景執行，不影響載入）
+            if (userId && displayName && displayName !== '患者') {
+                fetch(API_URL + '?setLineName=' + encodeURIComponent(userId) + '&dName=' + encodeURIComponent(displayName)).catch(function(){});
+            }
+            document.getElementById('main').style.display = 'block';
+            const loadingEl = document.getElementById('loading');
 
-    function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+            // 並行載入身體組成資料
+            fetch(GAS_URL + '?uid=' + encodeURIComponent(userId))
+                .then(r => r.json())
+                .then(bcResult => { if (bcResult && bcResult.measurements) renderBcSection(bcResult); })
+                .catch(e => console.warn('身體組成載入失敗:', e));
+
+            // 快取秒開：先用上次的資料立即渲染
+            var cached = loadCache(userId);
+            if (cached) {
+                loadingEl.classList.add('fade-out');
+                setTimeout(() => { loadingEl.style.display = 'none'; }, 300);
+                if (cached.patient?.name) { document.getElementById('patient-name').textContent = cached.patient.name; }
+                var cRecs = cached.records || [];
+                var cRec = cached.patient?.doctorRecommendedProtein || cached.patient?.recommendedProtein || 0;
+                var cWt = cached.patient?.weight || 0;
+                renderProteinProgress(cRecs, cRec, cWt);
+                renderRecords(cRecs);
+                renderChart(cRecs, cRec);
+            } else {
+                loadingText.textContent = '載入飲食紀錄…';
+            }
+
+            // 背景拉新資料
+            _step = '載入紀錄';
+            fetchRecords(userId).then(function(data) {
+                saveCache(userId, data);
+                if (!cached) { loadingEl.classList.add('fade-out'); setTimeout(function(){ loadingEl.style.display = 'none'; }, 300); }
+                if (data.patient?.name) { document.getElementById('patient-name').textContent = data.patient.name; }
+                var recs = data.records || [];
+                var rec = data.patient?.doctorRecommendedProtein || data.patient?.recommendedProtein || 0;
+                var wt = data.patient?.weight || 0;
+                renderProteinProgress(recs, rec, wt);
+                _targetMealId = _targetMealId; // preserve for re-render
+                renderRecords(recs);
+                renderChart(recs, rec);
+            }).catch(function(err) {
+                console.warn('背景更新失敗:', err);
+                if (!cached) {
+                    document.getElementById('records-list').innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><p>載入失敗：' + escHtml(err.message) + '</p></div>';
+                }
+            });
+        } catch (err) {
+            console.error('Error [' + _step + ']:', err);
+            if (document.getElementById('main').style.display === 'block') {
+                document.getElementById('records-list').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>載入失敗：${escHtml(err.message)}</p></div>`;
+            } else { showError('載入失敗 [' + _step + ']：' + (err.message || err)); }
+        }
+    }
+    init();
     </script>
 </body>
 </html>
