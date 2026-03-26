@@ -941,7 +941,12 @@
         var excess = weight * 2;
 
         html += '<div class="meal-protein-card">';
-        html += '<div class="meal-protein-header"><span class="meal-protein-label">今日蛋白質進度</span>';
+        // 碳日標籤
+        var _pvCarbDay = hwGetDayType(new Date());
+        var _pvCarbLabels = { high: '高碳日', mid: '中碳日', low: '低碳日', fast: '斷食日' };
+        var _pvCarbLabel = _pvCarbLabels[_pvCarbDay] || '';
+        var _pvProteinTitle = _pvCarbLabel ? '今日（' + _pvCarbLabel + '）蛋白質進度' : '今日蛋白質進度';
+        html += '<div class="meal-protein-header"><span class="meal-protein-label">' + _pvProteinTitle + '</span>';
         html += '<span class="meal-protein-value">' + Math.round(todayProtein) + 'g' + (recProtein ? ' / ' + Math.round(recProtein) + 'g' : '') + '</span></div>';
         var pct = (recProtein > 0 && excess > 0) ? Math.min((todayProtein / excess) * 100, 100) : 0;
         html += '<div class="mprog-bg"><div class="mprog-fill" style="width:' + pct + '%"></div></div>';
@@ -955,11 +960,34 @@
         }
         html += '<div class="meal-protein-status">' + statusMsg + '</div></div>';
 
-        // 2. 今日統計
+        // 2. 今日統計：熱量赤字、淨碳水、今日張數
+        var _pvTdee = 0;
+        if (allData && allData.measurements && allData.measurements.length > 0) {
+            var _lastM = allData.measurements[allData.measurements.length - 1];
+            _pvTdee = parseFloat(_lastM['日耗熱量']) || 0;
+            if (!_pvTdee) { var _bmr = parseFloat(_lastM['基礎代謝 (BMR)']); if (_bmr > 0) _pvTdee = Math.round(_bmr * 1.2); }
+        }
+        var _pvDeficit = _pvTdee > 0 ? Math.round(todayCal - _pvTdee) : null;
+        var _pvDeficitStr = _pvDeficit !== null ? String(_pvDeficit) : '—';
+        var _pvDeficitColor = _pvDeficit !== null && _pvDeficit < 0 ? 'color:#c0392b' : '';
+
+        var _pvNetCarbs = todayRecs.reduce(function(s,r){ return s + (r.netCarbs||0); }, 0);
+        var _pvNcColor = '';
+        var _pvW = patient.weight || 0;
+        if (_pvW > 0 && _pvCarbDay !== 'none' && _pvCarbDay !== 'fast') {
+            var _ncLo = 0, _ncHi = 0;
+            if (_pvCarbDay === 'low')  { _ncLo = 0;       _ncHi = _pvW * 1; }
+            if (_pvCarbDay === 'mid')  { _ncLo = _pvW * 1; _ncHi = _pvW * 2; }
+            if (_pvCarbDay === 'high') { _ncLo = _pvW * 2; _ncHi = _pvW * 3; }
+            if (_pvNetCarbs < _ncLo) _pvNcColor = 'color:#ccc';
+            else if (_pvNetCarbs > _ncHi) _pvNcColor = 'color:#c0392b';
+            else _pvNcColor = 'color:#27ae60';
+        }
+
         html += '<div class="meal-stats-row">';
-        html += '<div class="meal-stat-card"><div class="meal-stat-value">' + Math.round(todayCal) + '</div><div class="meal-stat-label">今日熱量 kcal</div></div>';
-        html += '<div class="meal-stat-card"><div class="meal-stat-value">' + Math.round(todayProtein) + '</div><div class="meal-stat-label">今日蛋白質 g</div></div>';
-        html += '<div class="meal-stat-card"><div class="meal-stat-value">' + todayRecs.length + '</div><div class="meal-stat-label">今日餐數</div></div>';
+        html += '<div class="meal-stat-card"><div class="meal-stat-value" style="' + _pvDeficitColor + '">' + _pvDeficitStr + '</div><div class="meal-stat-label">熱量赤字 kcal</div></div>';
+        html += '<div class="meal-stat-card"><div class="meal-stat-value" style="' + _pvNcColor + '">' + Math.round(_pvNetCarbs) + '</div><div class="meal-stat-label">淨碳水 g</div></div>';
+        html += '<div class="meal-stat-card"><div class="meal-stat-value">' + todayRecs.length + '</div><div class="meal-stat-label">今日張數</div></div>';
         html += '</div>';
 
         // 3. 蛋白質趨勢圖
@@ -1077,7 +1105,7 @@
             var totalProtein = dayRecs.reduce(function(s,r){ return s + (r.protein||0); }, 0);
             var totalCal = dayRecs.reduce(function(s,r){ return s + (r.calories||0); }, 0);
             var dayLabel = formatMealDayLabel(dateKey);
-            var summary = dayRecs.length + ' 餐 · 熱量 ' + Math.round(totalCal) + ' kcal';
+            var summary = dayRecs.length + ' 張 · 熱量 ' + Math.round(totalCal) + ' kcal';
             var mealsHtml = '';
             dayRecs.forEach(function(r, mi){
                 var cardId = 'mc-' + di + '-' + mi;
