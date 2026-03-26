@@ -146,7 +146,7 @@
         <div class="stats-row" id="stats-row">
             <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">熱量赤字 kcal</div></div>
             <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">淨碳水 g</div></div>
-            <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日餐數</div></div>
+            <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日張數</div></div>
         </div>
         <!-- bc-section removed — meal records only -->
         <div class="section-title">蛋白質趨勢</div>
@@ -369,7 +369,7 @@
         document.getElementById('stats-row').innerHTML = `
             <div class="stat-card"><div class="stat-value" style="${deficitColor}">${deficitStr}</div><div class="stat-label">熱量赤字 kcal</div></div>
             <div class="stat-card"><div class="stat-value" style="${ncColor}">${ncStr}</div><div class="stat-label">淨碳水 g</div></div>
-            <div class="stat-card"><div class="stat-value">${todayRecs.length}</div><div class="stat-label">今日餐數</div></div>
+            <div class="stat-card"><div class="stat-value">${todayRecs.length}</div><div class="stat-label">今日張數</div></div>
         `;
     }
 
@@ -497,7 +497,7 @@
             const totalCal = dayRecs.reduce((s, r) => s + (r.calories || 0), 0);
             const proteinStr = Math.round(totalProtein) + 'g';
             const dayLabel = formatDayLabel(dateKey);
-            const summary = `${dayRecs.length} 餐 · 熱量 ${Math.round(totalCal)} kcal`;
+            const summary = `${dayRecs.length} 張 · 熱量 ${Math.round(totalCal)} kcal`;
             let mealsHtml = '';
             dayRecs.forEach((r, mi) => {
                 const cardId = `meal-${di}-${mi}`;
@@ -614,6 +614,11 @@
                 if (cached.patient?.name) { document.getElementById('patient-name').textContent = cached.patient.name; }
                 if (cached.patient?.tdee) { _patientTdee = cached.patient.tdee; }
                 if (cached.patient?.weight) { _latestWeight = cached.patient.weight; }
+                // 碳日秒開：用快取的 patient.id 直接還原碳日
+                if (cached.patient?.id) {
+                    var cachedCarb = _loadCarbCache(cached.patient.id);
+                    if (cachedCarb && cachedCarb !== 'none') { applyCarbDay(cachedCarb); }
+                }
                 var cRecs = cached.records || [];
                 var cRec = cached.patient?.doctorRecommendedProtein || cached.patient?.recommendedProtein || 0;
                 var cWt = cached.patient?.weight || 0;
