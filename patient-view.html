@@ -672,7 +672,7 @@
             html+='</div></div>';
         }
         if(m.length>=1){
-            html+='<div class="card"><div class="card-title">📈 趨勢圖</div><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>';
+            html+='<div class="card"><div class="card-title" id="pvChartTitle">📈 趨勢圖</div><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>';
         }
         if(m.length>0){
             html+='<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">📄 測量歷史 <button style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid #E8E4DC;background:white;color:#A0626B;cursor:pointer" onclick="toggleMeasureDel()">編輯</button></div><div class="table-wrap"><table id="measureHistTable"><tr><th></th><th>日期</th>';
@@ -701,7 +701,12 @@
         if(m.length>=1){
             setTimeout(function(){
                 for(var i=0;i<METRICS.length;i++){
-                    if(m.some(function(row){return !isNaN(parseFloat(row[METRICS[i][0]]));})){renderChart(METRICS[i][0]);break;}
+                    if(m.some(function(row){return !isNaN(parseFloat(row[METRICS[i][0]]));})){
+                        var titleEl=document.getElementById('pvChartTitle');
+                        if(titleEl) titleEl.textContent='📈 '+METRICS[i][1]+' 趨勢圖';
+                        renderChart(METRICS[i][0]);
+                        break;
+                    }
                 }
             },100);
         }
@@ -778,9 +783,12 @@
         document.querySelectorAll('.metric-item').forEach(function(b){b.classList.remove('active');});
         el.classList.add('active');
         var key=window._pvMetricKeysRef?window._pvMetricKeysRef[idx]:null;
-        if(key) renderChart(key);
-        var cv=document.getElementById('trendChart');
-        if(cv) cv.scrollIntoView({behavior:'smooth',block:'center'});
+        if(key){
+            var meta=METRICS.find(function(x){return x[0]===key;});
+            var titleEl=document.getElementById('pvChartTitle');
+            if(titleEl&&meta) titleEl.textContent='📈 '+meta[1]+' 趨勢圖';
+            renderChart(key);
+        }
     }
 
     function getDisplayName(cust) {

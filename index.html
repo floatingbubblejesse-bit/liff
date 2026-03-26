@@ -98,8 +98,7 @@
                 <div class="bc-grid" id="bc-grid"></div>
             </div>
             <div class="bc-card">
-                <div class="bc-card-title">📈 趨勢圖</div>
-                <!-- tabs removed: grid items are now clickable -->
+                <div class="bc-card-title" id="bc-chart-title">📈 趨勢圖</div>
                 <div style="position:relative;height:200px"><canvas id="bc-chart"></canvas></div>
             </div>
             <div class="bc-card">
@@ -192,6 +191,7 @@
         const firstItem = document.querySelector('.bc-item[data-key-idx]');
         if (firstItem) firstItem.classList.add('active');
         if (availMetrics.length > 0 && m.length >= 1) {
+            document.getElementById('bc-chart-title').textContent = '📈 ' + availMetrics[0][1] + ' 趨勢圖';
             const drawFirst = () => { if (typeof Chart === 'undefined') { setTimeout(drawFirst, 100); return; } renderBcChart(availMetrics[0][0]); };
             drawFirst();
         }
@@ -255,10 +255,10 @@
     function switchBcFromGrid(el, idx) {
         document.querySelectorAll('.bc-item').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
-        const key = window._bcAvailMetrics[idx][0];
+        const meta = window._bcAvailMetrics[idx];
+        const key = meta[0];
+        document.getElementById('bc-chart-title').textContent = '📈 ' + meta[1] + ' 趨勢圖';
         renderBcChart(key);
-        const chartCard = document.getElementById('bc-chart');
-        if (chartCard) chartCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     // 預熱 GAS
