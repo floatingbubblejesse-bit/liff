@@ -59,6 +59,8 @@
         .stat-card { background: var(--card); border-radius: 10px; padding: 10px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
         .stat-value { font-size: 20px; font-weight: 700; color: #6B7F91; }
         .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .stat-detail { font-size: 10px; color: #A8B5A2; margin-top: 3px; display: none; transition: opacity .2s; }
+        .stat-detail.show { display: block; }
         .section-title { padding: 16px 16px 8px; font-size: 14px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
         .chart-card { background: var(--card); border-radius: 14px; margin: 0 12px 16px; padding: 14px 12px 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
         .chart-card canvas { display: block; width: 100% !important; }
@@ -374,8 +376,16 @@
         }
 
         document.getElementById('stats-row').innerHTML = `
-            <div class="stat-card"><div class="stat-value" style="${deficitColor}">${deficitStr}</div><div class="stat-label">熱量赤字 kcal${deficitFormula}</div></div>
-            <div class="stat-card"><div class="stat-value" style="${ncColor}">${ncStr}</div><div class="stat-label">淨碳水 g${ncRange}</div></div>
+            <div class="stat-card" onclick="this.querySelector('.stat-detail').classList.toggle('show')">
+                <div class="stat-value" style="${deficitColor}">${deficitStr}</div>
+                <div class="stat-label">熱量赤字 kcal</div>
+                ${deficitFormula ? '<div class="stat-detail">' + deficitFormula.replace(' / ','') + '</div>' : ''}
+            </div>
+            <div class="stat-card" onclick="this.querySelector('.stat-detail').classList.toggle('show')">
+                <div class="stat-value" style="${ncColor}">${ncStr}</div>
+                <div class="stat-label">淨碳水 g</div>
+                ${ncRange ? '<div class="stat-detail">範圍 ' + ncRange.replace(' / ','') + '</div>' : ''}
+            </div>
             <div class="stat-card"><div class="stat-value">${todayRecs.length}</div><div class="stat-label">今日張數</div></div>
         `;
     }
