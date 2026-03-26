@@ -278,18 +278,7 @@
         const schIdx = jsDay === 0 ? 1 : jsDay === 6 ? 0 : jsDay + 1;
         return dietData.schedule[schIdx] || 'none';
     }
-    var _todayCarbDay = 'none'; // 今日碳日類型，由 fetchAndShowCarbDay 設定
-    const CARB_CACHE_KEY = 'carbday_cache';
-    function _saveCarbCache(sn, carbDay) {
-        try { localStorage.setItem(CARB_CACHE_KEY, JSON.stringify({ sn: sn, day: carbDay, date: getTaipeiToday() })); } catch(e) {}
-    }
-    function _loadCarbCache(sn) {
-        try {
-            var c = JSON.parse(localStorage.getItem(CARB_CACHE_KEY));
-            if (c && c.sn === sn && c.date === getTaipeiToday()) return c.day;
-        } catch(e) {}
-        return null;
-    }
+    var _todayCarbDay = 'none'; // 今日碳日類型
     function applyCarbDay(carbDay) {
         _todayCarbDay = carbDay;
         const label = CARB_LABELS[carbDay];
@@ -298,19 +287,27 @@
         }
         refreshStatsRow();
     }
+    /* 把碳日寫回主快取，下次開頁就有 */
+    function _saveCarbToMainCache(carbDay) {
+        try {
+            var raw = localStorage.getItem(CACHE_KEY);
+            if (!raw) return;
+            var c = JSON.parse(raw);
+            c._carbDay = carbDay;
+            c._carbDate = getTaipeiToday();
+            localStorage.setItem(CACHE_KEY, JSON.stringify(c));
+        } catch(e) {}
+    }
     function fetchAndShowCarbDay(patientSn) {
         if (!patientSn) return;
-        // 秒開：先用快取
-        var cached = _loadCarbCache(patientSn);
-        if (cached && cached !== 'none') { applyCarbDay(cached); }
         // 背景更新
         Promise.all([
             fetch(API_URL + '?dietPlan=' + encodeURIComponent(patientSn)).then(function(r){ return r.json(); }).catch(function(){ return null; }),
             fetch(API_URL + '?homeWeight=' + encodeURIComponent(patientSn)).then(function(r){ return r.json(); }).catch(function(){ return null; })
         ]).then(function(results) {
             var freshDay = computeTodayCarbDay(results[0], results[1]);
-            _saveCarbCache(patientSn, freshDay);
-            if (freshDay !== cached) { applyCarbDay(freshDay); }
+            _saveCarbToMainCache(freshDay);
+            applyCarbDay(freshDay);
         });
     }
 
@@ -614,10 +611,9 @@
                 if (cached.patient?.name) { document.getElementById('patient-name').textContent = cached.patient.name; }
                 if (cached.patient?.tdee) { _patientTdee = cached.patient.tdee; }
                 if (cached.patient?.weight) { _latestWeight = cached.patient.weight; }
-                // 碳日秒開：用快取的 patient.id 直接還原碳日
-                if (cached.patient?.id) {
-                    var cachedCarb = _loadCarbCache(cached.patient.id);
-                    if (cachedCarb && cachedCarb !== 'none') { applyCarbDay(cachedCarb); }
+                // 碳日秒開：從主快取還原碳日
+                if (cached._carbDay && cached._carbDate === getTaipeiToday() && cached._carbDay !== 'none') {
+                    applyCarbDay(cached._carbDay);
                 }
                 var cRecs = cached.records || [];
                 var cRec = cached.patient?.doctorRecommendedProtein || cached.patient?.recommendedProtein || 0;
