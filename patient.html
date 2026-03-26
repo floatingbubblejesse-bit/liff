@@ -109,6 +109,9 @@
         #error-screen p { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
         #main { display: none; }
         /* bc-section styles removed — this page is meal-records only */
+        .meal-del-btn { display: none; background: #A0626B; color: white; border: none; border-radius: 4px; font-size: 9px; padding: 2px 6px; cursor: pointer; margin-right: 6px; flex-shrink: 0; }
+        .del-mode .meal-del-btn { display: inline-block; }
+        .edit-toggle-btn { font-size: 10px; padding: 3px 8px; border-radius: 6px; border: 1px solid #E8E4DC; background: white; color: #A0626B; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -148,7 +151,7 @@
         <!-- bc-section removed — meal records only -->
         <div class="section-title">蛋白質趨勢</div>
         <div class="chart-card"><canvas id="protein-chart" height="160"></canvas></div>
-        <div class="section-title">每日紀錄</div>
+        <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">每日紀錄 <button class="edit-toggle-btn" onclick="toggleMealDelMode()">編輯</button></div>
         <div id="records-list">
             <div class="loading-hint"><span class="mini-spinner"></span>載入飲食紀錄中…</div>
         </div>
@@ -345,8 +348,47 @@
     }
 
     var _targetMealId = null;
+    var _currentUserId = null;
+    var _allRecordsData = null;
+    var _mealDelMode = false;
+
+    function toggleMealDelMode() {
+        _mealDelMode = !_mealDelMode;
+        const list = document.getElementById('records-list');
+        if (_mealDelMode) list.classList.add('del-mode');
+        else list.classList.remove('del-mode');
+    }
+
+    function deleteMealDay(dateKey, btn) {
+        if (!confirm('確定刪除 ' + dateKey + ' 的所有餐食紀錄？此操作無法復原。')) return;
+        if (!_currentUserId) { alert('無法取得用戶 ID'); return; }
+        btn.disabled = true; btn.textContent = '刪除中…';
+        const url = API_URL + '?deleteMealsByDate=' + encodeURIComponent(_currentUserId) + '&date=' + encodeURIComponent(dateKey);
+        fetch(url).then(r => r.json()).then(res => {
+            if (res.ok) {
+                _allRecordsData = _allRecordsData.filter(r => toDateKey(r.date) !== dateKey);
+                renderRecords(_allRecordsData);
+                try { localStorage.removeItem(CACHE_KEY); } catch(e){}
+            } else { alert('刪除失敗：' + (res.error || '未知錯誤')); btn.disabled = false; btn.textContent = '刪除'; }
+        }).catch(e => { alert('刪除失敗：' + e.message); btn.disabled = false; btn.textContent = '刪除'; });
+    }
+
+    function deleteMealRecord(recordId, btn) {
+        if (!confirm('確定刪除此筆餐食紀錄？此操作無法復原。')) return;
+        if (!_currentUserId) { alert('無法取得用戶 ID'); return; }
+        btn.disabled = true; btn.textContent = '刪除中…';
+        const url = API_URL + '?deleteMealRecord=' + encodeURIComponent(_currentUserId) + '&recordId=' + encodeURIComponent(recordId);
+        fetch(url).then(r => r.json()).then(res => {
+            if (res.ok) {
+                _allRecordsData = _allRecordsData.filter(r => r.recordId !== recordId);
+                renderRecords(_allRecordsData);
+                try { localStorage.removeItem(CACHE_KEY); } catch(e){}
+            } else { alert('刪除失敗：' + (res.error || '未知錯誤')); btn.disabled = false; btn.textContent = '刪除'; }
+        }).catch(e => { alert('刪除失敗：' + e.message); btn.disabled = false; btn.textContent = '刪除'; });
+    }
 
     function renderRecords(records) {
+        _allRecordsData = records;
         const list = document.getElementById('records-list');
         if (records.length === 0) { list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>尚無紀錄</p></div>`; return; }
         const grouped = {};
@@ -374,6 +416,7 @@
                 mealsHtml += `
                     <div class="meal-card" id="${cardId}" ${r.imageId ? 'data-meal-id="' + escHtml(r.imageId) + '"' : ''}>
                         <div class="meal-card-header" onclick="toggleMealCard('${cardId}')">
+                            <button class="meal-del-btn" onclick="event.stopPropagation();deleteMealRecord('${escHtml(r.recordId)}',this)">刪除</button>
                             <div class="meal-card-time">🍽 ${escHtml(timeStr)}</div>
                             ${proteinMini ? `<div class="meal-card-protein">蛋白質 ${proteinMini}</div>` : ''}
                             <span class="meal-card-arrow">▼</span>
@@ -384,6 +427,7 @@
             html += `
                 <div class="day-accordion" id="day-${di}">
                     <div class="day-header" onclick="toggleDayAccordion(${di})">
+                        <button class="meal-del-btn" onclick="event.stopPropagation();deleteMealDay('${escHtml(dateKey)}',this)">刪除</button>
                         <div class="day-icon">📅</div>
                         <div class="day-info">
                             <div class="day-date-label">${dayLabel}</div>
@@ -396,6 +440,8 @@
                 </div>`;
         });
         list.innerHTML = html;
+        // 保留刪除模式狀態
+        if (_mealDelMode) list.classList.add('del-mode');
 
         if (targetDayIdx !== null && targetCardId) {
             const dayEl = document.getElementById('day-' + targetDayIdx);
@@ -456,6 +502,7 @@
             }
             if (!userId && urlUserId) { userId = urlUserId; displayName = '患者'; }
             if (!userId) { showError('請在 LINE App 中開啟此頁面'); return; }
+            _currentUserId = userId;
             if (pictureUrl) { document.getElementById('avatar-wrap').innerHTML = `<img class="avatar" src="${pictureUrl}" alt="avatar">`; }
             document.getElementById('patient-name').textContent = displayName || '您好';
             // 同步 LINE 名稱到客戶清單（背景執行，不影響載入）
