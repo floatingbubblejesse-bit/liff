@@ -48,61 +48,8 @@
         .avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 22px; }
         .header-info h1 { font-size: 18px; font-weight: 600; }
         .header-info p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
-        .protein-card { background: rgba(255,255,255,0.18); border-radius: 12px; padding: 14px; }
-        .protein-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .protein-label { font-size: 13px; opacity: 0.9; }
-        .protein-value { font-size: 13px; font-weight: 600; }
-        .progress-bar-bg { background: rgba(255,255,255,0.3); border-radius: 99px; height: 8px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; border-radius: 99px; background: white; transition: width 0.8s ease; }
-        .protein-status { margin-top: 8px; font-size: 12px; text-align: center; opacity: 0.95; }
-        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px 16px; }
-        .stat-card { background: var(--card); border-radius: 10px; padding: 10px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-        .stat-value { font-size: 20px; font-weight: 700; color: #6B7F91; }
-        .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-        .section-title { padding: 16px 16px 8px; font-size: 14px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-        .chart-card { background: var(--card); border-radius: 14px; margin: 0 12px 16px; padding: 14px 12px 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
-        .chart-card canvas { display: block; width: 100% !important; }
-        .day-accordion { background: var(--card); border-radius: 14px; margin: 0 12px 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .day-header { display: flex; align-items: center; padding: 13px 14px; cursor: pointer; user-select: none; gap: 10px; -webkit-tap-highlight-color: transparent; }
-        .day-header:active { background: #F0EDE6; }
-        .day-icon { font-size: 18px; flex-shrink: 0; }
-        .day-info { flex: 1; }
-        .day-date-label { font-size: 15px; font-weight: 700; color: var(--text); }
-        .day-summary { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-        .day-protein-badge { font-size: 13px; font-weight: 700; color: #6B7F91; background: #EDE8E0; border-radius: 99px; padding: 3px 10px; flex-shrink: 0; }
-        .day-arrow { font-size: 11px; color: var(--text-muted); transition: transform 0.25s ease; flex-shrink: 0; }
-        .day-accordion.open .day-arrow { transform: rotate(180deg); }
-        .day-body { display: none; border-top: 1px solid var(--border); padding: 8px 10px 10px; background: #FAFFFE; }
-        .day-accordion.open .day-body { display: block; }
-        .meal-card { background: var(--card); border-radius: 10px; margin-bottom: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid var(--border); }
-        .meal-card:last-child { margin-bottom: 0; }
-        .meal-card-header { display: flex; align-items: center; padding: 10px 12px; cursor: pointer; user-select: none; gap: 8px; -webkit-tap-highlight-color: transparent; }
-        .meal-card-header:active { background: #f8fffe; }
-        .meal-card-time { flex: 1; font-size: 13px; color: var(--text); font-weight: 500; }
-        .meal-card-protein { font-size: 12px; color: #6B7F91; font-weight: 600; }
-        .meal-card-arrow { font-size: 10px; color: var(--text-muted); transition: transform 0.2s ease; flex-shrink: 0; }
-        .meal-card.open .meal-card-arrow { transform: rotate(180deg); }
-        .meal-card-body { display: none; border-top: 1px solid var(--border); }
-        .meal-card.open .meal-card-body { display: block; }
-        .meal-image-wrap { width: 100%; height: 200px; overflow: hidden; background: #F5F3EF; position: relative; }
-        .meal-image-wrap img { width: 100%; height: 100%; object-fit: cover; }
-        .meal-image-wrap .img-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 48px; background: var(--primary-light); }
-        .meal-body { padding: 12px 14px; }
-        .foods-text { font-size: 14px; color: var(--text); line-height: 1.5; margin-bottom: 12px; }
-        .macros-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
-        .macro-item { text-align: center; padding: 6px 4px; background: #F0EDE6; border-radius: 8px; }
-        .macro-value { font-size: 15px; font-weight: 700; color: #6B7F91; }
-        .macro-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
-        .ai-note { background: #F0EDE6; border-left: 3px solid #8B9D83; border-radius: 0 8px 8px 0; padding: 8px 10px; font-size: 13px; color: #5A6B5E; line-height: 1.5; margin-bottom: 10px; }
-        .ai-note-label { font-size: 11px; font-weight: 700; color: #8B9D83; margin-bottom: 4px; }
-        .nutrition-advice { background: #F5F0E5; border-left: 3px solid #C4A882; border-radius: 0 8px 8px 0; padding: 8px 10px; font-size: 13px; color: #7B6B4A; line-height: 1.5; }
-        .nutrition-advice-label { font-size: 11px; font-weight: 700; color: #C4A882; margin-bottom: 4px; }
-        .score-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-        .score-stars { color: #C4A882; font-size: 14px; }
         .empty-state { text-align: center; padding: 48px 24px; color: var(--text-muted); }
         .empty-icon { font-size: 48px; margin-bottom: 12px; }
-        .loading-hint { text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px; }
-        .loading-hint .mini-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
         #error-screen { display: none; padding: 32px 24px; text-align: center; }
         #error-screen .error-icon { font-size: 56px; margin-bottom: 16px; }
         #error-screen h2 { font-size: 18px; margin-bottom: 8px; }
@@ -118,6 +65,11 @@
         .bc-chart-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
         .bc-tab { padding: 4px 10px; border-radius: 99px; border: 1px solid var(--border); background: var(--card); font-size: 12px; color: var(--text-muted); cursor: pointer; }
         .bc-tab.active { background: #7B8FA1; color: white; border-color: #7B8FA1; }
+        .bc-history { margin-top: 12px; }
+        .bc-history-title { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; }
+        .bc-history-list { display: flex; flex-wrap: wrap; gap: 6px; }
+        .bc-history-item { font-size: 12px; color: var(--text); background: #F0EDE6; border-radius: 8px; padding: 4px 10px; }
+        .bc-history-item.latest { background: #7B8FA1; color: white; }
     </style>
 </head>
 <body>
@@ -138,22 +90,7 @@
                     <h1 id="patient-name">載入中…</h1>
                 </div>
             </div>
-            <div class="protein-card">
-                <div class="protein-header">
-                    <span class="protein-label">今日蛋白質進度</span>
-                    <span class="protein-value" id="protein-text">—</span>
-                </div>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" id="protein-bar" style="width:0%"></div>
-                </div>
-                <div class="protein-status" id="protein-status">載入資料中…</div>
-            </div>
         </header>
-        <div class="stats-row" id="stats-row">
-            <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日熱量 kcal</div></div>
-            <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日蛋白質 g</div></div>
-            <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日餐數</div></div>
-        </div>
         <div id="bc-section" class="bc-section" style="display:none">
             <div class="bc-card">
                 <div class="bc-card-title">📋 最新身體組成</div>
@@ -164,19 +101,16 @@
                 <div class="bc-chart-tabs" id="bc-tabs"></div>
                 <div style="position:relative;height:200px"><canvas id="bc-chart"></canvas></div>
             </div>
+            <div class="bc-card">
+                <div class="bc-card-title">📅 歷次報告日期</div>
+                <div class="bc-history-list" id="bc-history-list"></div>
+            </div>
         </div>
-        <div class="section-title">蛋白質趨勢</div>
-        <div class="chart-card"><canvas id="protein-chart" height="160"></canvas></div>
-        <div class="section-title">每日紀錄</div>
-        <div id="records-list">
-            <div class="loading-hint"><span class="mini-spinner"></span>載入飲食紀錄中…</div>
-        </div>
+        <!-- meal section removed — body composition only -->
     </div>
 
     <script>
     const LIFF_ID = '2009326025-d6EV7T42';
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxV3Cc44ohL4i7-xk29hAxFSPaWktOFgWxmCRGsg0uvxaJHbRqiMXrJjBAyva3XwDNY/exec';
-    const IMAGE_PROXY = 'https://huangcs.app.n8n.cloud/webhook/meal-photo';
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
 
     const BC_METRICS = [
@@ -261,6 +195,15 @@
             const drawFirst = () => { if (typeof Chart === 'undefined') { setTimeout(drawFirst, 100); return; } renderBcChart(availMetrics[0][0]); };
             drawFirst();
         }
+        // 歷次報告日期
+        let histHtml = '';
+        for (let hi = m.length - 1; hi >= 0; hi--) {
+            const dt = (m[hi]['測量日期/時間'] || '').substring(0, 10);
+            if (!dt) continue;
+            const cls = hi === m.length - 1 ? 'bc-history-item latest' : 'bc-history-item';
+            histHtml += `<span class="${cls}">${escHtml(dt)}</span>`;
+        }
+        document.getElementById('bc-history-list').innerHTML = histHtml || '<span style="color:var(--text-muted);font-size:12px">尚無報告</span>';
     }
 
     function renderBcChart(key) {
@@ -311,55 +254,10 @@
         renderBcChart(key);
     }
 
-    // 預熱兩個 GAS（並行，不等結果）
-    try { fetch(API_URL + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
-    try { fetch('https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
+    // 預熱 GAS
+    try { fetch(GAS_URL + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
 
-    const CACHE_KEY = 'meal_records_cache';
-    const CACHE_TTL = 3600000; // 1 hour
-
-    function saveCache(userId, data) {
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ userId: userId, ts: Date.now(), data: data })); } catch(e) {}
-    }
-    function loadCache(userId) {
-        try {
-            var raw = localStorage.getItem(CACHE_KEY);
-            if (!raw) return null;
-            var c = JSON.parse(raw);
-            if (c.userId !== userId) return null;
-            if (Date.now() - c.ts > CACHE_TTL) return null;
-            return c.data;
-        } catch(e) { return null; }
-    }
-
-    async function fetchWithTimeout(url, timeoutMs) {
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-        try { const resp = await fetch(url, { signal: ctrl.signal }); clearTimeout(timer); return resp; }
-        catch(e) { clearTimeout(timer); throw e; }
-    }
-
-    async function fetchRecords(userId) {
-        const url = `${API_URL}?userId=${encodeURIComponent(userId)}`;
-        const maxRetries = 2;
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                const timeout = attempt === 1 ? 30000 : 25000;
-                if (attempt > 1) {
-                    document.getElementById('records-list').innerHTML = '<div class="loading-hint"><span class="mini-spinner"></span>重新連線中（第 ' + attempt + ' 次）…</div>';
-                }
-                const resp = await fetchWithTimeout(url, timeout);
-                const text = await resp.text();
-                if (!resp.ok) throw new Error('API error ' + resp.status);
-                if (!text || text.trim() === '') throw new Error('API 回傳空回應（n8n workflow 可能未啟動）');
-                return JSON.parse(text);
-            } catch(e) {
-                if (e.name === 'AbortError' && attempt < maxRetries) { console.warn('API timeout, retrying...'); continue; }
-                if (e.name === 'AbortError') throw new Error('API 回應逾時，請稍後重試或檢查 n8n workflow 是否啟動');
-                throw e;
-            }
-        }
-    }
+    function escHtml(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
     function showError(msg) {
         document.getElementById('loading').style.display = 'none';
@@ -368,224 +266,50 @@
         document.getElementById('error-msg').textContent = msg || '請在 LINE App 中開啟此頁面';
     }
 
-    function getTaipeiToday() { const now = new Date(Date.now() + 8 * 3600000); return now.toISOString().split('T')[0]; }
-
-    function isToday(dateStr) {
-        const today = getTaipeiToday();
-        const d = String(dateStr || '');
-        const year = today.split('-')[0];
-        const month = String(parseInt(today.split('-')[1]));
-        const day = String(parseInt(today.split('-')[2]));
-        return d.includes(today) || d.startsWith(year + '/' + month + '/' + day);
-    }
-
-    function scoreToStars(score) {
-        const n = parseFloat(score);
-        if (isNaN(n)) return '';
-        const full = Math.round(n);
-        return '★'.repeat(Math.min(full, 5)) + '☆'.repeat(Math.max(0, 5 - full));
-    }
-
-    function escHtml(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-    function toDateKey(dateStr) {
-        const m = String(dateStr).match(/(\d{4})\/(\d+)\/(\d+)/);
-        if (!m) return '';
-        return m[1] + '-' + String(m[2]).padStart(2,'0') + '-' + String(m[3]).padStart(2,'0');
-    }
-    function formatDateKey(key) { const parts = key.split('-'); return parseInt(parts[1]) + '/' + parseInt(parts[2]); }
-    function formatTimeOnly(dateStr) { const m = String(dateStr).match(/\d{4}\/\d+\/\d+\s*(.*)/); return m ? m[1].trim() : dateStr; }
-    function formatDayLabel(key) {
-        const parts = key.split('-');
-        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        const days = ['日','一','二','三','四','五','六'];
-        return `${parseInt(parts[1])}月${parseInt(parts[2])}日（週${days[d.getDay()]}）`;
-    }
-
-    function renderProteinProgress(records, recommended, weight) {
-        const todayRecs = records.filter(r => isToday(r.date));
-        const total = todayRecs.reduce((s, r) => s + (r.protein || 0), 0);
-        const excess = weight * 2;
-        const rec = recommended || 0;
-        document.getElementById('protein-text').textContent = Math.round(total) + 'g' + (rec ? ' / ' + Math.round(rec) + 'g' : '');
-        if (rec > 0) {
-            const pct = Math.min((total / excess) * 100, 100);
-            document.getElementById('protein-bar').style.width = pct + '%';
-            let msg = '';
-            if (total >= excess && excess > 0) msg = '🚨 蛋白質過量喔！今日已攝取 ' + Math.round(total) + 'g，超過上限 ' + Math.round(excess) + 'g';
-            else if (total >= rec) msg = '🎉 恭喜達標！今日蛋白質共 ' + Math.round(total) + 'g，目標 ' + Math.round(rec) + 'g）';
-            else msg = '💪 距離目標還有 ' + Math.round(rec - total) + 'g，加油！';
-            document.getElementById('protein-status').textContent = msg;
-        } else {
-            document.getElementById('protein-bar').style.width = '0%';
-            document.getElementById('protein-status').textContent = '今日攝取：' + Math.round(total) + 'g';
-        }
-        const cal = todayRecs.reduce((s, r) => s + (r.calories || 0), 0);
-        document.getElementById('stats-row').innerHTML = `
-            <div class="stat-card"><div class="stat-value">${Math.round(cal)}</div><div class="stat-label">今日熱量 kcal</div></div>
-            <div class="stat-card"><div class="stat-value">${Math.round(total)}</div><div class="stat-label">今日蛋白質 g</div></div>
-            <div class="stat-card"><div class="stat-value">${todayRecs.length}</div><div class="stat-label">今日餐數</div></div>
-        `;
-    }
-
-    function renderChart(records, recommended) {
-        const byDate = {};
-        records.forEach(r => { const key = toDateKey(r.date); if (!key) return; byDate[key] = (byDate[key] || 0) + (r.protein || 0); });
-        const keys = Object.keys(byDate).sort();
-        if (keys.length === 0) { document.querySelector('.chart-card').style.display = 'none'; return; }
-        const drawChart = () => {
-            if (typeof Chart === 'undefined') { setTimeout(drawChart, 100); return; }
-            const labels = keys.map(formatDateKey);
-            const values = keys.map(k => Math.round(byDate[k]));
-            const rec = recommended || 0;
-            const ctx = document.getElementById('protein-chart').getContext('2d');
-            const datasets = [{
-                label: '每日蛋白質 (g)', data: values,
-                borderColor: '#7B8FA1', backgroundColor: 'rgba(123,143,161,0.12)',
-                borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#7B8FA1',
-                fill: true, tension: 0.3,
-            }];
-            if (rec > 0) {
-                datasets.push({
-                    label: '醫師建議攝取量 ' + Math.round(rec) + 'g', data: keys.map(() => rec),
-                    borderColor: '#C4A882', borderWidth: 1.5, borderDash: [6, 4],
-                    pointRadius: 0, fill: false, tension: 0,
-                });
-            }
-            new Chart(ctx, {
-                type: 'line', data: { labels, datasets },
-                options: {
-                    responsive: true, maintainAspectRatio: true,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: { display: rec > 0, position: 'bottom', labels: { font: { size: 11 }, padding: 10, boxWidth: 14 } },
-                        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + 'g' } }
-                    },
-                    scales: {
-                        x: { ticks: { font: { size: 11 }, color: '#8B8B8B' }, grid: { display: false } },
-                        y: { ticks: { font: { size: 11 }, color: '#8B8B8B', callback: v => v + 'g' }, grid: { color: 'rgba(0,0,0,0.05)' }, beginAtZero: true }
-                    }
-                }
-            });
-        };
-        drawChart();
-    }
-
-    function renderMealCardBody(r) {
-        const imgUrl = r.imageId ? `${IMAGE_PROXY}?id=${r.imageId}` : '';
-        const imgHtml = imgUrl ? `<img src="${imgUrl}" onerror="this.parentNode.innerHTML='<div class=img-placeholder>🍱</div>'" loading="lazy">` : `<div class="img-placeholder">🍱</div>`;
-        const aiNote = r.aiNote ? `<div class="ai-note"><div class="ai-note-label">🤖 AI 飲食建議</div>${escHtml(r.aiNote)}</div>` : '';
-        const stars = r.nutritionScore ? `<div class="score-row"><span class="score-stars">${scoreToStars(r.nutritionScore)}</span><span style="font-size:12px;color:#92400E">(${r.nutritionScore}分)</span></div>` : '';
-        const advice = r.nutritionistAdvice ? `<div>${escHtml(r.nutritionistAdvice)}</div>` : '<div>（無備註）</div>';
-        return `
-            <div class="meal-image-wrap">${imgHtml}</div>
-            <div class="meal-body">
-                <div class="foods-text">${escHtml(r.foods || '（無資料）')}</div>
-                <div class="macros-grid">
-                    <div class="macro-item"><div class="macro-value">${Math.round(r.calories || 0)}</div><div class="macro-label">熱量 kcal</div></div>
-                    <div class="macro-item"><div class="macro-value">${Math.round(r.protein || 0)}</div><div class="macro-label">蛋白質 g</div></div>
-                    <div class="macro-item"><div class="macro-value">${Math.round(r.carbs || 0)}</div><div class="macro-label">碳水 g</div></div>
-                    <div class="macro-item"><div class="macro-value">${Math.round(r.fat || 0)}</div><div class="macro-label">脂肪 g</div></div>
-                    <div class="macro-item"><div class="macro-value">${Math.round(r.fiber || 0)}</div><div class="macro-label">纖維 g</div></div>
-                </div>
-                ${aiNote}
-                <div class="nutrition-advice">
-                    <div class="nutrition-advice-label">👩‍⚕️ 營養師建議</div>
-                    ${stars}${advice}
-                </div>
-            </div>`;
-    }
-
-    var _targetMealId = null;
-
-    function renderRecords(records) {
-        const list = document.getElementById('records-list');
-        if (records.length === 0) { list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>尚無紀錄</p></div>`; return; }
-        const grouped = {};
-        records.forEach(r => { const key = toDateKey(r.date); if (!grouped[key]) grouped[key] = []; grouped[key].push(r); });
-        const sortedKeys = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
-        let html = '';
-        let targetDayIdx = null;
-        let targetCardId = null;
-        sortedKeys.forEach((dateKey, di) => {
-            const dayRecs = grouped[dateKey];
-            const totalProtein = dayRecs.reduce((s, r) => s + (r.protein || 0), 0);
-            const totalCal = dayRecs.reduce((s, r) => s + (r.calories || 0), 0);
-            const proteinStr = Math.round(totalProtein) + 'g';
-            const dayLabel = formatDayLabel(dateKey);
-            const summary = `${dayRecs.length} 餐 · 熱量 ${Math.round(totalCal)} kcal`;
-            let mealsHtml = '';
-            dayRecs.forEach((r, mi) => {
-                const cardId = `meal-${di}-${mi}`;
-                const timeStr = formatTimeOnly(r.date) || '（無時間）';
-                const proteinMini = r.protein ? `${Math.round(r.protein)}g` : '';
-                if (_targetMealId && r.imageId === _targetMealId) {
-                    targetDayIdx = di;
-                    targetCardId = cardId;
-                }
-                mealsHtml += `
-                    <div class="meal-card" id="${cardId}" ${r.imageId ? 'data-meal-id="' + escHtml(r.imageId) + '"' : ''}>
-                        <div class="meal-card-header" onclick="toggleMealCard('${cardId}')">
-                            <div class="meal-card-time">🍽 ${escHtml(timeStr)}</div>
-                            ${proteinMini ? `<div class="meal-card-protein">蛋白質 ${proteinMini}</div>` : ''}
-                            <span class="meal-card-arrow">▼</span>
-                        </div>
-                        <div class="meal-card-body">${renderMealCardBody(r)}</div>
-                    </div>`;
-            });
-            html += `
-                <div class="day-accordion" id="day-${di}">
-                    <div class="day-header" onclick="toggleDayAccordion(${di})">
-                        <div class="day-icon">📅</div>
-                        <div class="day-info">
-                            <div class="day-date-label">${dayLabel}</div>
-                            <div class="day-summary">${summary}</div>
-                        </div>
-                        <div class="day-protein-badge">${proteinStr}</div>
-                        <span class="day-arrow">▼</span>
-                    </div>
-                    <div class="day-body">${mealsHtml}</div>
-                </div>`;
-        });
-        list.innerHTML = html;
-
-        if (targetDayIdx !== null && targetCardId) {
-            const dayEl = document.getElementById('day-' + targetDayIdx);
-            const cardEl = document.getElementById(targetCardId);
-            if (dayEl) dayEl.classList.add('open');
-            if (cardEl) cardEl.classList.add('open');
-            setTimeout(function() {
-                if (cardEl) cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 300);
-        }
-    }
-
-    function toggleDayAccordion(di) { const el = document.getElementById('day-' + di); if (el) el.classList.toggle('open'); }
-    function toggleMealCard(cardId) { const el = document.getElementById(cardId); if (el) el.classList.toggle('open'); }
-
     async function init() {
         const loadingText = document.getElementById('loading-text');
         let _step = '啟動';
         try {
             _step = '讀取URL';
             const urlParams = new URLSearchParams(location.search);
-            // iOS LIFF 會把 ?mealId=xxx 包進 liff.state，需要解出來
             const liffState = urlParams.get('liff.state') || '';
             if (liffState) {
                 var stateStr = liffState.charAt(0) === '?' ? liffState.substring(1) : liffState;
                 var stateParams = new URLSearchParams(stateStr);
                 stateParams.forEach(function(v, k) { if (!urlParams.has(k)) urlParams.set(k, v); });
             }
+            const urlId = urlParams.get('id');
             const urlUserId = urlParams.get('userId');
-            _targetMealId = urlParams.get('mealId') || null;
-            if (urlParams.has('liff.state') && !sessionStorage.getItem('_liff_stripped')) {
-                sessionStorage.setItem('_liff_stripped', '1');
-                urlParams.delete('liff.state');
-                var merged = urlParams.toString();
-                try { const cleanUrl = (location.origin || '') + location.pathname + (merged ? '?' + merged : ''); window.location.replace(cleanUrl); return; }
-                catch (navErr) { console.warn('iOS redirect failed:', navErr && navErr.message); }
-            }
             let userId = null, displayName = null, pictureUrl = null;
+
+            if (urlId) {
+                // 用 ?id= 直接查（個人化連結）
+                document.getElementById('patient-name').textContent = urlId;
+                document.getElementById('main').style.display = 'block';
+                loadingText.textContent = '載入身體組成…';
+                fetch(GAS_URL + '?id=' + encodeURIComponent(urlId))
+                    .then(r => r.json())
+                    .then(data => {
+                        document.getElementById('loading').classList.add('fade-out');
+                        setTimeout(() => { document.getElementById('loading').style.display = 'none'; }, 300);
+                        if (data && data.customer && data.customer.name) document.getElementById('patient-name').textContent = data.customer.name;
+                        if (data && data.measurements) renderBcSection(data);
+                    })
+                    .catch(e => showError('載入失敗：' + (e.message || e)));
+                // 背景跑 LIFF init 更新頭像
+                if (LIFF_ID && LIFF_ID !== 'YOUR_LIFF_ID_HERE') {
+                    liff.init({ liffId: LIFF_ID }).then(() => {
+                        if (!liff.isLoggedIn()) return;
+                        return liff.getProfile();
+                    }).then(profile => {
+                        if (!profile) return;
+                        if (profile.pictureUrl) document.getElementById('avatar-wrap').innerHTML = `<img class="avatar" src="${profile.pictureUrl}" alt="avatar">`;
+                        if (profile.displayName) document.getElementById('patient-name').textContent = profile.displayName;
+                    }).catch(() => {});
+                }
+                return;
+            }
+
             if (LIFF_ID && LIFF_ID !== 'YOUR_LIFF_ID_HERE' && !urlUserId) {
                 try {
                     loadingText.textContent = '正在連線 LINE…';
@@ -599,10 +323,8 @@
                 } catch (liffErr) {
                     const eMsg = (liffErr && liffErr.message) ? String(liffErr.message) : String(liffErr);
                     const eName = (liffErr && liffErr.name) ? liffErr.name : 'Error';
-                    const eCode = (liffErr && liffErr.code) ? String(liffErr.code) : '';
-                    console.warn('LIFF failed [' + _step + ']:', eName, eCode, eMsg);
+                    console.warn('LIFF failed [' + _step + ']:', eName, eMsg);
                     if (!sessionStorage.getItem('_liff_retry')) { sessionStorage.setItem('_liff_retry', '1'); location.reload(); return; }
-                    if (eMsg.indexOf('did not match') !== -1 || eMsg.indexOf('pattern') !== -1 || eName === 'SyntaxError') { showError('iOS 相容性問題，請關閉後重新開啟'); return; }
                     showError('LIFF 初始化失敗 [' + _step + ']\n' + eName + ': ' + eMsg); return;
                 }
             }
@@ -610,59 +332,25 @@
             if (!userId) { showError('請在 LINE App 中開啟此頁面'); return; }
             if (pictureUrl) { document.getElementById('avatar-wrap').innerHTML = `<img class="avatar" src="${pictureUrl}" alt="avatar">`; }
             document.getElementById('patient-name').textContent = displayName || '您好';
-            // 同步 LINE 名稱到客戶清單（背景執行，不影響載入）
+            // 同步 LINE 名稱
             if (userId && displayName && displayName !== '患者') {
-                fetch(API_URL + '?setLineName=' + encodeURIComponent(userId) + '&dName=' + encodeURIComponent(displayName)).catch(function(){});
+                fetch(GAS_URL + '?setLineName=' + encodeURIComponent(userId) + '&dName=' + encodeURIComponent(displayName)).catch(function(){});
             }
             document.getElementById('main').style.display = 'block';
-            const loadingEl = document.getElementById('loading');
+            loadingText.textContent = '載入身體組成…';
 
-            // 並行載入身體組成資料
             fetch(GAS_URL + '?uid=' + encodeURIComponent(userId))
                 .then(r => r.json())
-                .then(bcResult => { if (bcResult && bcResult.measurements) renderBcSection(bcResult); })
-                .catch(e => console.warn('身體組成載入失敗:', e));
-
-            // 快取秒開：先用上次的資料立即渲染
-            var cached = loadCache(userId);
-            if (cached) {
-                loadingEl.classList.add('fade-out');
-                setTimeout(() => { loadingEl.style.display = 'none'; }, 300);
-                if (cached.patient?.name) { document.getElementById('patient-name').textContent = cached.patient.name; }
-                var cRecs = cached.records || [];
-                var cRec = cached.patient?.doctorRecommendedProtein || cached.patient?.recommendedProtein || 0;
-                var cWt = cached.patient?.weight || 0;
-                renderProteinProgress(cRecs, cRec, cWt);
-                renderRecords(cRecs);
-                renderChart(cRecs, cRec);
-            } else {
-                loadingText.textContent = '載入飲食紀錄…';
-            }
-
-            // 背景拉新資料
-            _step = '載入紀錄';
-            fetchRecords(userId).then(function(data) {
-                saveCache(userId, data);
-                if (!cached) { loadingEl.classList.add('fade-out'); setTimeout(function(){ loadingEl.style.display = 'none'; }, 300); }
-                if (data.patient?.name) { document.getElementById('patient-name').textContent = data.patient.name; }
-                var recs = data.records || [];
-                var rec = data.patient?.doctorRecommendedProtein || data.patient?.recommendedProtein || 0;
-                var wt = data.patient?.weight || 0;
-                renderProteinProgress(recs, rec, wt);
-                _targetMealId = _targetMealId; // preserve for re-render
-                renderRecords(recs);
-                renderChart(recs, rec);
-            }).catch(function(err) {
-                console.warn('背景更新失敗:', err);
-                if (!cached) {
-                    document.getElementById('records-list').innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><p>載入失敗：' + escHtml(err.message) + '</p></div>';
-                }
-            });
+                .then(data => {
+                    document.getElementById('loading').classList.add('fade-out');
+                    setTimeout(() => { document.getElementById('loading').style.display = 'none'; }, 300);
+                    if (data && data.customer && data.customer.name) document.getElementById('patient-name').textContent = data.customer.name;
+                    if (data && data.measurements) renderBcSection(data);
+                })
+                .catch(e => showError('載入失敗：' + (e.message || e)));
         } catch (err) {
             console.error('Error [' + _step + ']:', err);
-            if (document.getElementById('main').style.display === 'block') {
-                document.getElementById('records-list').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>載入失敗：${escHtml(err.message)}</p></div>`;
-            } else { showError('載入失敗 [' + _step + ']：' + (err.message || err)); }
+            showError('載入失敗 [' + _step + ']：' + (err.message || err));
         }
     }
     init();
