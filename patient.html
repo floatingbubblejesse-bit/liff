@@ -144,7 +144,7 @@
             </div>
         </header>
         <div class="stats-row" id="stats-row">
-            <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日熱量 kcal</div></div>
+            <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">熱量赤字 kcal</div></div>
             <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日蛋白質 g</div></div>
             <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日餐數</div></div>
         </div>
@@ -292,6 +292,7 @@
         });
     }
 
+    var _patientTdee = 0; // 日耗熱量，由 API patient.tdee 設定
     function renderProteinProgress(records, recommended, weight) {
         const todayRecs = records.filter(r => isToday(r.date));
         const total = todayRecs.reduce((s, r) => s + (r.protein || 0), 0);
@@ -311,8 +312,12 @@
             document.getElementById('protein-status').textContent = '今日攝取：' + Math.round(total) + 'g';
         }
         const cal = todayRecs.reduce((s, r) => s + (r.calories || 0), 0);
+        /* 熱量赤字 = 餐食熱量 - 日耗熱量，負值代表赤字（好事） */
+        const deficit = _patientTdee > 0 ? Math.round(cal - _patientTdee) : null;
+        const deficitStr = deficit !== null ? String(deficit) : '—';
+        const deficitColor = deficit !== null && deficit < 0 ? 'color:#c0392b' : '';
         document.getElementById('stats-row').innerHTML = `
-            <div class="stat-card"><div class="stat-value">${Math.round(cal)}</div><div class="stat-label">今日熱量 kcal</div></div>
+            <div class="stat-card"><div class="stat-value" style="${deficitColor}">${deficitStr}</div><div class="stat-label">熱量赤字 kcal</div></div>
             <div class="stat-card"><div class="stat-value">${Math.round(total)}</div><div class="stat-label">今日蛋白質 g</div></div>
             <div class="stat-card"><div class="stat-value">${todayRecs.length}</div><div class="stat-label">今日餐數</div></div>
         `;
@@ -557,6 +562,7 @@
                 loadingEl.classList.add('fade-out');
                 setTimeout(() => { loadingEl.style.display = 'none'; }, 300);
                 if (cached.patient?.name) { document.getElementById('patient-name').textContent = cached.patient.name; }
+                if (cached.patient?.tdee) { _patientTdee = cached.patient.tdee; }
                 var cRecs = cached.records || [];
                 var cRec = cached.patient?.doctorRecommendedProtein || cached.patient?.recommendedProtein || 0;
                 var cWt = cached.patient?.weight || 0;
@@ -573,6 +579,7 @@
                 saveCache(userId, data);
                 if (!cached) { loadingEl.classList.add('fade-out'); setTimeout(function(){ loadingEl.style.display = 'none'; }, 300); }
                 if (data.patient?.name) { document.getElementById('patient-name').textContent = data.patient.name; }
+                if (data.patient?.tdee) { _patientTdee = data.patient.tdee; }
                 if (data.patient?.id) { fetchAndShowCarbDay(data.patient.id); }
                 var recs = data.records || [];
                 var rec = data.patient?.doctorRecommendedProtein || data.patient?.recommendedProtein || 0;
