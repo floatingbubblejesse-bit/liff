@@ -982,7 +982,7 @@
             if (_pvCarbDay === 'low')  { _ncLo = 0;       _ncHi = _pvW * 1; }
             if (_pvCarbDay === 'mid')  { _ncLo = _pvW * 1; _ncHi = _pvW * 2; }
             if (_pvCarbDay === 'high') { _ncLo = _pvW * 2; _ncHi = _pvW * 3; }
-            if (_pvNetCarbs < _ncLo) _pvNcColor = 'color:#ddd';
+            if (_pvNetCarbs < _ncLo) _pvNcColor = 'color:#8B8B8B';
             else if (_pvNetCarbs > _ncHi) _pvNcColor = 'color:#c0392b';
             else _pvNcColor = 'color:#27ae60';
         }
@@ -2858,6 +2858,7 @@
         if (cached && cached.schedule) {
             hwVisitRecords = [cached];
             if (hwLoaded) { hwRenderCalendar(); hwUpdateStats(); }
+            if (mealsLoaded && activeTab === 'meals') renderMealsTab();
         }
         fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn))
             .then(function(r){ return r.json(); })
@@ -2873,6 +2874,8 @@
                     pvSaveCache('pv_sch', patientSn, record);
                     hwVisitRecords = [record];
                     if (hwLoaded) { hwRenderCalendar(); hwUpdateStats(); }
+                    // 排程載入後，重新渲染餐食 tab 以更新淨碳水範圍與顏色
+                    if (mealsLoaded && activeTab === 'meals') renderMealsTab();
                 }
             })
             .catch(function(){});
