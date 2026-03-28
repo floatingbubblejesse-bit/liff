@@ -785,17 +785,17 @@
         btn.textContent = '儲存中…';
         btn.disabled = true;
 
-        var p = dateStr.split('-');
-        var dateObj = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
-        var dayType = getDayType(dateObj);
         var wt = (weightData[dateStr] && weightData[dateStr].weight) ? weightData[dateStr].weight : 0;
+
+        // 只有患者主動切換過碳日才送 dayType，避免覆蓋醫師排程
+        var overrideDayType = dayTypeOverrides[dateStr] || '';
 
         var saveUrl = MEALS_GAS
           + '?saveHomeWeight=true'
           + '&patientSn=' + encodeURIComponent(patientSn)
           + '&date=' + encodeURIComponent(dateStr)
           + '&weight=' + encodeURIComponent(wt)
-          + '&dayType=' + encodeURIComponent(dayType);
+          + (overrideDayType ? '&dayType=' + encodeURIComponent(overrideDayType) : '');
 
         clearIdleTimer();
         fetch(saveUrl, { mode: 'no-cors', redirect: 'follow' })
@@ -820,14 +820,15 @@
         });
     }
 
-    // ====== Cycle carb day type ======
+    // ====== Cycle carb day type (只在 high/mid/low/fast 之間切換，跳過 none) ======
+    var CYCLE_KEYS = ['high','mid','low','fast'];
     function cycleDayType(dateStr) {
         var p = dateStr.split('-');
         var dateObj = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
         var current = getDayType(dateObj);
-        var idx = CYCLE_OPTS.findIndex(function(o){ return o.key === current; });
-        idx = (idx + 1) % CYCLE_OPTS.length;
-        dayTypeOverrides[dateStr] = CYCLE_OPTS[idx].key;
+        var ci = CYCLE_KEYS.indexOf(current);
+        var next = CYCLE_KEYS[(ci + 1) % CYCLE_KEYS.length];
+        dayTypeOverrides[dateStr] = next;
         dirtyRows[dateStr] = true;
         _actionTime = Date.now();
         setEditingClass(true);
