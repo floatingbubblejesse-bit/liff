@@ -940,7 +940,7 @@
         var todayRecs = recs.filter(function(r){ return isMealToday(r.date); });
         var todayProtein = todayRecs.reduce(function(s,r){ return s + (r.protein||0); },0);
         var todayCal = todayRecs.reduce(function(s,r){ return s + (r.calories||0); },0);
-        var excess = weight * 2;
+        var excess = Math.min(weight * 2, 140);
 
         html += '<div class="meal-protein-card">';
         // 碳日標籤：優先從居家體重紀錄取（含患者覆寫），fallback 排程計算
@@ -952,8 +952,12 @@
         var _pvProteinTitle = _pvCarbLabel ? '今日（' + _pvCarbLabel + '）蛋白質進度' : '今日蛋白質進度';
         html += '<div class="meal-protein-header"><span class="meal-protein-label">' + _pvProteinTitle + '</span>';
         html += '<span class="meal-protein-value">' + Math.round(todayProtein) + 'g' + (recProtein ? ' / ' + Math.round(recProtein) + 'g' : '') + '</span></div>';
-        var pct = (recProtein > 0 && excess > 0) ? Math.min((todayProtein / excess) * 100, 100) : 0;
-        html += '<div class="mprog-bg"><div class="mprog-fill" style="width:' + pct + '%"></div></div>';
+        var pct = recProtein > 0 ? Math.min((todayProtein / recProtein) * 100, 100) : 0;
+        var _proteinOverLimit = excess > 0 && todayProtein > excess;
+        if (_proteinOverLimit) pct = 100;
+        var _fillStyle = 'width:' + pct + '%';
+        if (_proteinOverLimit) _fillStyle += ';background:#C4787E';
+        html += '<div class="mprog-bg"><div class="mprog-fill" style="' + _fillStyle + '"></div></div>';
         var statusMsg = '';
         if (recProtein > 0) {
             if (todayProtein >= excess && excess > 0) statusMsg = '🚨 蛋白質過量喔！今日已攝取 ' + Math.round(todayProtein) + 'g，超過上限 ' + Math.round(excess) + 'g';
