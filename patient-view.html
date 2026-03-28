@@ -943,8 +943,10 @@
         var excess = weight * 2;
 
         html += '<div class="meal-protein-card">';
-        // 碳日標籤
-        var _pvCarbDay = hwGetDayType(new Date());
+        // 碳日標籤：優先從居家體重紀錄取（含患者覆寫），fallback 排程計算
+        var _pvTodayStr = hwFormatDate(new Date());
+        var _pvSavedDayType = (hwWeightData[_pvTodayStr] && hwWeightData[_pvTodayStr].dayType) ? hwWeightData[_pvTodayStr].dayType : '';
+        var _pvCarbDay = _pvSavedDayType || hwGetDayType(new Date());
         var _pvCarbLabels = { high: '高碳日', mid: '中碳日', low: '低碳日', fast: '斷食日' };
         var _pvCarbLabel = _pvCarbLabels[_pvCarbDay] || '';
         var _pvProteinTitle = _pvCarbLabel ? '今日（' + _pvCarbLabel + '）蛋白質進度' : '今日蛋白質進度';
@@ -996,15 +998,16 @@
         }
 
         html += '<div class="meal-stats-row">';
-        html += '<div class="meal-stat-card" onclick="this.querySelector(\'.meal-stat-detail\').classList.toggle(\'show\')">'
+        html += '<div class="meal-stat-card" onclick="var d=this.querySelector(\'.meal-stat-detail\');if(d)d.classList.toggle(\'show\')">'
               + '<div class="meal-stat-value" style="' + _pvDeficitColor + '">' + _pvDeficitStr + '</div>'
               + '<div class="meal-stat-label">熱量赤字 kcal</div>'
               + (_pvDeficitFormula ? '<div class="meal-stat-detail">' + _pvDeficitFormula.replace(' / ','') + '</div>' : '')
               + '</div>';
-        html += '<div class="meal-stat-card" onclick="this.querySelector(\'.meal-stat-detail\').classList.toggle(\'show\')">'
+        var _pvNcDetailText = _pvNcRange ? '範圍 ' + _pvNcRange.replace(' / ','') : '無碳日排程';
+        html += '<div class="meal-stat-card" onclick="var d=this.querySelector(\'.meal-stat-detail\');if(d)d.classList.toggle(\'show\')">'
               + '<div class="meal-stat-value" style="' + _pvNcColor + '">' + Math.round(_pvNetCarbs) + '</div>'
               + '<div class="meal-stat-label">淨碳水 g</div>'
-              + (_pvNcRange ? '<div class="meal-stat-detail">範圍 ' + _pvNcRange.replace(' / ','') + '</div>' : '')
+              + '<div class="meal-stat-detail">' + _pvNcDetailText + '</div>'
               + '</div>';
         html += '<div class="meal-stat-card"><div class="meal-stat-value">' + todayRecs.length + '</div><div class="meal-stat-label">今日張數</div></div>';
         html += '</div>';
