@@ -320,15 +320,18 @@
     function renderProteinProgress(records, recommended, weight) {
         const todayRecs = records.filter(r => isToday(r.date));
         const total = todayRecs.reduce((s, r) => s + (r.protein || 0), 0);
-        const excess = weight * 2;
+        const excess = Math.min(weight * 2, 140);
         const rec = recommended || 0;
         document.getElementById('protein-text').textContent = Math.round(total) + 'g' + (rec ? ' / ' + Math.round(rec) + 'g' : '');
         if (rec > 0) {
-            const pct = Math.min((total / excess) * 100, 100);
-            document.getElementById('protein-bar').style.width = pct + '%';
+            const overLimit = excess > 0 && total > excess;
+            const pct = overLimit ? 100 : Math.min((total / rec) * 100, 100);
+            const bar = document.getElementById('protein-bar');
+            bar.style.width = pct + '%';
+            bar.style.background = overLimit ? '#C4787E' : 'white';
             let msg = '';
-            if (total >= excess && excess > 0) msg = '🚨 蛋白質過量喔！今日已攝取 ' + Math.round(total) + 'g，超過上限 ' + Math.round(excess) + 'g';
-            else if (total >= rec) msg = '🎉 恭喜達標！今日蛋白質共 ' + Math.round(total) + 'g，目標 ' + Math.round(rec) + 'g）';
+            if (overLimit) msg = '🚨 蛋白質超標！今日已攝取 ' + Math.round(total) + 'g，上限 ' + Math.round(excess) + 'g';
+            else if (total >= rec) msg = '🎉 恭喜達標！今日蛋白質共 ' + Math.round(total) + 'g';
             else msg = '💪 距離目標還有 ' + Math.round(rec - total) + 'g，加油！';
             document.getElementById('protein-status').textContent = msg;
         } else {
