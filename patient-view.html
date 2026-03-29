@@ -157,6 +157,11 @@
         .day-info{flex:1}
         .day-date-label{font-size:14px;font-weight:700;color:var(--text)}
         .day-summary{font-size:11px;color:var(--muted);margin-top:2px}
+        .day-meta{display:flex;align-items:center;gap:6px;margin-top:3px}
+        .day-weight-tag{font-size:10px;color:#7B8FA1;font-weight:600}
+        .day-carb-tag{font-size:10px;font-weight:600;padding:1px 6px;border-radius:6px;display:inline-block}
+        .day-carb-tag.t-high{background:#F8D7DA;color:#A0626B}.day-carb-tag.t-mid{background:#FFF3CD;color:#B8926A}
+        .day-carb-tag.t-low{background:#D4EDDA;color:#6B8F71}.day-carb-tag.t-fast{background:#E2E3E5;color:#4A4A4A}
         .day-protein-badge{font-size:13px;font-weight:700;color:#A0626B;background:#F5EDE9;border-radius:99px;padding:3px 10px;flex-shrink:0}
         .day-arrow{font-size:11px;color:var(--muted);transition:transform 0.25s ease;flex-shrink:0}
         .day-accordion.open .day-arrow{transform:rotate(180deg)}
@@ -1041,6 +1046,14 @@
         // 3. 蛋白質趨勢圖
         html += '<div class="meal-chart-card"><div style="font-size:12px;font-weight:700;color:#8B8B8B;margin-bottom:8px">蛋白質趨勢</div><canvas id="mealProteinChart" height="160"></canvas></div>';
 
+        // 3.5 居家體重排程區塊（與居家體重 tab 相同）
+        html += '<div id="mealHwScheduleBar" style="text-align:center;font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;display:none"></div>';
+        html += '<div class="hw-stats-row">';
+        html += '<div class="hw-stat-item" onclick="hwToggleMinMax();mealHwSyncStats()"><div class="hw-stat-value" id="mealHwStatLeft">-</div><div class="hw-stat-label" id="mealHwStatLeftLabel">最低體重</div></div>';
+        html += '<div class="hw-stat-item" onclick="hwCycleWeekStat();mealHwSyncStats()"><div class="hw-stat-value" id="mealHwStatMid">-</div><div class="hw-stat-label" id="mealHwStatMidLabel">平均一週</div></div>';
+        html += '<div class="hw-stat-item" onclick="hwToggleDiffMode();mealHwSyncStats()"><div class="hw-stat-value" id="mealHwStatRight">-</div><div class="hw-stat-label" id="mealHwStatRightLabel">期間變化</div></div>';
+        html += '</div>';
+
         // 4. 每日紀錄
         html += '<div style="font-size:12px;font-weight:700;color:#8B8B8B;margin-bottom:4px;letter-spacing:.5px">每日紀錄</div>';
         html += buildDayAccordions(recs);
@@ -1049,6 +1062,35 @@
 
         // 渲染趨勢圖
         setTimeout(function(){ renderMealChart(recs, recProtein); }, 50);
+        // 同步居家體重統計到餐食紀錄
+        setTimeout(function(){ mealHwSyncStats(); }, 100);
+    }
+
+    function mealHwSyncStats() {
+        // 從居家體重 tab 的元素複製數值到餐食紀錄 tab 的對應元素
+        var pairs = [
+            ['hwStatLeft', 'mealHwStatLeft'],
+            ['hwStatLeftLabel', 'mealHwStatLeftLabel'],
+            ['hwStatMid', 'mealHwStatMid'],
+            ['hwStatMidLabel', 'mealHwStatMidLabel'],
+            ['hwStatRight', 'mealHwStatRight'],
+            ['hwStatRightLabel', 'mealHwStatRightLabel']
+        ];
+        pairs.forEach(function(p) {
+            var src = document.getElementById(p[0]);
+            var dst = document.getElementById(p[1]);
+            if (src && dst) {
+                dst.textContent = src.textContent;
+                if (src.style.color) dst.style.color = src.style.color;
+            }
+        });
+        // 同步排程列
+        var srcBar = document.getElementById('hwScheduleBar');
+        var dstBar = document.getElementById('mealHwScheduleBar');
+        if (srcBar && dstBar) {
+            dstBar.innerHTML = srcBar.innerHTML;
+            dstBar.style.display = srcBar.style.display;
+        }
     }
 
     function isMealToday(dateStr) {
@@ -1192,10 +1234,39 @@
                     + '</div>';
             });
 
+            // 居家體重 & 碳日 & 變化
+            var _hwData = hwWeightData[dateKey];
+            var _hwWeight = (_hwData && _hwData.weight) ? _hwData.weight : null;
+            var _dtParts = dateKey.split('-');
+            var _dtObj = new Date(parseInt(_dtParts[0]), parseInt(_dtParts[1]) - 1, parseInt(_dtParts[2]));
+            var _dayType = (_hwData && _hwData.dayType) ? _hwData.dayType : hwGetDayType(_dtObj);
+            var _carbLabels = { high: '高碳', mid: '中碳', low: '低碳', fast: '斷食' };
+            // 計算體重變化（vs 前一天有紀錄的體重）
+            var _hwDiff = null;
+            if (_hwWeight) {
+                var _hwAllKeys = Object.keys(hwWeightData).filter(function(k){ return hwWeightData[k].weight && k < dateKey; }).sort();
+                if (_hwAllKeys.length > 0) {
+                    var _prevW = hwWeightData[_hwAllKeys[_hwAllKeys.length - 1]].weight;
+                    _hwDiff = _hwWeight - _prevW;
+                }
+            }
+            var _metaHtml = '';
+            if (_hwWeight || _dayType) {
+                _metaHtml = '<div class="day-meta">';
+                if (_dayType && _carbLabels[_dayType]) _metaHtml += '<span class="day-carb-tag t-' + _dayType + '">' + _carbLabels[_dayType] + '</span>';
+                if (_hwWeight) _metaHtml += '<span class="day-weight-tag">' + _hwWeight + 'kg</span>';
+                if (_hwDiff !== null) {
+                    var _dSign = _hwDiff > 0 ? '+' : '';
+                    var _dColor = _hwDiff < 0 ? '#6B8F71' : (_hwDiff > 0 ? '#A0626B' : '#8B8B8B');
+                    _metaHtml += '<span class="day-weight-tag" style="color:' + _dColor + '">' + _dSign + _hwDiff.toFixed(1) + '</span>';
+                }
+                _metaHtml += '</div>';
+            }
+
             html += '<div class="day-accordion" id="day-' + di + '">'
                 + '<div class="day-header" onclick="toggleDay(' + di + ')">'
                 + '<div class="day-icon">📅</div>'
-                + '<div class="day-info"><div class="day-date-label">' + dayLabel + '</div><div class="day-summary">' + summary + '</div></div>'
+                + '<div class="day-info"><div class="day-date-label">' + dayLabel + '</div><div class="day-summary">' + summary + '</div>' + _metaHtml + '</div>'
                 + '<div class="day-protein-badge">' + Math.round(totalProtein) + 'g</div>'
                 + '<span class="day-arrow">▼</span>'
                 + '</div>'
@@ -3282,6 +3353,8 @@
             elR.textContent = '-';
             elR.style.color = '';
         }
+        // 同步到餐食紀錄 tab
+        if (typeof mealHwSyncStats === 'function') mealHwSyncStats();
     }
 
     // ── 體重趨勢圖表（含縮放、滑動、星期標籤） ──
