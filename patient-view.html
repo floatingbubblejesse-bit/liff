@@ -987,36 +987,37 @@
         html += '<div class="hw-stat-item" onclick="hwToggleDiffMode();mealHwSyncStats()"><div class="hw-stat-value" id="mealHwStatRight">-</div><div class="hw-stat-label" id="mealHwStatRightLabel">期間變化</div></div>';
         html += '</div>';
 
-        // 4. 每日紀錄（直接顯示表格，不包收折標題）
+        // 4. 每日紀錄（欄位標頭兼收折按鈕）
         html += '<div class="meal-section-wrap">';
         html += '<div class="meal-tbl-wrap">';
-        html += '<div class="meal-tbl-head">'
-            + '<div class="day-col day-col-date">日期 <span class="meal-tbl-today-btn" onclick="mealTblScrollToToday()">↻</span></div>'
+        html += '<div class="meal-tbl-head" onclick="mealToggleSection(\'mealTblBody\')" style="cursor:pointer">'
+            + '<div class="day-col day-col-date">日期 <span class="meal-tbl-today-btn" onclick="event.stopPropagation();mealTblScrollToToday()">↻</span></div>'
             + '<div class="day-col day-col-carb">碳日</div>'
             + '<div class="day-col day-col-diff">變化</div>'
             + '<div class="day-col day-col-wt">體重</div>'
             + '<div class="day-col day-col-cal">熱量</div>'
             + '<div class="day-col day-col-protein">蛋白質</div>'
             + '<div class="day-col day-col-count">張</div>'
+            + '<span class="meal-section-arrow" id="mealTblBodyArrow">▼</span>'
             + '</div>';
-        html += '<div class="meal-tbl-scroll" id="mealTblScroll">';
+        html += '<div id="mealTblBody"><div class="meal-tbl-scroll" id="mealTblScroll">';
         html += buildDayAccordions(recs);
-        html += '</div></div>';
+        html += '</div></div></div>';
         html += '</div>';
 
         // 5. 體重趨勢圖（可收折）
         html += '<div class="meal-section-wrap">';
         html += '<div class="meal-section-head" onclick="mealToggleSection(\'mealWeightBody\')">'
-            + '<span>📈 體重趨勢</span><span class="meal-section-arrow" id="mealWeightBodyArrow">▶</span></div>';
-        html += '<div class="meal-section-body" id="mealWeightBody" style="display:none">';
+            + '<span>📈 體重趨勢</span><span class="meal-section-arrow" id="mealWeightBodyArrow">▼</span></div>';
+        html += '<div class="meal-section-body" id="mealWeightBody">';
         html += '<div class="card" style="margin:0;box-shadow:none"><div class="hw-chart-wrap" id="mealHwChartWrap"><div class="hw-chart-inner" id="mealHwChartInner"><canvas id="mealWeightChart"></canvas></div></div></div>';
         html += '</div></div>';
 
         // 6. 蛋白質趨勢圖（可收折）
         html += '<div class="meal-section-wrap">';
         html += '<div class="meal-section-head" onclick="mealToggleSection(\'mealProteinBody\')">'
-            + '<span>蛋白質趨勢</span><span class="meal-section-arrow" id="mealProteinBodyArrow">▶</span></div>';
-        html += '<div class="meal-section-body" id="mealProteinBody" style="display:none">';
+            + '<span>蛋白質趨勢</span><span class="meal-section-arrow" id="mealProteinBodyArrow">▼</span></div>';
+        html += '<div class="meal-section-body" id="mealProteinBody">';
         html += '<div class="meal-chart-card" style="margin:0;box-shadow:none"><canvas id="mealProteinChart" height="160"></canvas></div>';
         html += '</div></div>';
 
