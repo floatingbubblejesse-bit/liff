@@ -155,7 +155,7 @@
         .meal-tbl-head{display:flex;align-items:center;padding:6px 8px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2;position:relative}
         .meal-tbl-head .day-col{font-size:12px;font-weight:700;color:var(--muted)}
         .meal-tbl-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
-        .meal-tbl-today-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;justify-content:center;padding:2px 10px;border-radius:10px;background:#C0CDD9;color:#fff;font-size:11px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;gap:3px}
+        .meal-tbl-today-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#C0CDD9;color:#fff;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-left:4px;flex-shrink:0}
         .meal-tbl-today-btn:active{opacity:0.5}
         .day-accordion{border-bottom:1px solid #F0EDE8}
         .day-accordion:last-child{border-bottom:none}
@@ -982,14 +982,13 @@
         // 4. 每日紀錄（連續日期表格，類似體重紀錄表）
         html += '<div class="meal-tbl-wrap">';
         html += '<div class="meal-tbl-head">'
-            + '<div class="day-col day-col-date">日期</div>'
+            + '<div class="day-col day-col-date">日期 <span class="meal-tbl-today-btn" onclick="mealTblScrollToToday()">↻</span></div>'
             + '<div class="day-col day-col-carb">碳日</div>'
             + '<div class="day-col day-col-diff">變化</div>'
             + '<div class="day-col day-col-wt">體重</div>'
             + '<div class="day-col day-col-cal">熱量</div>'
             + '<div class="day-col day-col-protein">蛋白質</div>'
             + '<div class="day-col day-col-count">張</div>'
-            + '<span class="meal-tbl-today-btn" onclick="mealTblScrollToToday()">↻ 今天</span>'
             + '</div>';
         html += '<div class="meal-tbl-scroll" id="mealTblScroll">';
         html += buildDayAccordions(recs);
