@@ -110,10 +110,10 @@
 
         /* ====== 居家體重 stats row ====== */
         .hw-stats-row{display:flex;gap:6px;margin-bottom:14px}
-        .hw-stat-item{flex:1;text-align:center;background:white;border-radius:10px;padding:10px 4px;box-shadow:0 1px 4px rgba(0,0,0,0.07);cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+        .hw-stat-item{flex:1;display:flex;align-items:center;justify-content:space-between;background:white;border-radius:10px;padding:6px 10px;box-shadow:0 1px 4px rgba(0,0,0,0.07);cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;min-height:0}
         .hw-stat-item:active{background:#FDFBF7}
-        .hw-stat-value{font-size:17px;font-weight:700;color:var(--red)}
-        .hw-stat-label{font-size:10px;color:var(--muted);margin-top:2px}
+        .hw-stat-value{font-size:20px;font-weight:700;color:var(--red);white-space:nowrap}
+        .hw-stat-label{font-size:11px;color:var(--muted);white-space:nowrap}
 
         /* ====== 居家體重 tab ====== */
         .hw-cal-toggle{font-size:13px;color:var(--muted);cursor:pointer;transition:transform 0.3s;display:inline-block;-webkit-tap-highlight-color:transparent}
@@ -965,11 +965,11 @@
 
         // 上方固定區：排程 + 統計
         html += '<div class="meal-fixed-top">';
-        html += '<div id="mealHwScheduleBar" style="text-align:center;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;display:none"></div>';
-        html += '<div class="hw-stats-row" style="margin-bottom:6px">';
-        html += '<div class="hw-stat-item" onclick="hwToggleMinMax();mealHwSyncStats()"><div class="hw-stat-value" id="mealHwStatLeft">-</div><div class="hw-stat-label" id="mealHwStatLeftLabel">最低體重</div></div>';
-        html += '<div class="hw-stat-item" onclick="hwCycleWeekStat();mealHwSyncStats()"><div class="hw-stat-value" id="mealHwStatMid">-</div><div class="hw-stat-label" id="mealHwStatMidLabel">平均一週</div></div>';
-        html += '<div class="hw-stat-item" onclick="hwToggleDiffMode();mealHwSyncStats()"><div class="hw-stat-value" id="mealHwStatRight">-</div><div class="hw-stat-label" id="mealHwStatRightLabel">期間變化</div></div>';
+        html += '<div id="mealHwScheduleBar" style="text-align:center;font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px;display:none"></div>';
+        html += '<div class="hw-stats-row" style="margin-bottom:4px">';
+        html += '<div class="hw-stat-item" onclick="hwToggleMinMax()"><div class="hw-stat-label" id="mealHwStatLeftLabel">最低體重</div><div class="hw-stat-value" id="mealHwStatLeft">-</div></div>';
+        html += '<div class="hw-stat-item" onclick="hwCycleWeekStat()"><div class="hw-stat-label" id="mealHwStatMidLabel">平均一週</div><div class="hw-stat-value" id="mealHwStatMid">-</div></div>';
+        html += '<div class="hw-stat-item" onclick="hwToggleDiffMode()"><div class="hw-stat-label" id="mealHwStatRightLabel">期間變化</div><div class="hw-stat-value" id="mealHwStatRight">-</div></div>';
         html += '</div>';
         html += '</div>';
 
@@ -1011,8 +1011,8 @@
         // 渲染體重趨勢圖（預設顯示）
         setTimeout(function(){ mealRenderWeightChart(); }, 50);
         // 蛋白質圖在切換時才渲染（hidden canvas 無法正確渲染）
-        // 同步居家體重統計
-        setTimeout(function(){ mealHwSyncStats(); }, 100);
+        // 渲染完 DOM 後重新寫入統計（排程列 + 三格數值）
+        setTimeout(function(){ if (hwLoaded) hwUpdateStats(); }, 100);
     }
 
     // 收折重渲染用全域變數
