@@ -151,18 +151,23 @@
         .meal-chart-card{background:white;border-radius:12px;padding:14px 12px 10px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
         .meal-chart-card canvas{display:block;width:100%!important}
         .day-accordion{background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
-        .day-header{display:flex;align-items:center;padding:13px 14px;cursor:pointer;user-select:none;gap:10px;-webkit-tap-highlight-color:transparent}
+        .day-header{display:flex;align-items:center;padding:10px 10px;cursor:pointer;user-select:none;gap:0;-webkit-tap-highlight-color:transparent}
         .day-header:active{background:#F5F3EF}
-        .day-icon{font-size:18px;flex-shrink:0}
-        .day-info{flex:1}
-        .day-date-label{font-size:14px;font-weight:700;color:var(--text)}
-        .day-summary{font-size:11px;color:var(--muted);margin-top:2px}
-        .day-meta{display:flex;align-items:center;gap:6px;margin-top:3px}
-        .day-weight-tag{font-size:10px;color:#7B8FA1;font-weight:600}
-        .day-carb-tag{font-size:10px;font-weight:600;padding:1px 6px;border-radius:6px;display:inline-block}
+        .day-col{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+        .day-col-date{flex:0 0 auto;min-width:72px;text-align:left;padding-left:4px}
+        .day-col-carb{flex:0 0 38px}
+        .day-col-wt{flex:0 0 52px}
+        .day-col-diff{flex:0 0 44px}
+        .day-col-cal{flex:1 1 auto}
+        .day-col-protein{flex:0 0 44px}
+        .day-col-count{flex:0 0 32px}
+        .day-val{font-size:15px;font-weight:700;color:var(--text);line-height:1.2}
+        .day-lbl{font-size:8px;color:var(--muted);margin-top:1px}
+        .day-date-main{font-size:14px;font-weight:700;color:var(--text)}
+        .day-date-sub{font-size:10px;color:var(--muted)}
+        .day-carb-tag{font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;display:inline-block}
         .day-carb-tag.t-high{background:#F8D7DA;color:#A0626B}.day-carb-tag.t-mid{background:#FFF3CD;color:#B8926A}
         .day-carb-tag.t-low{background:#D4EDDA;color:#6B8F71}.day-carb-tag.t-fast{background:#E2E3E5;color:#4A4A4A}
-        .day-protein-badge{font-size:13px;font-weight:700;color:#A0626B;background:#F5EDE9;border-radius:99px;padding:3px 10px;flex-shrink:0}
         .day-arrow{font-size:11px;color:var(--muted);transition:transform 0.25s ease;flex-shrink:0}
         .day-accordion.open .day-arrow{transform:rotate(180deg)}
         .day-body{display:none;border-top:1px solid var(--border);padding:8px 10px 10px;background:#FDFBF7}
@@ -1056,6 +1061,16 @@
 
         // 4. 每日紀錄
         html += '<div style="font-size:12px;font-weight:700;color:#8B8B8B;margin-bottom:4px;letter-spacing:.5px">每日紀錄</div>';
+        html += '<div class="day-header" style="padding:4px 10px;cursor:default;background:none;margin-bottom:2px">'
+            + '<div class="day-col day-col-date" style="text-align:left"><span class="day-lbl">日期</span></div>'
+            + '<div class="day-col day-col-carb"><span class="day-lbl">碳日</span></div>'
+            + '<div class="day-col day-col-wt"><span class="day-lbl">體重</span></div>'
+            + '<div class="day-col day-col-diff"><span class="day-lbl">變化</span></div>'
+            + '<div class="day-col day-col-cal"><span class="day-lbl">熱量</span></div>'
+            + '<div class="day-col day-col-protein"><span class="day-lbl">蛋白質</span></div>'
+            + '<div class="day-col day-col-count"><span class="day-lbl">張</span></div>'
+            + '<span style="width:11px;flex-shrink:0"></span>'
+            + '</div>';
         html += buildDayAccordions(recs);
 
         el.innerHTML = html;
@@ -1240,7 +1255,7 @@
             var _dtParts = dateKey.split('-');
             var _dtObj = new Date(parseInt(_dtParts[0]), parseInt(_dtParts[1]) - 1, parseInt(_dtParts[2]));
             var _dayType = (_hwData && _hwData.dayType) ? _hwData.dayType : hwGetDayType(_dtObj);
-            var _carbLabels = { high: '高碳', mid: '中碳', low: '低碳', fast: '斷食' };
+            var _carbLabels = { high: '高', mid: '中', low: '低', fast: '斷' };
             // 計算體重變化（vs 前一天有紀錄的體重）
             var _hwDiff = null;
             if (_hwWeight) {
@@ -1250,24 +1265,36 @@
                     _hwDiff = _hwWeight - _prevW;
                 }
             }
-            var _metaHtml = '';
-            if (_hwWeight || _dayType) {
-                _metaHtml = '<div class="day-meta">';
-                if (_dayType && _carbLabels[_dayType]) _metaHtml += '<span class="day-carb-tag t-' + _dayType + '">' + _carbLabels[_dayType] + '</span>';
-                if (_hwWeight) _metaHtml += '<span class="day-weight-tag">' + _hwWeight + 'kg</span>';
-                if (_hwDiff !== null) {
-                    var _dSign = _hwDiff > 0 ? '+' : '';
-                    var _dColor = _hwDiff < 0 ? '#6B8F71' : (_hwDiff > 0 ? '#A0626B' : '#8B8B8B');
-                    _metaHtml += '<span class="day-weight-tag" style="color:' + _dColor + '">' + _dSign + _hwDiff.toFixed(1) + '</span>';
-                }
-                _metaHtml += '</div>';
+            // 日期拆分
+            var _dMon = parseInt(_dtParts[1]);
+            var _dDay = parseInt(_dtParts[2]);
+            var _dWeek = ['日','一','二','三','四','五','六'][_dtObj.getDay()];
+
+            // 碳日欄
+            var _carbHtml = (_dayType && _carbLabels[_dayType])
+                ? '<span class="day-carb-tag t-' + _dayType + '">' + _carbLabels[_dayType] + '</span>'
+                : '<span style="color:#ccc">-</span>';
+            // 體重欄
+            var _wtHtml = _hwWeight ? '<span class="day-val">' + _hwWeight + '</span>' : '<span style="color:#ccc">-</span>';
+            // 變化欄
+            var _diffHtml = '';
+            if (_hwDiff !== null) {
+                var _dSign = _hwDiff > 0 ? '+' : '';
+                var _dColor = _hwDiff < 0 ? '#6B8F71' : (_hwDiff > 0 ? '#A0626B' : '#8B8B8B');
+                _diffHtml = '<span class="day-val" style="color:' + _dColor + '">' + _dSign + _hwDiff.toFixed(1) + '</span>';
+            } else {
+                _diffHtml = '<span style="color:#ccc">-</span>';
             }
 
             html += '<div class="day-accordion" id="day-' + di + '">'
                 + '<div class="day-header" onclick="toggleDay(' + di + ')">'
-                + '<div class="day-icon">📅</div>'
-                + '<div class="day-info"><div class="day-date-label">' + dayLabel + '</div><div class="day-summary">' + summary + '</div>' + _metaHtml + '</div>'
-                + '<div class="day-protein-badge">' + Math.round(totalProtein) + 'g</div>'
+                + '<div class="day-col day-col-date"><div class="day-date-main">' + _dMon + '/' + _dDay + '<span style="font-size:11px;font-weight:400;color:var(--muted)">(' + _dWeek + ')</span></div></div>'
+                + '<div class="day-col day-col-carb">' + _carbHtml + '</div>'
+                + '<div class="day-col day-col-wt">' + _wtHtml + '<div class="day-lbl">kg</div></div>'
+                + '<div class="day-col day-col-diff">' + _diffHtml + '</div>'
+                + '<div class="day-col day-col-cal"><span class="day-val">' + Math.round(totalCal) + '</span><div class="day-lbl">kcal</div></div>'
+                + '<div class="day-col day-col-protein"><span class="day-val" style="color:#A0626B">' + Math.round(totalProtein) + '</span><div class="day-lbl">g</div></div>'
+                + '<div class="day-col day-col-count"><span class="day-val" style="font-size:13px;color:var(--muted)">' + dayRecs.length + '</span></div>'
                 + '<span class="day-arrow">▼</span>'
                 + '</div>'
                 + '<div class="day-body">' + mealsHtml + '</div>'
