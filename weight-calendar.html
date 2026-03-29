@@ -811,7 +811,7 @@
         btn.textContent = '儲存中…';
         btn.disabled = true;
 
-        var wt = (weightData[dateStr] && weightData[dateStr].weight) ? weightData[dateStr].weight : 0;
+        var wt = (weightData[dateStr] && weightData[dateStr].weight) ? weightData[dateStr].weight : '';
 
         // 只有患者主動切換過碳日才送 dayType，避免覆蓋醫師排程
         var overrideDayType = dayTypeOverrides[dateStr] || '';
