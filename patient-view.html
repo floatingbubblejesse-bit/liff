@@ -1553,13 +1553,13 @@
             var _dtObj = new Date(parseInt(_dtParts[0]), parseInt(_dtParts[1]) - 1, parseInt(_dtParts[2]));
             var _dayType = (_hwData && _hwData.dayType) ? _hwData.dayType : hwGetDayType(_dtObj);
 
-            // 變化
+            // 變化（顯示在前一天：下一個有體重日 - 當天體重）
             var _hwDiff = null;
             if (_hwWeight) {
-                var _hwAllKeys = Object.keys(hwWeightData).filter(function(k){ return hwWeightData[k].weight && k < dateKey; }).sort();
-                if (_hwAllKeys.length > 0) {
-                    var _prevW = hwWeightData[_hwAllKeys[_hwAllKeys.length - 1]].weight;
-                    _hwDiff = _hwWeight - _prevW;
+                var _hwNextKeys = Object.keys(hwWeightData).filter(function(k){ return hwWeightData[k].weight && k > dateKey; }).sort();
+                if (_hwNextKeys.length > 0) {
+                    var _nextW = hwWeightData[_hwNextKeys[0]].weight;
+                    _hwDiff = _nextW - _hwWeight;
                 }
             }
 
