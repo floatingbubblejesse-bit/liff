@@ -1010,7 +1010,7 @@
             + '<div class="day-col day-col-diff">變化</div>'
             + '<div class="day-col day-col-wt">體重</div>'
             + '<div class="day-col day-col-protein">蛋白質</div>'
-            + '<div class="day-col day-col-cal">赤字</div>'
+            + '<div class="day-col day-col-cal">熱量</div>'
             + '<div class="day-col day-col-nc">淨碳水</div>'
             + '<div class="day-col day-col-count">照片</div>'
             + '</div>';
@@ -1652,43 +1652,25 @@
             var _appTdee = _appMeasure ? _appMeasure.tdee : 0;
             var _appWeight = _appMeasure ? _appMeasure.weight : 0;
 
-            // 蛋白質（實際 - 該日期適用的目標）
-            var _proHtml = '<span style="color:#ccc">-</span>';
-            if (hasRec && _appProtein && _appProtein > 0) {
-                var _proDiff = Math.round(totalProtein) - Math.round(_appProtein);
-                var _proSign = _proDiff > 0 ? '+' : '';
-                var _proColor = _proDiff >= 0 ? '#6B8F71' : '#A0626B';
-                _proHtml = '<span class="day-val" style="color:' + _proColor + '">' + _proSign + _proDiff + '</span>';
-            } else if (hasRec) {
-                _proHtml = '<span class="day-val" style="color:#A0626B">' + Math.round(totalProtein) + '</span>';
-            }
-            // 熱量赤字（該日期適用的 TDEE - 實際攝取）
-            var _calHtml = '<span style="color:#ccc">-</span>';
-            if (hasRec && _appTdee > 0) {
-                var _deficit = _appTdee - Math.round(totalCal);
-                var _defSign = _deficit > 0 ? '+' : '';
-                var _defColor = _deficit > 0 ? '#6B8F71' : '#A0626B';
-                _calHtml = '<span class="day-val" style="color:' + _defColor + '">' + _defSign + _deficit + '</span>';
-            } else if (hasRec) {
-                _calHtml = '<span class="day-val">' + Math.round(totalCal) + '</span>';
-            }
-            // 淨碳水（少/平/多，使用該日期適用的體重計算範圍）
+            // 蛋白質（日總量）
+            var _proHtml = hasRec ? '<span class="day-val" style="color:#A0626B">' + Math.round(totalProtein) + '</span>' : '<span style="color:#ccc">-</span>';
+            // 熱量（日總量）
+            var _calHtml = hasRec ? '<span class="day-val">' + Math.round(totalCal) + '</span>' : '<span style="color:#ccc">-</span>';
+            // 淨碳水（少/平/超，使用該日期適用的體重計算範圍；斷食日比照低碳日）
             var _ncHtml = '<span style="color:#ccc">-</span>';
-            if (hasRec && _dayType && _dayType !== 'fast' && _appWeight > 0) {
+            if (hasRec && _dayType && _appWeight > 0) {
                 var _totalNetCarb = dayRecs.reduce(function(s,r){ return s + ((r.carbs||0) - (r.fiber||0)); }, 0);
                 var _ncLower = 0, _ncUpper = 0;
                 if (_dayType === 'high') { _ncLower = _appWeight * 2; _ncUpper = _appWeight * 3; }
                 else if (_dayType === 'mid') { _ncLower = _appWeight * 1; _ncUpper = _appWeight * 2; }
-                else if (_dayType === 'low') { _ncLower = 0; _ncUpper = _appWeight * 1; }
+                else { _ncLower = 0; _ncUpper = _appWeight * 1; } // low & fast 同範圍
                 if (_totalNetCarb < _ncLower) {
                     _ncHtml = '<span class="day-val" style="color:#6B8F71">少</span>';
                 } else if (_totalNetCarb > _ncUpper) {
-                    _ncHtml = '<span class="day-val" style="color:#A0626B">多</span>';
+                    _ncHtml = '<span class="day-val" style="color:#A0626B">超</span>';
                 } else {
                     _ncHtml = '<span class="day-val" style="color:#B8926A">平</span>';
                 }
-            } else if (_dayType === 'fast') {
-                _ncHtml = '<span style="color:#ccc">斷</span>';
             }
             // 照片數（點擊展開餐食）
             var _cntHtml = hasRec ? '<span class="day-val" style="color:var(--blue);cursor:pointer" onclick="event.stopPropagation();toggleDay(' + di + ')">' + dayRecs.length + '</span>' : '';
