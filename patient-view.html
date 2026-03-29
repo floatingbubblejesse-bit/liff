@@ -162,6 +162,9 @@
         .meal-chart-toggle{display:flex;align-items:center;padding:6px 12px;gap:8px}
         .meal-chart-toggle-btn{padding:4px 14px;border-radius:14px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s}
         .meal-chart-toggle-btn.active{background:var(--blue);color:white;border-color:var(--blue)}
+        .meal-range-btns{display:flex;align-items:center;gap:4px;margin-left:auto}
+        .meal-range-btn{padding:3px 10px;border-radius:12px;border:1.5px solid var(--border);background:white;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s}
+        .meal-range-btn.active{background:var(--text);color:white;border-color:var(--text)}
         .meal-section-wrap{background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:6px}
         .meal-section-head{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;font-size:14px;font-weight:700;color:var(--text);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
         .meal-section-head:active{background:rgba(0,0,0,0.03)}
@@ -994,6 +997,11 @@
         html += '<div class="meal-chart-toggle">'
             + '<button class="meal-chart-toggle-btn active" id="mealChartBtnWeight" onclick="mealSwitchChart(\'weight\')">體重</button>'
             + '<button class="meal-chart-toggle-btn" id="mealChartBtnProtein" onclick="mealSwitchChart(\'protein\')">蛋白質</button>'
+            + '<div class="meal-range-btns">'
+            + '<button class="meal-range-btn" data-mode="week" id="mealRangeBtnWeek" onclick="mealCycleWeek()">週</button>'
+            + '<button class="meal-range-btn active" data-mode="period" onclick="mealSetChartRange(\'period\')">期間</button>'
+            + '<button class="meal-range-btn" data-mode="history" onclick="mealSetChartRange(\'history\')">歷史</button>'
+            + '</div>'
             + '</div>';
         html += '<div id="mealChartWeightArea"><div class="hw-chart-wrap" id="mealHwChartWrap"><div class="hw-chart-inner" id="mealHwChartInner"><canvas id="mealWeightChart"></canvas></div></div></div>';
         html += '<div id="mealChartProteinArea" style="display:none"><div class="hw-chart-wrap" style="height:160px"><div class="hw-chart-inner"><canvas id="mealProteinChart"></canvas></div></div></div>';
@@ -1055,6 +1063,70 @@
             setTimeout(function(){ renderMealChart(_mealRecs, _mealRecProtein); }, 30);
         }
     }
+    // ── 圖表日期範圍切換 ──
+    function mealSetChartRange(mode) {
+        _chartRangeMode = mode;
+        _highlightedDate = null;
+        // 更新按鈕 active 狀態
+        var btns = document.querySelectorAll('.meal-range-btn');
+        for (var b = 0; b < btns.length; b++) {
+            var m = btns[b].getAttribute('data-mode');
+            if (m === mode || (mode.indexOf('week-') === 0 && m === 'week')) {
+                btns[b].classList.add('active');
+            } else {
+                btns[b].classList.remove('active');
+            }
+        }
+        // 更新週按鈕文字
+        var weekBtn = document.getElementById('mealRangeBtnWeek');
+        if (weekBtn && mode.indexOf('week-') === 0) {
+            var wi = parseInt(mode.split('-')[1]);
+            weekBtn.textContent = '第' + (wi + 1) + '週';
+        } else if (weekBtn && mode !== 'week') {
+            weekBtn.textContent = '週';
+        }
+        // 重新渲染當前圖表
+        if (_mealActiveChart === 'weight') {
+            mealRenderWeightChart();
+        } else {
+            renderMealChart(_mealRecs, _mealRecProtein);
+        }
+        // 滾動表格到對應範圍起始
+        mealScrollToRange(mode);
+    }
+
+    function mealCycleWeek() {
+        if (_hwWeekBounds.length === 0) return;
+        if (_chartRangeMode.indexOf('week-') === 0) {
+            _chartRangeWeekIdx = (parseInt(_chartRangeMode.split('-')[1]) + 1) % _hwWeekBounds.length;
+        } else {
+            _chartRangeWeekIdx = 0;
+        }
+        mealSetChartRange('week-' + _chartRangeWeekIdx);
+    }
+
+    function mealScrollToRange(mode) {
+        var startDate = null;
+        if (mode.indexOf('week-') === 0) {
+            var wi = parseInt(mode.split('-')[1]);
+            if (wi >= 0 && wi < _hwWeekBounds.length) startDate = _hwWeekBounds[wi].start;
+        } else if (mode === 'period' && _hwScheduleStartStr) {
+            startDate = _hwScheduleStartStr;
+        }
+        // history 模式不滾動
+        if (!startDate) return;
+        var sc = document.getElementById('mealTblScroll');
+        if (!sc) return;
+        var rows = sc.querySelectorAll('.day-accordion');
+        for (var r = 0; r < rows.length; r++) {
+            var dk = rows[r].getAttribute('data-datekey');
+            if (dk && dk >= startDate) {
+                sc.scrollTo({ top: rows[r].offsetTop - sc.offsetTop, behavior: 'smooth' });
+                break;
+            }
+        }
+    }
+
     function mealTblScrollToToday() {
         var sc = document.getElementById('mealTblScroll');
         if (!sc) return;
@@ -1123,16 +1195,48 @@
     var _weightChartKeys = []; // 體重圖的日期 key 陣列，供 highlight 用
     var _weightChartBaseRadius = 3;
     var _weightChartColors = [];
+
+    // 依 _chartRangeMode 篩選日期 key 陣列
+    function _getChartRangeKeys(fullKeys) {
+        if (_chartRangeMode === 'history') return fullKeys;
+        if (_chartRangeMode.indexOf('week-') === 0) {
+            var wi = parseInt(_chartRangeMode.split('-')[1]);
+            if (wi >= 0 && wi < _hwWeekBounds.length) {
+                var wb = _hwWeekBounds[wi];
+                return fullKeys.filter(function(k){ return k >= wb.start && k <= wb.end; });
+            }
+        }
+        // default: period
+        if (_hwScheduleStartStr && _hwScheduleEndStr) {
+            return fullKeys.filter(function(k){ return k >= _hwScheduleStartStr && k <= _hwScheduleEndStr; });
+        }
+        return fullKeys;
+    }
+
+    function _buildChartLabels(keys, pxPer) {
+        return keys.map(function(k) {
+            if (pxPer < 22) return '';
+            var p = k.split('-');
+            var dateStr = parseInt(p[1]) + '/' + parseInt(p[2]);
+            if (pxPer >= 50) {
+                var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+                return dateStr + '(' + HW_DAY_NAMES[d.getDay()] + ')';
+            }
+            return dateStr;
+        });
+    }
+
     function mealRenderWeightChart() {
-        var allKeys = Object.keys(hwWeightData).sort();
-        _weightChartKeys = allKeys;
-        if (allKeys.length === 0) return;
+        var fullKeys = Object.keys(hwWeightData).sort();
+        var chartKeys = _getChartRangeKeys(fullKeys);
+        _weightChartKeys = chartKeys;
+        if (chartKeys.length === 0) return;
         var canvas = document.getElementById('mealWeightChart');
         if (!canvas) return;
         if (_mealWeightChartInst) _mealWeightChartInst.destroy();
 
-        var values = allKeys.map(function(k){ return hwWeightData[k].weight; });
-        var colors = allKeys.map(function(k){
+        var values = chartKeys.map(function(k){ return hwWeightData[k].weight; });
+        var colors = chartKeys.map(function(k){
             var dt = hwWeightData[k].dayType;
             if (!dt) {
                 var p = k.split('-');
@@ -1149,21 +1253,12 @@
         var baseW = wrap.offsetWidth;
         inner.style.width = baseW + 'px';
 
-        var n = allKeys.length || 1;
+        var n = chartKeys.length || 1;
         var pxPer = baseW / n;
-        var labels = allKeys.map(function(k) {
-            if (pxPer < 22) return '';
-            var p = k.split('-');
-            var dateStr = parseInt(p[1]) + '/' + parseInt(p[2]);
-            if (pxPer >= 50) {
-                var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
-                return dateStr + '(' + HW_DAY_NAMES[d.getDay()] + ')';
-            }
-            return dateStr;
-        });
+        var labels = _buildChartLabels(chartKeys, pxPer);
         _weightChartBaseRadius = pxPer < 10 ? 0 : pxPer < 20 ? 1 : Math.max(2, Math.min(8, 3));
-        var defaultRadii = allKeys.map(function(){ return _weightChartBaseRadius; });
-        var bw = Math.max(1.5, Math.min(3, 2));
+        var defaultRadii = chartKeys.map(function(){ return _weightChartBaseRadius; });
+        var bw = pxPer < 6 ? 1 : Math.max(1.5, Math.min(3, 2));
 
         _mealWeightChartInst = new Chart(canvas.getContext('2d'), {
             type: 'line',
@@ -1179,7 +1274,7 @@
                     pointBackgroundColor: colors.slice(),
                     pointBorderColor: colors.slice(),
                     pointBorderWidth: 1,
-                    pointHitRadius: 12,
+                    pointHitRadius: Math.max(4, 12 - n / 5),
                     fill: true,
                     tension: 0.35
                 }]
@@ -1202,7 +1297,7 @@
                         callbacks: {
                             title: function(items) {
                                 var idx = items[0].dataIndex;
-                                var k = allKeys[idx];
+                                var k = chartKeys[idx];
                                 var p = k.split('-');
                                 var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
                                 return parseInt(p[1]) + '/' + parseInt(p[2]) + '(' + HW_DAY_NAMES[d.getDay()] + ')';
@@ -1212,7 +1307,7 @@
                     }
                 },
                 scales: {
-                    x: { ticks: { font: { size: Math.max(9, Math.min(12, pxPer / 5)) }, color: '#8B8B8B', maxRotation: 45, autoSkip: false }, grid: { display: false } },
+                    x: { ticks: { font: { size: Math.max(9, Math.min(12, pxPer / 5)) }, color: '#8B8B8B', maxRotation: 45, autoSkip: pxPer < 30 }, grid: { display: false } },
                     y: { ticks: { font: { size: 10 }, color: '#8B8B8B', callback: function(v){ return v + 'kg'; } }, grid: { color: 'rgba(0,0,0,0.05)' } }
                 }
             }
@@ -1358,7 +1453,8 @@
             if (!key) return;
             byDate[key] = (byDate[key] || 0) + (r.protein || 0);
         });
-        var keys = Object.keys(byDate).sort();
+        var fullKeys = Object.keys(byDate).sort();
+        var keys = _getChartRangeKeys(fullKeys);
         _proteinChartKeys = keys;
         if (keys.length === 0) return;
         var canvas = document.getElementById('mealProteinChart');
@@ -3442,8 +3538,15 @@
     var _hwWeekStats = [];
     var _hwStatMinW = null;
     var _hwStatMaxW = null;
+    var _hwStatMinWDate = null;
+    var _hwStatMaxWDate = null;
     var _hwPeriodDiff = null;
     var _hwHistoryDiff = null;
+    var _hwScheduleStartStr = null;
+    var _hwScheduleEndStr = null;
+    var _hwWeekBounds = []; // [{start:'YYYY-MM-DD', end:'YYYY-MM-DD'}, ...]
+    var _chartRangeMode = 'period'; // 'period' | 'history' | 'week-0' | 'week-1' ...
+    var _chartRangeWeekIdx = 0;
     var _hwTableCollapsed = false;
 
     function hwToggleTable() {
@@ -3466,6 +3569,9 @@
         var mLbl = document.getElementById('mealHwStatLeftLabel');
         if (mEl) mEl.textContent = val;
         if (mLbl) mLbl.textContent = label;
+        // 同步高亮圖表對應點 + 滾動到日期條
+        var targetDate = _hwShowMaxWeight ? _hwStatMaxWDate : _hwStatMinWDate;
+        if (targetDate) mealHighlightChartPoint(targetDate);
     }
 
     function hwToggleDiffMode() {
@@ -3491,6 +3597,8 @@
             var lb = document.getElementById(labels[li]);
             if (lb) lb.textContent = label;
         }
+        // 同步切換圖表範圍：歷史 ↔ 期間
+        mealSetChartRange(_hwShowHistoryDiff ? 'history' : 'period');
     }
 
     function hwShowWeekStat() {
@@ -3524,6 +3632,14 @@
         if (_hwWeekStats.length === 0) return;
         _hwWeekStatIndex = (_hwWeekStatIndex + 1) % _hwWeekStats.length;
         hwShowWeekStat();
+        // 同步圖表範圍：若是第N週則切換到該週，若是平均一週則切換到期間
+        var item = _hwWeekStats[_hwWeekStatIndex];
+        if (item && item.label.indexOf('第') === 0) {
+            var weekNum = parseInt(item.label.replace('第', '').replace('週', ''));
+            if (!isNaN(weekNum) && weekNum > 0) mealSetChartRange('week-' + (weekNum - 1));
+        } else {
+            mealSetChartRange('period');
+        }
     }
 
     function hwUpdateStats() {
@@ -3562,26 +3678,31 @@
             }
         }
 
+        // 存全域排程日期
+        _hwScheduleStartStr = scheduleStart ? hwFormatDate(scheduleStart) : null;
+        _hwScheduleEndStr = scheduleEnd ? hwFormatDate(scheduleEnd) : null;
+
         var rangeKeys = allKeys;
         if (scheduleStart && scheduleEnd) {
-            var sStr = hwFormatDate(scheduleStart);
-            var eStr = hwFormatDate(scheduleEnd);
-            rangeKeys = allKeys.filter(function(k) { return k >= sStr && k <= eStr; });
+            rangeKeys = allKeys.filter(function(k) { return k >= _hwScheduleStartStr && k <= _hwScheduleEndStr; });
         }
 
         var count = rangeKeys.length;
         var first = count > 0 ? hwWeightData[rangeKeys[0]].weight : null;
         var last = count > 0 ? hwWeightData[rangeKeys[rangeKeys.length - 1]].weight : null;
         var minW = null, maxW = null;
+        var minWDate = null, maxWDate = null;
         for (var mi = 0; mi < allKeys.length; mi++) {
             var w = hwWeightData[allKeys[mi]].weight;
             if (w) {
-                if (minW === null || w < minW) minW = w;
-                if (maxW === null || w > maxW) maxW = w;
+                if (minW === null || w < minW) { minW = w; minWDate = allKeys[mi]; }
+                if (maxW === null || w > maxW) { maxW = w; maxWDate = allKeys[mi]; }
             }
         }
         _hwStatMinW = minW;
         _hwStatMaxW = maxW;
+        _hwStatMinWDate = minWDate;
+        _hwStatMaxWDate = maxWDate;
 
         // 歷史變化
         if (allKeys.length >= 2) {
@@ -3606,6 +3727,7 @@
 
         // 週變化
         _hwWeekStats = [];
+        _hwWeekBounds = [];
         if (scheduleStart && rangeKeys.length > 0) {
             var ws = new Date(scheduleStart.getTime());
             var weekNum = 1;
@@ -3614,6 +3736,7 @@
                 we.setDate(we.getDate() + 6);
                 var wsStr = hwFormatDate(ws);
                 var weStr = hwFormatDate(we);
+                _hwWeekBounds.push({ start: wsStr, end: weStr });
                 var wk = rangeKeys.filter(function(k) { return k >= wsStr && k <= weStr; });
                 if (wk.length >= 2) {
                     var wf = hwWeightData[wk[0]].weight;
