@@ -594,6 +594,21 @@
         renderBodyTab(data);
         var cust = data.customer || {};
         var mArr = data.measurements || [];
+        // 建立身體組成時間軸
+        _measureTimeline = [];
+        mArr.forEach(function(row) {
+            var mDate = (row['測量日期/時間'] || '').substring(0, 10);
+            var mBmr = parseFloat(row['基礎代謝 (BMR)']);
+            var mWt = parseFloat(row['體重']);
+            if (mDate && !isNaN(mWt) && mWt > 0) {
+                _measureTimeline.push({
+                    date: mDate,
+                    tdee: (!isNaN(mBmr) && mBmr > 0) ? Math.round(mBmr * 1.2) : 0,
+                    weight: mWt
+                });
+            }
+        });
+        _measureTimeline.sort(function(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
         if (mArr.length > 0) {
             var latest = mArr[mArr.length - 1];
             if (!cust['體重'] && latest['體重']) cust['體重'] = latest['體重'];
@@ -958,6 +973,14 @@
         _mealRecProtein = recProtein;
         var weight = patient.weight || 0;
         _mealPatientWeight = weight;
+        // 建立蛋白質目標時間軸（以看診日期為起點）
+        _proteinTimeline = [];
+        if (recProtein > 0 && hwVisitRecords.length > 0) {
+            var vr = hwVisitRecords[hwVisitRecords.length - 1];
+            if (vr.date) {
+                _proteinTimeline.push({ date: vr.date, protein: recProtein });
+            }
+        }
         var el = document.getElementById('tab-meals');
 
         if (recs.length === 0) {
@@ -1031,8 +1054,29 @@
     // 收折重渲染用全域變數
     var _mealRecs = [];
     var _mealRecProtein = 0;
-    var _mealPatientWeight = 0; // 最新體重（用於淨碳水範圍計算）
-    var _mealLatestTdee = 0;    // 日耗熱量 = BMR × 1.2（用於熱量赤字計算）
+    var _mealPatientWeight = 0; // 最新體重（用於淨碳水範圍計算 fallback）
+    var _mealLatestTdee = 0;    // 最新日耗熱量 fallback
+    // 身體組成時間軸：每筆測量的日期、TDEE、體重（用於逐日查找適用值）
+    var _measureTimeline = []; // [{ date:'YYYY-MM-DD', tdee:number, weight:number }, ...]
+    // 蛋白質目標時間軸：每次醫師發送飲食計劃的日期與蛋白質目標
+    var _proteinTimeline = []; // [{ date:'YYYY-MM-DD', protein:number }, ...]
+
+    // 查找某日期適用的身體組成（最近一筆 <= dateKey）
+    function _getApplicableMeasure(dateKey) {
+        var result = null;
+        for (var i = _measureTimeline.length - 1; i >= 0; i--) {
+            if (_measureTimeline[i].date <= dateKey) { result = _measureTimeline[i]; break; }
+        }
+        return result;
+    }
+    // 查找某日期適用的蛋白質目標（最近一筆 <= dateKey）
+    function _getApplicableProtein(dateKey) {
+        var result = null;
+        for (var i = _proteinTimeline.length - 1; i >= 0; i--) {
+            if (_proteinTimeline[i].date <= dateKey) { result = _proteinTimeline[i].protein; break; }
+        }
+        return result;
+    }
 
     // 萬年曆 infinite scroll 狀態
     var _mealTblStartDate = null; // Date object
@@ -1597,34 +1641,40 @@
             }
             // 體重
             var _wtHtml = _hwWeight ? '<span class="day-val">' + _hwWeight + '</span>' : '<span style="color:#ccc">-</span>';
-            // 蛋白質（實際 - 目標）
+            // 查找此日期適用的身體組成與蛋白質目標
+            var _appMeasure = _getApplicableMeasure(dateKey);
+            var _appProtein = _getApplicableProtein(dateKey);
+            var _appTdee = _appMeasure ? _appMeasure.tdee : 0;
+            var _appWeight = _appMeasure ? _appMeasure.weight : 0;
+
+            // 蛋白質（實際 - 該日期適用的目標）
             var _proHtml = '<span style="color:#ccc">-</span>';
-            if (hasRec && _mealRecProtein > 0) {
-                var _proDiff = Math.round(totalProtein) - Math.round(_mealRecProtein);
+            if (hasRec && _appProtein && _appProtein > 0) {
+                var _proDiff = Math.round(totalProtein) - Math.round(_appProtein);
                 var _proSign = _proDiff > 0 ? '+' : '';
                 var _proColor = _proDiff >= 0 ? '#6B8F71' : '#A0626B';
                 _proHtml = '<span class="day-val" style="color:' + _proColor + '">' + _proSign + _proDiff + '</span>';
             } else if (hasRec) {
                 _proHtml = '<span class="day-val" style="color:#A0626B">' + Math.round(totalProtein) + '</span>';
             }
-            // 熱量赤字（TDEE - 實際攝取）
+            // 熱量赤字（該日期適用的 TDEE - 實際攝取）
             var _calHtml = '<span style="color:#ccc">-</span>';
-            if (hasRec && _mealLatestTdee > 0) {
-                var _deficit = _mealLatestTdee - Math.round(totalCal);
+            if (hasRec && _appTdee > 0) {
+                var _deficit = _appTdee - Math.round(totalCal);
                 var _defSign = _deficit > 0 ? '+' : '';
                 var _defColor = _deficit > 0 ? '#6B8F71' : '#A0626B';
                 _calHtml = '<span class="day-val" style="color:' + _defColor + '">' + _defSign + _deficit + '</span>';
             } else if (hasRec) {
                 _calHtml = '<span class="day-val">' + Math.round(totalCal) + '</span>';
             }
-            // 淨碳水（少/平/多）
+            // 淨碳水（少/平/多，使用該日期適用的體重計算範圍）
             var _ncHtml = '<span style="color:#ccc">-</span>';
-            if (hasRec && _dayType && _dayType !== 'fast' && _mealPatientWeight > 0) {
+            if (hasRec && _dayType && _dayType !== 'fast' && _appWeight > 0) {
                 var _totalNetCarb = dayRecs.reduce(function(s,r){ return s + ((r.carbs||0) - (r.fiber||0)); }, 0);
                 var _ncLower = 0, _ncUpper = 0;
-                if (_dayType === 'high') { _ncLower = _mealPatientWeight * 2; _ncUpper = _mealPatientWeight * 3; }
-                else if (_dayType === 'mid') { _ncLower = _mealPatientWeight * 1; _ncUpper = _mealPatientWeight * 2; }
-                else if (_dayType === 'low') { _ncLower = 0; _ncUpper = _mealPatientWeight * 1; }
+                if (_dayType === 'high') { _ncLower = _appWeight * 2; _ncUpper = _appWeight * 3; }
+                else if (_dayType === 'mid') { _ncLower = _appWeight * 1; _ncUpper = _appWeight * 2; }
+                else if (_dayType === 'low') { _ncLower = 0; _ncUpper = _appWeight * 1; }
                 if (_totalNetCarb < _ncLower) {
                     _ncHtml = '<span class="day-val" style="color:#6B8F71">少</span>';
                 } else if (_totalNetCarb > _ncUpper) {
