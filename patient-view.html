@@ -172,7 +172,7 @@
         .meal-section-body{overflow:hidden}
         .meal-tbl-wrap{background:white;border-radius:0;overflow:hidden}
         .meal-tbl-head{display:flex;align-items:center;padding:6px 8px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2;position:relative}
-        .meal-tbl-head .day-col{font-size:14px;font-weight:700;color:var(--muted)}
+        .meal-tbl-head .day-col{font-size:12px;font-weight:700;color:var(--muted)}
         .meal-tbl-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
         .meal-tbl-today-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#C0CDD9;color:#fff;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-left:4px;flex-shrink:0}
         .meal-tbl-today-btn:active{opacity:0.5}
@@ -183,12 +183,13 @@
         .day-header.no-rec{opacity:0.55}
         .day-header:active:not(.no-rec){background:#F5F3EF}
         .day-col{text-align:center;display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0}
-        .day-col-date{justify-content:flex-start;padding-left:2px}
-        .day-val{font-size:15px;font-weight:700;color:var(--text);line-height:1.2}
+        .day-col-date{flex:1.5 1 0;justify-content:flex-start;padding-left:2px}
+        .day-col-count{flex:0.5 1 0}
+        .day-val{font-size:13px;font-weight:700;color:var(--text);line-height:1.2}
         .day-lbl{font-size:15px;font-weight:700;color:var(--text)}
         .day-date-main{font-size:15px;font-weight:700;color:var(--text)}
         .day-date-sub{font-size:11px;color:var(--muted)}
-        .day-carb-tag{font-size:12px;font-weight:700;padding:2px 6px;border-radius:6px;display:inline-block}
+        .day-carb-tag{font-size:11px;font-weight:700;padding:2px 5px;border-radius:6px;display:inline-block}
         .day-carb-tag.t-high{background:#F8D7DA;color:#A0626B}.day-carb-tag.t-mid{background:#FFF3CD;color:#B8926A}
         .day-carb-tag.t-low{background:#D4EDDA;color:#6B8F71}.day-carb-tag.t-fast{background:#E2E3E5;color:#4A4A4A}
         .day-arrow{font-size:12px;color:var(--muted);transition:transform 0.25s ease;position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -597,6 +598,8 @@
             var latest = mArr[mArr.length - 1];
             if (!cust['體重'] && latest['體重']) cust['體重'] = latest['體重'];
             if (!cust.weight && latest['體重']) cust.weight = latest['體重'];
+            var _bmrVal = parseFloat(latest['基礎代謝 (BMR)']);
+            if (!isNaN(_bmrVal) && _bmrVal > 0) _mealLatestTdee = Math.round(_bmrVal * 1.2);
         }
         fillProteinField(cust);
         fillTargetWeightField(cust, data.measurements || []);
@@ -954,6 +957,7 @@
         _mealRecs = recs;
         _mealRecProtein = recProtein;
         var weight = patient.weight || 0;
+        _mealPatientWeight = weight;
         var el = document.getElementById('tab-meals');
 
         if (recs.length === 0) {
@@ -983,8 +987,9 @@
             + '<div class="day-col day-col-carb">碳日</div>'
             + '<div class="day-col day-col-diff">變化</div>'
             + '<div class="day-col day-col-wt">體重</div>'
-            + '<div class="day-col day-col-cal">熱量</div>'
             + '<div class="day-col day-col-protein">蛋白質</div>'
+            + '<div class="day-col day-col-cal">赤字</div>'
+            + '<div class="day-col day-col-nc">淨碳水</div>'
             + '<div class="day-col day-col-count">張</div>'
             + '</div>';
         html += '<div class="meal-tbl-scroll" id="mealTblScroll">';
@@ -1026,6 +1031,8 @@
     // 收折重渲染用全域變數
     var _mealRecs = [];
     var _mealRecProtein = 0;
+    var _mealPatientWeight = 0; // 最新體重（用於淨碳水範圍計算）
+    var _mealLatestTdee = 0;    // 日耗熱量 = BMR × 1.2（用於熱量赤字計算）
 
     // 萬年曆 infinite scroll 狀態
     var _mealTblStartDate = null; // Date object
@@ -1590,10 +1597,44 @@
             }
             // 體重
             var _wtHtml = _hwWeight ? '<span class="day-val">' + _hwWeight + '</span>' : '<span style="color:#ccc">-</span>';
-            // 熱量
-            var _calHtml = hasRec ? '<span class="day-val">' + Math.round(totalCal) + '</span>' : '<span style="color:#ccc">-</span>';
-            // 蛋白質
-            var _proHtml = hasRec ? '<span class="day-val" style="color:#A0626B">' + Math.round(totalProtein) + '</span>' : '<span style="color:#ccc">-</span>';
+            // 蛋白質（實際 - 目標）
+            var _proHtml = '<span style="color:#ccc">-</span>';
+            if (hasRec && _mealRecProtein > 0) {
+                var _proDiff = Math.round(totalProtein) - Math.round(_mealRecProtein);
+                var _proSign = _proDiff > 0 ? '+' : '';
+                var _proColor = _proDiff >= 0 ? '#6B8F71' : '#A0626B';
+                _proHtml = '<span class="day-val" style="color:' + _proColor + '">' + _proSign + _proDiff + '</span>';
+            } else if (hasRec) {
+                _proHtml = '<span class="day-val" style="color:#A0626B">' + Math.round(totalProtein) + '</span>';
+            }
+            // 熱量赤字（TDEE - 實際攝取）
+            var _calHtml = '<span style="color:#ccc">-</span>';
+            if (hasRec && _mealLatestTdee > 0) {
+                var _deficit = _mealLatestTdee - Math.round(totalCal);
+                var _defSign = _deficit > 0 ? '+' : '';
+                var _defColor = _deficit > 0 ? '#6B8F71' : '#A0626B';
+                _calHtml = '<span class="day-val" style="color:' + _defColor + '">' + _defSign + _deficit + '</span>';
+            } else if (hasRec) {
+                _calHtml = '<span class="day-val">' + Math.round(totalCal) + '</span>';
+            }
+            // 淨碳水（少/平/多）
+            var _ncHtml = '<span style="color:#ccc">-</span>';
+            if (hasRec && _dayType && _dayType !== 'fast' && _mealPatientWeight > 0) {
+                var _totalNetCarb = dayRecs.reduce(function(s,r){ return s + ((r.carbs||0) - (r.fiber||0)); }, 0);
+                var _ncLower = 0, _ncUpper = 0;
+                if (_dayType === 'high') { _ncLower = _mealPatientWeight * 2; _ncUpper = _mealPatientWeight * 3; }
+                else if (_dayType === 'mid') { _ncLower = _mealPatientWeight * 1; _ncUpper = _mealPatientWeight * 2; }
+                else if (_dayType === 'low') { _ncLower = 0; _ncUpper = _mealPatientWeight * 1; }
+                if (_totalNetCarb < _ncLower) {
+                    _ncHtml = '<span class="day-val" style="color:#6B8F71">少</span>';
+                } else if (_totalNetCarb > _ncUpper) {
+                    _ncHtml = '<span class="day-val" style="color:#A0626B">多</span>';
+                } else {
+                    _ncHtml = '<span class="day-val" style="color:#B8926A">平</span>';
+                }
+            } else if (_dayType === 'fast') {
+                _ncHtml = '<span style="color:#ccc">斷</span>';
+            }
             // 張數
             var _cntHtml = hasRec ? '<span class="day-val">' + dayRecs.length + '</span>' : '';
 
@@ -1647,8 +1688,9 @@
                 + '<div class="day-col day-col-carb">' + _carbHtml + '</div>'
                 + '<div class="day-col day-col-diff">' + _diffHtml + '</div>'
                 + '<div class="day-col day-col-wt">' + _wtHtml + '</div>'
-                + '<div class="day-col day-col-cal">' + _calHtml + '</div>'
                 + '<div class="day-col day-col-protein">' + _proHtml + '</div>'
+                + '<div class="day-col day-col-cal">' + _calHtml + '</div>'
+                + '<div class="day-col day-col-nc">' + _ncHtml + '</div>'
                 + '<div class="day-col day-col-count">' + _cntHtml + '</div>'
                 + (hasRec ? '<span class="day-arrow" onclick="event.stopPropagation();toggleDay(' + di + ')">▼</span>' : '')
                 + '</div>'
