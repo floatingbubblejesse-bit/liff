@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2026-03-29-bigfont -->
+<!-- v2026-03-29-fixlayout -->
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -30,12 +30,12 @@
         :root { --blue: #7B8FA1; --blue-light: #EDE8E0; --green: #8B9D83; --green-light: #E8EDE6; --red: #A0626B; --orange: #C4A882; --bg: #F5F3EF; --card: #FDFBF7; --text: #4A4A4A; --muted: #8B8B8B; --border: #E8E4DC; }
         *{box-sizing:border-box;margin:0;padding:0}
         body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;overflow:hidden}
-        .header{background:linear-gradient(135deg, #7B8FA1, #6B7F91);color:white;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0}
-        .back-btn{background:rgba(255,255,255,0.2);border:none;color:white;padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+        .header{background:linear-gradient(135deg, #7B8FA1, #6B7F91);color:white;padding:6px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+        .back-btn{background:rgba(255,255,255,0.2);border:none;color:white;padding:4px 10px;border-radius:16px;font-size:12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:3px}
         .back-btn:hover{background:rgba(255,255,255,0.3)}
-        .header-info{flex:1}
-        .header-info h1{font-size:16px;font-weight:700}
-        .header-info p{font-size:11px;opacity:0.8;margin-top:1px}
+        .header-info{flex:1;display:flex;align-items:center;justify-content:space-between}
+        .header-info h1{font-size:15px;font-weight:700}
+        .header-info p{font-size:13px;opacity:0.85;margin:0}
         .tab-bar{background:white;border-bottom:1px solid var(--border);display:flex;flex-shrink:0}
         .tab-btn{flex:1;padding:12px 8px;border:none;background:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s}
         .tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
@@ -43,6 +43,8 @@
         .tab-pane{display:none;position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;padding:16px}
         .tab-pane.active{display:block}
         .tab-pane>*{margin-bottom:14px}
+        #tab-meals.active{display:flex;overflow:hidden;padding:8px}
+        #tab-meals>.meal-fixed-layout{margin-bottom:0}
         .card{background:white;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
         .card-title{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
         /* ── 劇本按鈕 ── */
@@ -138,45 +140,54 @@
         /* ====== 餐食記錄 inline styles (from patient.html) ====== */
         .meal-protein-card{background:linear-gradient(135deg,#7B8FA1,#8B9D83);border-radius:12px;padding:14px;color:white}
         .meal-protein-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-        .meal-protein-label{font-size:20px;opacity:0.9}
-        .meal-protein-value{font-size:20px;font-weight:600}
+        .meal-protein-label{font-size:15px;opacity:0.9}
+        .meal-protein-value{font-size:15px;font-weight:600}
         .mprog-bg{background:rgba(255,255,255,0.3);border-radius:99px;height:8px;overflow:hidden}
         .mprog-fill{height:100%;border-radius:99px;background:white;transition:width 0.8s ease}
-        .meal-protein-status{margin-top:8px;font-size:18px;text-align:center;opacity:0.95}
+        .meal-protein-status{margin-top:8px;font-size:14px;text-align:center;opacity:0.95}
         .meal-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
         .meal-stat-card{background:white;border-radius:10px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
-        .meal-stat-value{font-size:30px;font-weight:700;color:#A0626B}
-        .meal-stat-label{font-size:17px;color:var(--muted);margin-top:2px}
-        .meal-stat-detail{font-size:15px;color:#A8B5A2;margin-top:3px;display:none;transition:opacity .2s}
+        .meal-stat-value{font-size:22px;font-weight:700;color:#A0626B}
+        .meal-stat-label{font-size:12px;color:var(--muted);margin-top:2px}
+        .meal-stat-detail{font-size:11px;color:#A8B5A2;margin-top:3px;display:none;transition:opacity .2s}
         .meal-stat-detail.show{display:block}
         .meal-chart-card{background:white;border-radius:12px;padding:14px 12px 10px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
         .meal-chart-card canvas{display:block;width:100%!important}
-        .meal-section-wrap{background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:10px}
-        .meal-section-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;font-size:20px;font-weight:700;color:var(--text);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+        .meal-fixed-layout{display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden}
+        .meal-fixed-top{flex-shrink:0}
+        .meal-fixed-tbl{flex:1;min-height:0;display:flex;flex-direction:column;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:6px}
+        .meal-fixed-tbl .meal-tbl-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+        .meal-fixed-chart{flex-shrink:0;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:6px}
+        .meal-fixed-chart .hw-chart-wrap{height:160px}
+        .meal-chart-toggle{display:flex;align-items:center;padding:6px 12px;gap:8px}
+        .meal-chart-toggle-btn{padding:4px 14px;border-radius:14px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s}
+        .meal-chart-toggle-btn.active{background:var(--blue);color:white;border-color:var(--blue)}
+        .meal-section-wrap{background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:6px}
+        .meal-section-head{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;font-size:14px;font-weight:700;color:var(--text);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
         .meal-section-head:active{background:rgba(0,0,0,0.03)}
-        .meal-section-arrow{font-size:17px;color:var(--muted);transition:transform 0.25s ease}
+        .meal-section-arrow{font-size:12px;color:var(--muted);transition:transform 0.25s ease}
         .meal-section-body{overflow:hidden}
         .meal-tbl-wrap{background:white;border-radius:0;overflow:hidden}
         .meal-tbl-head{display:flex;align-items:center;padding:6px 8px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2;position:relative}
-        .meal-tbl-head .day-col{font-size:18px;font-weight:700;color:var(--muted)}
+        .meal-tbl-head .day-col{font-size:14px;font-weight:700;color:var(--muted)}
         .meal-tbl-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
-        .meal-tbl-today-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#C0CDD9;color:#fff;font-size:18px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-left:4px;flex-shrink:0}
+        .meal-tbl-today-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#C0CDD9;color:#fff;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-left:4px;flex-shrink:0}
         .meal-tbl-today-btn:active{opacity:0.5}
         .day-accordion{border-bottom:1px solid #F0EDE8}
         .day-accordion:last-child{border-bottom:none}
-        .day-header{display:flex;align-items:center;padding:12px 8px;cursor:pointer;user-select:none;gap:0;-webkit-tap-highlight-color:transparent;position:relative}
+        .day-header{display:flex;align-items:center;padding:8px 8px;cursor:pointer;user-select:none;gap:0;-webkit-tap-highlight-color:transparent;position:relative}
         .day-header.no-rec{cursor:default;opacity:0.55}
         .day-header:active:not(.no-rec){background:#F5F3EF}
         .day-col{text-align:center;display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0}
         .day-col-date{justify-content:flex-start;padding-left:2px}
-        .day-val{font-size:21px;font-weight:700;color:var(--text);line-height:1.2}
-        .day-lbl{font-size:21px;font-weight:700;color:var(--text)}
-        .day-date-main{font-size:21px;font-weight:700;color:var(--text)}
-        .day-date-sub{font-size:15px;color:var(--muted)}
-        .day-carb-tag{font-size:17px;font-weight:700;padding:2px 6px;border-radius:6px;display:inline-block}
+        .day-val{font-size:15px;font-weight:700;color:var(--text);line-height:1.2}
+        .day-lbl{font-size:15px;font-weight:700;color:var(--text)}
+        .day-date-main{font-size:15px;font-weight:700;color:var(--text)}
+        .day-date-sub{font-size:11px;color:var(--muted)}
+        .day-carb-tag{font-size:12px;font-weight:700;padding:2px 6px;border-radius:6px;display:inline-block}
         .day-carb-tag.t-high{background:#F8D7DA;color:#A0626B}.day-carb-tag.t-mid{background:#FFF3CD;color:#B8926A}
         .day-carb-tag.t-low{background:#D4EDDA;color:#6B8F71}.day-carb-tag.t-fast{background:#E2E3E5;color:#4A4A4A}
-        .day-arrow{font-size:17px;color:var(--muted);transition:transform 0.25s ease;position:absolute;right:8px;top:50%;transform:translateY(-50%)}
+        .day-arrow{font-size:12px;color:var(--muted);transition:transform 0.25s ease;position:absolute;right:8px;top:50%;transform:translateY(-50%)}
         .day-accordion.open .day-arrow{transform:translateY(-50%) rotate(180deg)}
         .day-body{display:none;border-top:1px solid var(--border);padding:8px 10px 10px;background:#FDFBF7}
         .day-accordion.open .day-body{display:block}
@@ -184,9 +195,9 @@
         .mc:last-child{margin-bottom:0}
         .mc-header{display:flex;align-items:center;padding:10px 12px;cursor:pointer;user-select:none;gap:8px;-webkit-tap-highlight-color:transparent}
         .mc-header:active{background:#FDFBF7}
-        .mc-time{flex:1;font-size:20px;color:var(--text);font-weight:500}
-        .mc-protein{font-size:18px;color:#A0626B;font-weight:600}
-        .mc-arrow{font-size:15px;color:var(--muted);transition:transform 0.2s ease;flex-shrink:0}
+        .mc-time{flex:1;font-size:14px;color:var(--text);font-weight:500}
+        .mc-protein{font-size:13px;color:#A0626B;font-weight:600}
+        .mc-arrow{font-size:11px;color:var(--muted);transition:transform 0.2s ease;flex-shrink:0}
         .mc.open .mc-arrow{transform:rotate(180deg)}
         .mc-body{display:none;border-top:1px solid var(--border)}
         .mc.open .mc-body{display:block}
@@ -194,16 +205,16 @@
         .mc-img-wrap img{width:100%;height:100%;object-fit:cover}
         .mc-img-wrap .mc-img-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:40px;background:#EDE8E0}
         .mc-detail{padding:12px 14px}
-        .mc-foods{font-size:20px;color:var(--text);line-height:1.5;margin-bottom:10px}
+        .mc-foods{font-size:14px;color:var(--text);line-height:1.5;margin-bottom:10px}
         .mc-macros{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px}
         .mc-macro{text-align:center;padding:5px 3px;background:#F5F3EF;border-radius:8px}
-        .mc-macro-val{font-size:21px;font-weight:700;color:#A0626B}
-        .mc-macro-lbl{font-size:14px;color:var(--muted);margin-top:1px}
-        .mc-ai-note{background:#F5F3EF;border-left:3px solid #8B9D83;border-radius:0 8px 8px 0;padding:8px 10px;font-size:18px;color:#6A7D8E;line-height:1.5;margin-bottom:8px}
-        .mc-ai-label{font-size:15px;font-weight:700;color:#8B9D83;margin-bottom:3px}
-        .mc-advice{background:#FAF6F0;border-left:3px solid #C4A882;border-radius:0 8px 8px 0;padding:8px 10px;font-size:18px;color:#8B7355;line-height:1.5}
-        .mc-advice-label{font-size:15px;font-weight:700;color:#C4A882;margin-bottom:3px}
-        .mc-stars{color:#C4A882;font-size:20px}
+        .mc-macro-val{font-size:15px;font-weight:700;color:#A0626B}
+        .mc-macro-lbl{font-size:10px;color:var(--muted);margin-top:1px}
+        .mc-ai-note{background:#F5F3EF;border-left:3px solid #8B9D83;border-radius:0 8px 8px 0;padding:8px 10px;font-size:13px;color:#6A7D8E;line-height:1.5;margin-bottom:8px}
+        .mc-ai-label{font-size:11px;font-weight:700;color:#8B9D83;margin-bottom:3px}
+        .mc-advice{background:#FAF6F0;border-left:3px solid #C4A882;border-radius:0 8px 8px 0;padding:8px 10px;font-size:13px;color:#8B7355;line-height:1.5}
+        .mc-advice-label{font-size:11px;font-weight:700;color:#C4A882;margin-bottom:3px}
+        .mc-stars{color:#C4A882;font-size:14px}
 
         /* ====== 中碳日飲食計劃 ====== */
         .diet-mode{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:8px}
@@ -347,10 +358,10 @@
 </head>
 <body>
     <div class="header">
-        <a class="back-btn" href="./doctor.html">← 返回</a>
+        <a class="back-btn" href="./doctor.html">←</a>
         <div class="header-info">
             <h1 id="headerName">載入中...</h1>
-            <p id="headerSub">病患資料</p>
+            <p id="headerSub"></p>
         </div>
     </div>
     <div class="tab-bar">
@@ -604,7 +615,7 @@
         var gasUid=findLineUid(data.customer);
         if(gasUid) patientLineUid=gasUid;
         document.getElementById('headerName').textContent=patientName;
-        document.getElementById('headerSub').textContent=patientSn+' 體組成資料';
+        document.getElementById('headerSub').textContent=patientSn;
         renderBodyTab(data);
         var cust = data.customer || {};
         var mArr = data.measurements || [];
@@ -979,61 +990,58 @@
 
         var html = '';
 
-        // 3.5 居家體重排程區塊（與居家體重 tab 相同）
-        html += '<div id="mealHwScheduleBar" style="text-align:center;font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;display:none"></div>';
-        html += '<div class="hw-stats-row">';
+        // ── 固定佈局容器 ──
+        html += '<div class="meal-fixed-layout">';
+
+        // 上方固定區：排程 + 統計
+        html += '<div class="meal-fixed-top">';
+        html += '<div id="mealHwScheduleBar" style="text-align:center;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;display:none"></div>';
+        html += '<div class="hw-stats-row" style="margin-bottom:6px">';
         html += '<div class="hw-stat-item" onclick="hwToggleMinMax();mealHwSyncStats()"><div class="hw-stat-value" id="mealHwStatLeft">-</div><div class="hw-stat-label" id="mealHwStatLeftLabel">最低體重</div></div>';
         html += '<div class="hw-stat-item" onclick="hwCycleWeekStat();mealHwSyncStats()"><div class="hw-stat-value" id="mealHwStatMid">-</div><div class="hw-stat-label" id="mealHwStatMidLabel">平均一週</div></div>';
         html += '<div class="hw-stat-item" onclick="hwToggleDiffMode();mealHwSyncStats()"><div class="hw-stat-value" id="mealHwStatRight">-</div><div class="hw-stat-label" id="mealHwStatRightLabel">期間變化</div></div>';
         html += '</div>';
+        html += '</div>';
 
-        // 4. 每日紀錄（欄位標頭兼收折按鈕）
-        html += '<div class="meal-section-wrap">';
-        html += '<div class="meal-tbl-wrap">';
-        html += '<div class="meal-tbl-head" onclick="mealToggleSection(\'mealTblBody\')" style="cursor:pointer">'
-            + '<div class="day-col day-col-date">日期 <span class="meal-tbl-today-btn" onclick="event.stopPropagation();mealTblScrollToToday()">↻</span></div>'
+        // 中間彈性區：每日紀錄表（flex:1 填滿剩餘空間）
+        html += '<div class="meal-fixed-tbl">';
+        html += '<div class="meal-tbl-head" style="flex-shrink:0;position:relative">'
+            + '<div class="day-col day-col-date">日期 <span class="meal-tbl-today-btn" onclick="mealTblScrollToToday()">↻</span></div>'
             + '<div class="day-col day-col-carb">碳日</div>'
             + '<div class="day-col day-col-diff">變化</div>'
             + '<div class="day-col day-col-wt">體重</div>'
             + '<div class="day-col day-col-cal">熱量</div>'
             + '<div class="day-col day-col-protein">蛋白質</div>'
             + '<div class="day-col day-col-count">張</div>'
-            + '<span class="meal-section-arrow" id="mealTblBodyArrow">▼</span>'
             + '</div>';
-        html += '<div id="mealTblBody"><div class="meal-tbl-scroll" id="mealTblScroll">';
+        html += '<div class="meal-tbl-scroll" id="mealTblScroll">';
         html += buildDayAccordions(recs);
-        html += '</div></div></div>';
+        html += '</div>';
         html += '</div>';
 
-        // 5. 體重趨勢圖（可收折）
-        html += '<div class="meal-section-wrap">';
-        html += '<div class="meal-section-head" onclick="mealToggleSection(\'mealWeightBody\')">'
-            + '<span>📈 體重趨勢</span><span class="meal-section-arrow" id="mealWeightBodyArrow">▼</span></div>';
-        html += '<div class="meal-section-body" id="mealWeightBody">';
-        html += '<div class="card" style="margin:0;box-shadow:none"><div class="hw-chart-wrap" id="mealHwChartWrap"><div class="hw-chart-inner" id="mealHwChartInner"><canvas id="mealWeightChart"></canvas></div></div></div>';
-        html += '</div></div>';
+        // 下方固定區：趨勢圖（體重/蛋白質切換）
+        html += '<div class="meal-fixed-chart">';
+        html += '<div class="meal-chart-toggle">'
+            + '<button class="meal-chart-toggle-btn active" id="mealChartBtnWeight" onclick="mealSwitchChart(\'weight\')">體重</button>'
+            + '<button class="meal-chart-toggle-btn" id="mealChartBtnProtein" onclick="mealSwitchChart(\'protein\')">蛋白質</button>'
+            + '</div>';
+        html += '<div id="mealChartWeightArea"><div class="hw-chart-wrap" id="mealHwChartWrap"><div class="hw-chart-inner" id="mealHwChartInner"><canvas id="mealWeightChart"></canvas></div></div></div>';
+        html += '<div id="mealChartProteinArea" style="display:none;padding:4px 8px 8px"><canvas id="mealProteinChart" height="140"></canvas></div>';
+        html += '</div>';
 
-        // 6. 蛋白質趨勢圖（可收折）
-        html += '<div class="meal-section-wrap">';
-        html += '<div class="meal-section-head" onclick="mealToggleSection(\'mealProteinBody\')">'
-            + '<span>蛋白質趨勢</span><span class="meal-section-arrow" id="mealProteinBodyArrow">▼</span></div>';
-        html += '<div class="meal-section-body" id="mealProteinBody">';
-        html += '<div class="meal-chart-card" style="margin:0;box-shadow:none"><canvas id="mealProteinChart" height="160"></canvas></div>';
-        html += '</div></div>';
+        html += '</div>'; // end meal-fixed-layout
 
         el.innerHTML = html;
 
-        // 設定表格高度 + 捲到今天 + 初始化無限滾動
+        // 初始化無限滾動（不再設固定高度，由 flex 控制）
         setTimeout(function(){
-            mealTblSetHeight();
             mealTblScrollToToday();
             mealTblInitScroll();
         }, 30);
-        // 渲染趨勢圖
-        setTimeout(function(){ renderMealChart(recs, recProtein); }, 50);
-        // 渲染居家體重趨勢圖
-        setTimeout(function(){ mealRenderWeightChart(); }, 80);
-        // 同步居家體重統計到餐食紀錄
+        // 渲染體重趨勢圖（預設顯示）
+        setTimeout(function(){ mealRenderWeightChart(); }, 50);
+        // 蛋白質圖在切換時才渲染（hidden canvas 無法正確渲染）
+        // 同步居家體重統計
         setTimeout(function(){ mealHwSyncStats(); }, 100);
     }
 
@@ -1048,28 +1056,33 @@
     var _mealTblDayIdx = 0;       // running day-accordion index counter
 
     function mealTblSetHeight() {
-        var sc = document.getElementById('mealTblScroll');
-        if (!sc) return;
-        // 顯示 7 天的高度（每列約 52px，字體放大後）
-        var rowH = 52;
-        sc.style.height = (rowH * 7) + 'px';
+        // 不再需要固定高度，由 flex 佈局自動分配
     }
 
     function mealToggleSection(bodyId) {
-        var body = document.getElementById(bodyId);
-        var arrow = document.getElementById(bodyId + 'Arrow');
-        if (!body) return;
-        var isHidden = body.style.display === 'none';
-        body.style.display = isHidden ? '' : 'none';
-        if (arrow) arrow.textContent = isHidden ? '▼' : '▶';
-        if (isHidden && bodyId === 'mealTblBody') {
-            setTimeout(function(){ mealTblSetHeight(); mealTblScrollToToday(); }, 30);
-        }
-        if (isHidden && bodyId === 'mealWeightBody') {
-            setTimeout(function(){ mealRenderWeightChart(); }, 50);
-        }
-        if (isHidden && bodyId === 'mealProteinBody') {
-            setTimeout(function(){ renderMealChart(_mealRecs, _mealRecProtein); }, 50);
+        // 收折已移除，保留空函數避免其他地方呼叫報錯
+    }
+
+    var _mealActiveChart = 'weight';
+    function mealSwitchChart(type) {
+        _mealActiveChart = type;
+        var wArea = document.getElementById('mealChartWeightArea');
+        var pArea = document.getElementById('mealChartProteinArea');
+        var wBtn = document.getElementById('mealChartBtnWeight');
+        var pBtn = document.getElementById('mealChartBtnProtein');
+        if (!wArea || !pArea) return;
+        if (type === 'weight') {
+            wArea.style.display = '';
+            pArea.style.display = 'none';
+            if (wBtn) wBtn.className = 'meal-chart-toggle-btn active';
+            if (pBtn) pBtn.className = 'meal-chart-toggle-btn';
+            setTimeout(function(){ mealRenderWeightChart(); }, 30);
+        } else {
+            wArea.style.display = 'none';
+            pArea.style.display = '';
+            if (wBtn) wBtn.className = 'meal-chart-toggle-btn';
+            if (pBtn) pBtn.className = 'meal-chart-toggle-btn active';
+            setTimeout(function(){ renderMealChart(_mealRecs, _mealRecProtein); }, 30);
         }
     }
     function mealTblScrollToToday() {
@@ -1102,7 +1115,7 @@
                 setTimeout(function(){ _mealTblExpanding = false; }, 100);
             }
         });
-        window.addEventListener('resize', mealTblSetHeight);
+        // resize 不需要，flex 佈局自動處理
     }
 
     function mealTblExpandTop() {
