@@ -155,11 +155,11 @@
         .meal-chart-card canvas{display:block;width:100%!important}
         .meal-fixed-layout{display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden}
         .meal-fixed-top{flex-shrink:0}
-        .meal-fixed-tbl{flex:1;min-height:0;display:flex;flex-direction:column;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:6px;max-height:38vh}
+        .meal-fixed-tbl{flex:1;min-height:0;display:flex;flex-direction:column;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:4px;max-height:46vh}
         .meal-fixed-tbl .meal-tbl-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
-        .meal-fixed-chart{flex:1;min-height:0;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:6px;display:flex;flex-direction:column}
+        .meal-fixed-chart{flex:1;min-height:0;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:2px;display:flex;flex-direction:column}
         .meal-fixed-chart .hw-chart-wrap{flex:1;min-height:0}
-        .meal-chart-toggle{display:flex;align-items:center;padding:6px 12px;gap:8px}
+        .meal-chart-toggle{display:flex;align-items:center;padding:4px 12px;gap:8px;flex-shrink:0}
         .meal-chart-toggle-btn{padding:4px 14px;border-radius:14px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s}
         .meal-chart-toggle-btn.active{background:var(--blue);color:white;border-color:var(--blue)}
         .meal-range-btns{display:flex;align-items:center;gap:4px;margin-left:auto}
@@ -1283,7 +1283,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: false,
-                layout: { padding: { bottom: 18, left: 4, right: 4 } },
+                layout: { padding: { bottom: 4, left: 4, right: 4 } },
                 onClick: function(evt, elements) {
                     if (elements.length > 0) {
                         var idx = elements[0].index;
@@ -3870,7 +3870,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: false,
-                layout: { padding: { bottom: 18, left: 4, right: 4 } },
+                layout: { padding: { bottom: 4, left: 4, right: 4 } },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
