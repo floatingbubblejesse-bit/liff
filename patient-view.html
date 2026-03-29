@@ -367,8 +367,7 @@
     </div>
     <div class="tab-bar">
         <button class="tab-btn" id="tabBtn-body" onclick="switchTab('body')">🏋️ 身體組成</button>
-        <button class="tab-btn" id="tabBtn-weight" onclick="switchTab('weight')">⚖️ 居家體重</button>
-        <button class="tab-btn" id="tabBtn-meals" onclick="switchTab('meals')">🍱 餐食記錄</button>
+        <button class="tab-btn" id="tabBtn-meals" onclick="switchTab('meals')">🍱 飲控紀錄</button>
         <button class="tab-btn" id="tabBtn-note" onclick="switchTab('note')">📋 醫生建議</button>
     </div>
     <div class="main">
@@ -379,36 +378,7 @@
         <script>if(window._pvCacheHit){document.getElementById('loadingDiv').style.display='none';}</script>
         <div id="errorDiv" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0"></div>
         <div id="tab-body" class="tab-pane" style="display:none"></div>
-        <div id="tab-weight" class="tab-pane" style="display:none">
-            <div id="hwScheduleBar" style="text-align:center;font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;display:none"></div>
-            <div class="hw-stats-row">
-                <div class="hw-stat-item" onclick="hwToggleMinMax()"><div class="hw-stat-value" id="hwStatLeft">-</div><div class="hw-stat-label" id="hwStatLeftLabel">最低體重</div></div>
-                <div class="hw-stat-item" onclick="hwCycleWeekStat()"><div class="hw-stat-value" id="hwStatMid">-</div><div class="hw-stat-label" id="hwStatMidLabel">平均一週</div></div>
-                <div class="hw-stat-item" onclick="hwToggleDiffMode()"><div class="hw-stat-value" id="hwStatRight">-</div><div class="hw-stat-label" id="hwStatRightLabel">期間變化</div></div>
-            </div>
-            <div class="card">
-                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleTable()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle" id="hwTableArrow">▼</span>📋 體重紀錄表</span><button onclick="hwTableScrollToToday()" id="hwTableTodayBtn" style="font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-light);border:1px solid var(--border);border-radius:14px;padding:3px 10px 3px 7px;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>今天</button></div>
-                <div id="hwTableBody" class="hw-chart-body">
-                    <div class="hw-scroll-wrap" id="hwTableScroll" style="max-height:50vh">
-                        <div id="hwTableWrap"><div class="no-data">載入中…</div></div>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleChart()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle collapsed" id="hwChartArrow">▼</span>📈 體重趨勢</span></div>
-                <div id="hwChartBody" class="hw-chart-body collapsed">
-                    <div id="hwChartWrap" class="hw-chart-wrap">
-                        <div id="hwChartInner" class="hw-chart-inner">
-                            <canvas id="hwWeightChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-title" style="justify-content:space-between"><span onclick="hwToggleCal()" style="cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent"><span class="hw-cal-toggle collapsed" id="hwCalArrow">▼</span>📅 日曆</span><button onclick="hwScrollToToday()" id="hwTodayBtn" style="display:none;font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-light);border:1px solid var(--border);border-radius:14px;padding:3px 10px 3px 7px;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>今天</button></div>
-                <div id="hwCalWrap" class="hw-scroll-wrap collapsed"></div>
-            </div>
-        </div>
+        <!-- 居家體重 tab 已移除，資料仍透過 _prefetchHomeWeight 預取供飲控紀錄使用 -->
         <div id="tab-meals" class="tab-pane" style="display:none"></div>
         <div id="tab-note" class="tab-pane" style="display:none">
             <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px" id="proteinWeightRow">
@@ -605,7 +575,7 @@
     if (cachedUid) patientLineUid = cachedUid;
     // 從 hash 讀取上次的 tab（重新整理時維持在同一頁）
     var initTab = (location.hash || '').replace('#','') || 'body';
-    if (['body','weight','meals','note'].indexOf(initTab) === -1) initTab = 'body';
+    if (['body','meals','note'].indexOf(initTab) === -1) initTab = 'body';
 
     // ★ 初始化程式碼已搬到 script 最底部，確保所有 var 賦值完成後才執行
 
@@ -648,14 +618,13 @@
             .catch(function(err){ if (!cached) showError('資料載入失敗：'+err.message); });
     }
 
-    var TAB_NAMES = ['body','weight','meals','note'];
+    var TAB_NAMES = ['body','meals','note'];
     function switchTab(name){
         activeTab=name;
         location.hash = name;
         document.querySelectorAll('.tab-btn').forEach(function(b,i){
             b.classList.toggle('active',TAB_NAMES[i]===name);
         });
-        if(name==='weight') loadHomeWeight();
         if(name==='meals') loadMeals();
         if(name==='note') renderHistoryTab();
         showTab(name);
@@ -1147,30 +1116,7 @@
     }
 
     function mealHwSyncStats() {
-        // 從居家體重 tab 的元素複製數值到餐食紀錄 tab 的對應元素
-        var pairs = [
-            ['hwStatLeft', 'mealHwStatLeft'],
-            ['hwStatLeftLabel', 'mealHwStatLeftLabel'],
-            ['hwStatMid', 'mealHwStatMid'],
-            ['hwStatMidLabel', 'mealHwStatMidLabel'],
-            ['hwStatRight', 'mealHwStatRight'],
-            ['hwStatRightLabel', 'mealHwStatRightLabel']
-        ];
-        pairs.forEach(function(p) {
-            var src = document.getElementById(p[0]);
-            var dst = document.getElementById(p[1]);
-            if (src && dst) {
-                dst.textContent = src.textContent;
-                if (src.style.color) dst.style.color = src.style.color;
-            }
-        });
-        // 同步排程列
-        var srcBar = document.getElementById('hwScheduleBar');
-        var dstBar = document.getElementById('mealHwScheduleBar');
-        if (srcBar && dstBar) {
-            dstBar.innerHTML = srcBar.innerHTML;
-            dstBar.style.display = srcBar.style.display;
-        }
+        // 居家體重 tab 已移除，所有統計函數已直接寫入 meal 元素，此函數保留為 no-op 以相容舊呼叫
     }
 
     var _mealWeightChartInst = null;
@@ -3471,50 +3417,67 @@
 
     function hwToggleMinMax() {
         _hwShowMaxWeight = !_hwShowMaxWeight;
+        var val = _hwShowMaxWeight ? (_hwStatMaxW !== null ? _hwStatMaxW.toFixed(1) : '-') : (_hwStatMinW !== null ? _hwStatMinW.toFixed(1) : '-');
+        var label = _hwShowMaxWeight ? '最高體重' : '最低體重';
         var el = document.getElementById('hwStatLeft');
         var lbl = document.getElementById('hwStatLeftLabel');
-        if (_hwShowMaxWeight) {
-            lbl.textContent = '最高體重';
-            el.textContent = _hwStatMaxW !== null ? _hwStatMaxW.toFixed(1) : '-';
-        } else {
-            lbl.textContent = '最低體重';
-            el.textContent = _hwStatMinW !== null ? _hwStatMinW.toFixed(1) : '-';
-        }
+        if (el) el.textContent = val;
+        if (lbl) lbl.textContent = label;
+        var mEl = document.getElementById('mealHwStatLeft');
+        var mLbl = document.getElementById('mealHwStatLeftLabel');
+        if (mEl) mEl.textContent = val;
+        if (mLbl) mLbl.textContent = label;
     }
 
     function hwToggleDiffMode() {
         _hwShowHistoryDiff = !_hwShowHistoryDiff;
-        var el = document.getElementById('hwStatRight');
-        var lbl = document.getElementById('hwStatRightLabel');
         var diff = _hwShowHistoryDiff ? _hwHistoryDiff : _hwPeriodDiff;
-        lbl.textContent = _hwShowHistoryDiff ? '歷史變化' : '期間變化';
+        var label = _hwShowHistoryDiff ? '歷史變化' : '期間變化';
+        var val, clr;
         if (diff !== null) {
             var sign = diff > 0 ? '+' : '';
-            el.textContent = sign + diff.toFixed(1);
-            el.style.color = diff < 0 ? '#6B8F71' : diff > 0 ? '#A0626B' : '#8B8B8B';
+            val = sign + diff.toFixed(1);
+            clr = diff < 0 ? '#6B8F71' : diff > 0 ? '#A0626B' : '#8B8B8B';
         } else {
-            el.textContent = '-';
-            el.style.color = '';
+            val = '-';
+            clr = '';
+        }
+        var targets = ['hwStatRight', 'mealHwStatRight'];
+        var labels = ['hwStatRightLabel', 'mealHwStatRightLabel'];
+        for (var ti = 0; ti < targets.length; ti++) {
+            var el = document.getElementById(targets[ti]);
+            if (el) { el.textContent = val; el.style.color = clr; }
+        }
+        for (var li = 0; li < labels.length; li++) {
+            var lb = document.getElementById(labels[li]);
+            if (lb) lb.textContent = label;
         }
     }
 
     function hwShowWeekStat() {
-        var el = document.getElementById('hwStatMid');
-        var lbl = document.getElementById('hwStatMidLabel');
+        var val, label, clr;
         if (_hwWeekStats.length === 0) {
-            el.textContent = '-';
-            lbl.textContent = '平均一週';
-            return;
-        }
-        var item = _hwWeekStats[_hwWeekStatIndex];
-        lbl.textContent = item.label;
-        if (item.diff !== null) {
-            var sign = item.diff > 0 ? '+' : '';
-            el.textContent = sign + item.diff.toFixed(1);
-            el.style.color = item.diff < 0 ? '#6B8F71' : item.diff > 0 ? '#A0626B' : '#8B8B8B';
+            val = '-'; label = '平均一週'; clr = '';
         } else {
-            el.textContent = '-';
-            el.style.color = '';
+            var item = _hwWeekStats[_hwWeekStatIndex];
+            label = item.label;
+            if (item.diff !== null) {
+                var sign = item.diff > 0 ? '+' : '';
+                val = sign + item.diff.toFixed(1);
+                clr = item.diff < 0 ? '#6B8F71' : item.diff > 0 ? '#A0626B' : '#8B8B8B';
+            } else {
+                val = '-'; clr = '';
+            }
+        }
+        var targets = ['hwStatMid', 'mealHwStatMid'];
+        var labels = ['hwStatMidLabel', 'mealHwStatMidLabel'];
+        for (var ti = 0; ti < targets.length; ti++) {
+            var el = document.getElementById(targets[ti]);
+            if (el) { el.textContent = val; el.style.color = clr; }
+        }
+        for (var li = 0; li < labels.length; li++) {
+            var lb = document.getElementById(labels[li]);
+            if (lb) lb.textContent = label;
         }
     }
 
@@ -3541,17 +3504,22 @@
             scheduleEnd = new Date(scheduleStart.getFullYear(), scheduleStart.getMonth(), scheduleStart.getDate() + weeks * 7 - 1);
         }
 
-        // 排程資訊列
-        var schBar = document.getElementById('hwScheduleBar');
-        if (schBar) {
-            if (scheduleStart && scheduleEnd) {
-                var sL = (scheduleStart.getMonth()+1) + '/' + scheduleStart.getDate() + '(' + HW_DAY_NAMES[scheduleStart.getDay()] + ')';
-                var eL = (scheduleEnd.getMonth()+1) + '/' + scheduleEnd.getDate() + '(' + HW_DAY_NAMES[scheduleEnd.getDay()] + ')';
-                var wks = hwVisitRecords.length > 0 ? (hwVisitRecords[hwVisitRecords.length-1].weeks || 4) : 4;
-                schBar.innerHTML = '最新排程期間　<span style="color:var(--blue);font-weight:700">' + sL + ' ~ ' + eL + '</span>　' + wks + ' 週';
-                schBar.style.display = 'block';
-            } else {
-                schBar.style.display = 'none';
+        // 排程資訊列（寫入兩處：居家體重 tab + 飲控紀錄 tab）
+        var schBarIds = ['hwScheduleBar', 'mealHwScheduleBar'];
+        var schHtml = '';
+        var schShow = false;
+        if (scheduleStart && scheduleEnd) {
+            var sL = (scheduleStart.getMonth()+1) + '/' + scheduleStart.getDate() + '(' + HW_DAY_NAMES[scheduleStart.getDay()] + ')';
+            var eL = (scheduleEnd.getMonth()+1) + '/' + scheduleEnd.getDate() + '(' + HW_DAY_NAMES[scheduleEnd.getDay()] + ')';
+            var wks = hwVisitRecords.length > 0 ? (hwVisitRecords[hwVisitRecords.length-1].weeks || 4) : 4;
+            schHtml = '最新排程期間　<span style="color:var(--blue);font-weight:700">' + sL + ' ~ ' + eL + '</span>　' + wks + ' 週';
+            schShow = true;
+        }
+        for (var sbi = 0; sbi < schBarIds.length; sbi++) {
+            var schBar = document.getElementById(schBarIds[sbi]);
+            if (schBar) {
+                schBar.innerHTML = schHtml;
+                schBar.style.display = schShow ? 'block' : 'none';
             }
         }
 
@@ -3585,13 +3553,17 @@
             _hwHistoryDiff = null;
         }
 
-        // 左格：最低/最高
+        // 左格：最低/最高（寫入居家體重 tab + 飲控紀錄 tab）
         var elL = document.getElementById('hwStatLeft');
-        if (_hwShowMaxWeight) {
-            elL.textContent = maxW !== null ? maxW.toFixed(1) : '-';
-        } else {
-            elL.textContent = minW !== null ? minW.toFixed(1) : '-';
-        }
+        var mealElL = document.getElementById('mealHwStatLeft');
+        var leftVal = _hwShowMaxWeight ? (maxW !== null ? maxW.toFixed(1) : '-') : (minW !== null ? minW.toFixed(1) : '-');
+        var leftLabel = _hwShowMaxWeight ? '最高體重' : '最低體重';
+        if (elL) elL.textContent = leftVal;
+        if (mealElL) mealElL.textContent = leftVal;
+        var elLL = document.getElementById('hwStatLeftLabel');
+        var mealElLL = document.getElementById('mealHwStatLeftLabel');
+        if (elLL) elLL.textContent = leftLabel;
+        if (mealElLL) mealElLL.textContent = leftLabel;
 
         // 週變化
         _hwWeekStats = [];
@@ -3637,17 +3609,26 @@
         // 右格：期間/歷史變化
         _hwPeriodDiff = (first && last) ? last - first : null;
         var activeDiff = _hwShowHistoryDiff ? _hwHistoryDiff : _hwPeriodDiff;
-        var elR = document.getElementById('hwStatRight');
+        var rightVal, rightClr;
+        var rightLabel = _hwShowHistoryDiff ? '歷史變化' : '期間變化';
         if (activeDiff !== null) {
             var sign = activeDiff > 0 ? '+' : '';
-            elR.textContent = sign + activeDiff.toFixed(1);
-            elR.style.color = activeDiff < 0 ? '#6B8F71' : activeDiff > 0 ? '#A0626B' : '#8B8B8B';
+            rightVal = sign + activeDiff.toFixed(1);
+            rightClr = activeDiff < 0 ? '#6B8F71' : activeDiff > 0 ? '#A0626B' : '#8B8B8B';
         } else {
-            elR.textContent = '-';
-            elR.style.color = '';
+            rightVal = '-';
+            rightClr = '';
         }
-        // 同步到餐食紀錄 tab
-        if (typeof mealHwSyncStats === 'function') mealHwSyncStats();
+        var rightTargets = ['hwStatRight', 'mealHwStatRight'];
+        var rightLabels = ['hwStatRightLabel', 'mealHwStatRightLabel'];
+        for (var ri = 0; ri < rightTargets.length; ri++) {
+            var rEl = document.getElementById(rightTargets[ri]);
+            if (rEl) { rEl.textContent = rightVal; rEl.style.color = rightClr; }
+        }
+        for (var rli = 0; rli < rightLabels.length; rli++) {
+            var rlEl = document.getElementById(rightLabels[rli]);
+            if (rlEl) rlEl.textContent = rightLabel;
+        }
     }
 
     // ── 體重趨勢圖表（含縮放、滑動、星期標籤） ──
