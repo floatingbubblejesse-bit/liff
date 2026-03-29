@@ -24,6 +24,7 @@
     <style>
         :root { --blue:#7B8FA1; --blue-light:#EDE8E0; --green:#8B9D83; --green-light:#E8EDE6; --red:#A0626B; --orange:#C4A882; --brown:#B8926A; --bg:#F5F3EF; --card:#FDFBF7; --text:#4A4A4A; --muted:#8B8B8B; --border:#E8E4DC; }
         *{box-sizing:border-box;margin:0;padding:0}
+        html,body{overscroll-behavior-y:contain}
         body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:52px}
 
         /* ====== Header ====== */
@@ -46,7 +47,7 @@
         .stat-label{font-size:10px;color:var(--muted);margin-top:2px}
 
         /* ====== Scroll container ====== */
-        .table-scroll{}
+        .table-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
 
         /* ====== Table ====== */
         .wt-table{width:100%;border-collapse:collapse;background:white;table-layout:fixed}
@@ -478,7 +479,12 @@
         }
         renderScheduleBar();
         renderTable();
-        if (!_dataReadyDone) { initInfiniteScroll(); _dataReadyDone = true; }
+        if (!_dataReadyDone) {
+            initInfiniteScroll();
+            _dataReadyDone = true;
+            // 首次載入：自動捲到今天
+            setTimeout(scrollToToday, 100);
+        }
     }
 
     // ====== Infinite scroll ======
@@ -491,7 +497,7 @@
             var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             var scrollHeight = document.documentElement.scrollHeight;
             var clientHeight = window.innerHeight;
-            // 接近底部：往下擴展
+            // 只偵測底部：往下擴展（往上改用按鈕）
             if (scrollHeight - scrollTop - clientHeight < 300) {
                 expandBottom();
             }
@@ -552,8 +558,8 @@
         var today = new Date();
         var endAnchor = scheduleEnd || today;
 
-        // 初始範圍：今天前 2 天起，確保 header/統計列不被推出螢幕
-        rangeStartDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 2);
+        // 初始範圍：今天前 6 個月起
+        rangeStartDate = new Date(today.getFullYear(), today.getMonth() - 6, 1);
         rangeEndDate = new Date(endAnchor.getFullYear(), endAnchor.getMonth() + EXPAND_MONTHS + 1, 0);
 
         return { start: rangeStartDate, end: rangeEndDate };

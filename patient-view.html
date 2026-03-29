@@ -150,19 +150,25 @@
         .meal-stat-detail.show{display:block}
         .meal-chart-card{background:white;border-radius:12px;padding:14px 12px 10px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
         .meal-chart-card canvas{display:block;width:100%!important}
-        .day-accordion{background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
-        .day-header{display:flex;align-items:center;padding:10px 10px;cursor:pointer;user-select:none;gap:0;-webkit-tap-highlight-color:transparent}
-        .day-header:active{background:#F5F3EF}
-        .day-col{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
-        .day-col-date{flex:0 0 auto;min-width:72px;text-align:left;padding-left:4px}
-        .day-col-carb{flex:0 0 38px}
-        .day-col-wt{flex:0 0 52px}
-        .day-col-diff{flex:0 0 44px}
+        .meal-tbl-wrap{background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+        .meal-tbl-head{display:flex;align-items:center;padding:6px 8px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
+        .meal-tbl-head .day-col{font-size:12px;font-weight:700;color:var(--muted)}
+        .meal-tbl-scroll{max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+        .day-accordion{border-bottom:1px solid #F0EDE8}
+        .day-accordion:last-child{border-bottom:none}
+        .day-header{display:flex;align-items:center;padding:9px 8px;cursor:pointer;user-select:none;gap:0;-webkit-tap-highlight-color:transparent}
+        .day-header.no-rec{cursor:default;opacity:0.55}
+        .day-header:active:not(.no-rec){background:#F5F3EF}
+        .day-col{text-align:center;display:flex;align-items:center;justify-content:center}
+        .day-col-date{flex:0 0 auto;min-width:68px;text-align:left;padding-left:2px;justify-content:flex-start}
+        .day-col-carb{flex:0 0 34px}
+        .day-col-diff{flex:0 0 48px}
+        .day-col-wt{flex:0 0 48px}
         .day-col-cal{flex:1 1 auto}
-        .day-col-protein{flex:0 0 44px}
-        .day-col-count{flex:0 0 32px}
-        .day-val{font-size:15px;font-weight:700;color:var(--text);line-height:1.2}
-        .day-lbl{font-size:8px;color:var(--muted);margin-top:1px}
+        .day-col-protein{flex:0 0 40px}
+        .day-col-count{flex:0 0 28px}
+        .day-val{font-size:14px;font-weight:700;color:var(--text);line-height:1.2}
+        .day-lbl{font-size:14px;font-weight:700;color:var(--text)}
         .day-date-main{font-size:14px;font-weight:700;color:var(--text)}
         .day-date-sub{font-size:10px;color:var(--muted)}
         .day-carb-tag{font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;display:inline-block}
@@ -982,22 +988,29 @@
         html += '<div class="hw-stat-item" onclick="hwToggleDiffMode();mealHwSyncStats()"><div class="hw-stat-value" id="mealHwStatRight">-</div><div class="hw-stat-label" id="mealHwStatRightLabel">期間變化</div></div>';
         html += '</div>';
 
-        // 4. 每日紀錄
-        html += '<div style="font-size:12px;font-weight:700;color:#8B8B8B;margin-bottom:4px;letter-spacing:.5px">每日紀錄</div>';
-        html += '<div class="day-header" style="padding:4px 10px;cursor:default;background:none;margin-bottom:2px">'
-            + '<div class="day-col day-col-date" style="text-align:left"><span class="day-lbl">日期</span></div>'
-            + '<div class="day-col day-col-carb"><span class="day-lbl">碳日</span></div>'
-            + '<div class="day-col day-col-wt"><span class="day-lbl">體重</span></div>'
-            + '<div class="day-col day-col-diff"><span class="day-lbl">變化</span></div>'
-            + '<div class="day-col day-col-cal"><span class="day-lbl">熱量</span></div>'
-            + '<div class="day-col day-col-protein"><span class="day-lbl">蛋白質</span></div>'
-            + '<div class="day-col day-col-count"><span class="day-lbl">張</span></div>'
+        // 4. 每日紀錄（連續日期表格，類似體重紀錄表）
+        html += '<div class="meal-tbl-wrap">';
+        html += '<div class="meal-tbl-head">'
+            + '<div class="day-col day-col-date">日期</div>'
+            + '<div class="day-col day-col-carb">碳日</div>'
+            + '<div class="day-col day-col-diff">變化</div>'
+            + '<div class="day-col day-col-wt">體重</div>'
+            + '<div class="day-col day-col-cal">熱量</div>'
+            + '<div class="day-col day-col-protein">蛋白質</div>'
+            + '<div class="day-col day-col-count">張</div>'
             + '<span style="width:11px;flex-shrink:0"></span>'
             + '</div>';
+        html += '<div class="meal-tbl-scroll" id="mealTblScroll">';
         html += buildDayAccordions(recs);
+        html += '</div></div>';
 
         el.innerHTML = html;
 
+        // 捲到表格底部（最新日期）
+        setTimeout(function(){
+            var sc = document.getElementById('mealTblScroll');
+            if (sc) sc.scrollTop = sc.scrollHeight;
+        }, 30);
         // 渲染趨勢圖
         setTimeout(function(){ renderMealChart(recs, recProtein); }, 50);
         // 渲染居家體重趨勢圖
@@ -1207,6 +1220,7 @@
     }
 
     function buildDayAccordions(recs) {
+        // 按日期分組餐食紀錄
         var grouped = {};
         recs.forEach(function(r){
             var key = toMealDateKey(r.date);
@@ -1214,51 +1228,41 @@
             if (!grouped[key]) grouped[key] = [];
             grouped[key].push(r);
         });
-        var sortedKeys = Object.keys(grouped).sort(function(a,b){ return a.localeCompare(b); });
+
+        // 找出日期範圍：最早紀錄 ~ 今天
+        var recKeys = Object.keys(grouped).sort();
+        var hwKeys = Object.keys(hwWeightData).sort();
+        var allDateKeys = recKeys.concat(hwKeys);
+        allDateKeys.sort();
+        if (allDateKeys.length === 0) return '';
+        var now = new Date(Date.now() + 8 * 3600000);
+        var todayStr = now.toISOString().split('T')[0];
+        var minKey = allDateKeys[0];
+        var maxKey = todayStr > allDateKeys[allDateKeys.length - 1] ? todayStr : allDateKeys[allDateKeys.length - 1];
+
+        // 產生連續日期陣列
+        var startParts = minKey.split('-');
+        var cursor = new Date(parseInt(startParts[0]), parseInt(startParts[1]) - 1, parseInt(startParts[2]));
+        var endParts = maxKey.split('-');
+        var endDate = new Date(parseInt(endParts[0]), parseInt(endParts[1]) - 1, parseInt(endParts[2]));
+        var allDates = [];
+        while (cursor <= endDate) {
+            var y = cursor.getFullYear();
+            var m = cursor.getMonth() + 1;
+            var d = cursor.getDate();
+            allDates.push(y + '-' + (m < 10 ? '0' + m : m) + '-' + (d < 10 ? '0' + d : d));
+            cursor.setDate(cursor.getDate() + 1);
+        }
+
+        var _carbLabels = { high: '高', mid: '中', low: '低', fast: '斷' };
+        var _weekNames = ['日','一','二','三','四','五','六'];
         var html = '';
-        sortedKeys.forEach(function(dateKey, di){
-            var dayRecs = grouped[dateKey];
+
+        allDates.forEach(function(dateKey, di) {
+            var dayRecs = grouped[dateKey] || [];
+            var hasRec = dayRecs.length > 0;
             var totalProtein = dayRecs.reduce(function(s,r){ return s + (r.protein||0); }, 0);
             var totalCal = dayRecs.reduce(function(s,r){ return s + (r.calories||0); }, 0);
-            var dayLabel = formatMealDayLabel(dateKey);
-            var summary = dayRecs.length + ' 張 · 熱量 ' + Math.round(totalCal) + ' kcal';
-            var mealsHtml = '';
-            dayRecs.forEach(function(r, mi){
-                var cardId = 'mc-' + di + '-' + mi;
-                var timeStr = formatMealTime(r.date) || '（無時間）';
-                var proteinMini = r.protein ? Math.round(r.protein) + 'g' : '';
-                var imgUrl = r.imageId ? IMAGE_PROXY + '?id=' + r.imageId : '';
-                var imgHtml = imgUrl
-                    ? '<img src="' + esc(imgUrl) + '" onerror="this.parentNode.innerHTML=\'<div class=mc-img-ph>🍱</div>\'" loading="lazy">'
-                    : '<div class="mc-img-ph">🍱</div>';
-                var aiNote = r.aiNote ? '<div class="mc-ai-note"><div class="mc-ai-label">🤖 AI 飲食建議</div>' + esc(r.aiNote) + '</div>' : '';
-                var stars = r.nutritionScore ? '<div style="margin-bottom:3px"><span class="mc-stars">' + scoreToStars(r.nutritionScore) + '</span> <span style="font-size:11px;color:#92400E">(' + r.nutritionScore + '分)</span></div>' : '';
-                var advice = r.nutritionistAdvice ? '<div>' + esc(r.nutritionistAdvice) + '</div>' : '<div>（無備註）</div>';
-
-                mealsHtml += '<div class="mc" id="' + cardId + '">'
-                    + '<div class="mc-header" onclick="toggleMC(\'' + cardId + '\')">'
-                    + '<div class="mc-time">🍽 ' + esc(timeStr) + '</div>'
-                    + (proteinMini ? '<div class="mc-protein">蛋白質 ' + proteinMini + '</div>' : '')
-                    + '<span class="mc-arrow">▼</span>'
-                    + '</div>'
-                    + '<div class="mc-body">'
-                    + '<div class="mc-img-wrap">' + imgHtml + '</div>'
-                    + '<div class="mc-detail">'
-                    + '<div class="mc-foods">' + esc(r.foods || '（無資料）') + '</div>'
-                    + '<div class="mc-macros">'
-                    + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.calories||0) + '</div><div class="mc-macro-lbl">熱量 kcal</div></div>'
-                    + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.protein||0) + '</div><div class="mc-macro-lbl">蛋白質 g</div></div>'
-                    + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round((r.carbs||0)-(r.fiber||0)) + '</div><div class="mc-macro-lbl">淨碳水 g</div></div>'
-                    + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.carbs||0) + '</div><div class="mc-macro-lbl">碳水 g</div></div>'
-                    + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.fat||0) + '</div><div class="mc-macro-lbl">脂肪 g</div></div>'
-                    + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.fiber||0) + '</div><div class="mc-macro-lbl">纖維 g</div></div>'
-                    + '</div>'
-                    + aiNote
-                    + '<div class="mc-advice"><div class="mc-advice-label">👩‍⚕️ 營養師建議</div>' + stars + advice + '</div>'
-                    + '</div>'
-                    + '</div>'
-                    + '</div>';
-            });
 
             // 居家體重 & 碳日 & 變化
             var _hwData = hwWeightData[dateKey];
@@ -1266,8 +1270,8 @@
             var _dtParts = dateKey.split('-');
             var _dtObj = new Date(parseInt(_dtParts[0]), parseInt(_dtParts[1]) - 1, parseInt(_dtParts[2]));
             var _dayType = (_hwData && _hwData.dayType) ? _hwData.dayType : hwGetDayType(_dtObj);
-            var _carbLabels = { high: '高', mid: '中', low: '低', fast: '斷' };
-            // 計算體重變化（vs 前一天有紀錄的體重）
+
+            // 變化
             var _hwDiff = null;
             if (_hwWeight) {
                 var _hwAllKeys = Object.keys(hwWeightData).filter(function(k){ return hwWeightData[k].weight && k < dateKey; }).sort();
@@ -1276,18 +1280,16 @@
                     _hwDiff = _hwWeight - _prevW;
                 }
             }
-            // 日期拆分
+
             var _dMon = parseInt(_dtParts[1]);
             var _dDay = parseInt(_dtParts[2]);
-            var _dWeek = ['日','一','二','三','四','五','六'][_dtObj.getDay()];
+            var _dWeek = _weekNames[_dtObj.getDay()];
 
-            // 碳日欄
+            // 碳日
             var _carbHtml = (_dayType && _carbLabels[_dayType])
                 ? '<span class="day-carb-tag t-' + _dayType + '">' + _carbLabels[_dayType] + '</span>'
                 : '<span style="color:#ccc">-</span>';
-            // 體重欄
-            var _wtHtml = _hwWeight ? '<span class="day-val">' + _hwWeight + '</span>' : '<span style="color:#ccc">-</span>';
-            // 變化欄
+            // 變化
             var _diffHtml = '';
             if (_hwDiff !== null) {
                 var _dSign = _hwDiff > 0 ? '+' : '';
@@ -1296,19 +1298,71 @@
             } else {
                 _diffHtml = '<span style="color:#ccc">-</span>';
             }
+            // 體重
+            var _wtHtml = _hwWeight ? '<span class="day-val">' + _hwWeight + '</span>' : '<span style="color:#ccc">-</span>';
+            // 熱量
+            var _calHtml = hasRec ? '<span class="day-val">' + Math.round(totalCal) + '</span>' : '<span style="color:#ccc">-</span>';
+            // 蛋白質
+            var _proHtml = hasRec ? '<span class="day-val" style="color:#A0626B">' + Math.round(totalProtein) + '</span>' : '<span style="color:#ccc">-</span>';
+            // 張數
+            var _cntHtml = hasRec ? '<span class="day-val">' + dayRecs.length + '</span>' : '';
+
+            // 展開內容（只有有紀錄才有）
+            var mealsHtml = '';
+            if (hasRec) {
+                dayRecs.forEach(function(r, mi){
+                    var cardId = 'mc-' + di + '-' + mi;
+                    var timeStr = formatMealTime(r.date) || '（無時間）';
+                    var proteinMini = r.protein ? Math.round(r.protein) + 'g' : '';
+                    var imgUrl = r.imageId ? IMAGE_PROXY + '?id=' + r.imageId : '';
+                    var imgHtml = imgUrl
+                        ? '<img src="' + esc(imgUrl) + '" onerror="this.parentNode.innerHTML=\'<div class=mc-img-ph>🍱</div>\'" loading="lazy">'
+                        : '<div class="mc-img-ph">🍱</div>';
+                    var aiNote = r.aiNote ? '<div class="mc-ai-note"><div class="mc-ai-label">🤖 AI 飲食建議</div>' + esc(r.aiNote) + '</div>' : '';
+                    var stars = r.nutritionScore ? '<div style="margin-bottom:3px"><span class="mc-stars">' + scoreToStars(r.nutritionScore) + '</span> <span style="font-size:11px;color:#92400E">(' + r.nutritionScore + '分)</span></div>' : '';
+                    var advice = r.nutritionistAdvice ? '<div>' + esc(r.nutritionistAdvice) + '</div>' : '<div>（無備註）</div>';
+                    mealsHtml += '<div class="mc" id="' + cardId + '">'
+                        + '<div class="mc-header" onclick="toggleMC(\'' + cardId + '\')">'
+                        + '<div class="mc-time">🍽 ' + esc(timeStr) + '</div>'
+                        + (proteinMini ? '<div class="mc-protein">蛋白質 ' + proteinMini + '</div>' : '')
+                        + '<span class="mc-arrow">▼</span>'
+                        + '</div>'
+                        + '<div class="mc-body">'
+                        + '<div class="mc-img-wrap">' + imgHtml + '</div>'
+                        + '<div class="mc-detail">'
+                        + '<div class="mc-foods">' + esc(r.foods || '（無資料）') + '</div>'
+                        + '<div class="mc-macros">'
+                        + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.calories||0) + '</div><div class="mc-macro-lbl">熱量 kcal</div></div>'
+                        + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.protein||0) + '</div><div class="mc-macro-lbl">蛋白質 g</div></div>'
+                        + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round((r.carbs||0)-(r.fiber||0)) + '</div><div class="mc-macro-lbl">淨碳水 g</div></div>'
+                        + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.carbs||0) + '</div><div class="mc-macro-lbl">碳水 g</div></div>'
+                        + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.fat||0) + '</div><div class="mc-macro-lbl">脂肪 g</div></div>'
+                        + '<div class="mc-macro"><div class="mc-macro-val">' + Math.round(r.fiber||0) + '</div><div class="mc-macro-lbl">纖維 g</div></div>'
+                        + '</div>'
+                        + aiNote
+                        + '<div class="mc-advice"><div class="mc-advice-label">👩‍⚕️ 營養師建議</div>' + stars + advice + '</div>'
+                        + '</div>'
+                        + '</div>'
+                        + '</div>';
+                });
+            }
+
+            var isToday = dateKey === todayStr;
+            var todayStyle = isToday ? 'background:rgba(123,143,161,0.08);' : '';
+            var dateStyle = isToday ? 'font-weight:800;color:var(--blue)' : '';
 
             html += '<div class="day-accordion" id="day-' + di + '">'
-                + '<div class="day-header" onclick="toggleDay(' + di + ')">'
-                + '<div class="day-col day-col-date"><div class="day-date-main">' + _dMon + '/' + _dDay + '<span style="font-size:11px;font-weight:400;color:var(--muted)">(' + _dWeek + ')</span></div></div>'
+                + '<div class="day-header' + (hasRec ? '' : ' no-rec') + '" style="' + todayStyle + '"' + (hasRec ? ' onclick="toggleDay(' + di + ')"' : '') + '>'
+                + '<div class="day-col day-col-date"><span class="day-val" style="' + dateStyle + '">' + _dMon + '/' + _dDay + '<span style="font-size:11px;font-weight:400;color:var(--muted)">(' + _dWeek + ')</span></span></div>'
                 + '<div class="day-col day-col-carb">' + _carbHtml + '</div>'
-                + '<div class="day-col day-col-wt">' + _wtHtml + '<div class="day-lbl">kg</div></div>'
                 + '<div class="day-col day-col-diff">' + _diffHtml + '</div>'
-                + '<div class="day-col day-col-cal"><span class="day-val">' + Math.round(totalCal) + '</span><div class="day-lbl">kcal</div></div>'
-                + '<div class="day-col day-col-protein"><span class="day-val" style="color:#A0626B">' + Math.round(totalProtein) + '</span><div class="day-lbl">g</div></div>'
-                + '<div class="day-col day-col-count"><span class="day-val" style="font-size:13px;color:var(--muted)">' + dayRecs.length + '</span></div>'
-                + '<span class="day-arrow">▼</span>'
+                + '<div class="day-col day-col-wt">' + _wtHtml + '</div>'
+                + '<div class="day-col day-col-cal">' + _calHtml + '</div>'
+                + '<div class="day-col day-col-protein">' + _proHtml + '</div>'
+                + '<div class="day-col day-col-count">' + _cntHtml + '</div>'
+                + (hasRec ? '<span class="day-arrow">▼</span>' : '<span style="width:11px;flex-shrink:0"></span>')
                 + '</div>'
-                + '<div class="day-body">' + mealsHtml + '</div>'
+                + (hasRec ? '<div class="day-body">' + mealsHtml + '</div>' : '')
                 + '</div>';
         });
         return html;
