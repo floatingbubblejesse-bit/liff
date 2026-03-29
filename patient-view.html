@@ -153,7 +153,9 @@
         .meal-tbl-wrap{background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
         .meal-tbl-head{display:flex;align-items:center;padding:6px 8px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
         .meal-tbl-head .day-col{font-size:12px;font-weight:700;color:var(--muted)}
-        .meal-tbl-scroll{max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+        .meal-tbl-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+        .meal-tbl-today-btn{display:inline-flex;align-items:center;justify-content:center;padding:2px 10px;border-radius:10px;background:#C0CDD9;color:#fff;font-size:11px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;gap:3px;margin-left:auto;flex-shrink:0}
+        .meal-tbl-today-btn:active{opacity:0.5}
         .day-accordion{border-bottom:1px solid #F0EDE8}
         .day-accordion:last-child{border-bottom:none}
         .day-header{display:flex;align-items:center;padding:9px 8px;cursor:pointer;user-select:none;gap:0;-webkit-tap-highlight-color:transparent}
@@ -986,7 +988,7 @@
             + '<div class="day-col day-col-cal">熱量</div>'
             + '<div class="day-col day-col-protein">蛋白質</div>'
             + '<div class="day-col day-col-count">張</div>'
-            + '<span style="width:11px;flex-shrink:0"></span>'
+            + '<span class="meal-tbl-today-btn" onclick="mealTblScrollToToday()">↻ 今天</span>'
             + '</div>';
         html += '<div class="meal-tbl-scroll" id="mealTblScroll">';
         html += buildDayAccordions(recs);
@@ -1000,10 +1002,10 @@
 
         el.innerHTML = html;
 
-        // 捲到表格底部（最新日期）
+        // 設定表格高度 + 捲到今天
         setTimeout(function(){
-            var sc = document.getElementById('mealTblScroll');
-            if (sc) sc.scrollTop = sc.scrollHeight;
+            mealTblSetHeight();
+            mealTblScrollToToday();
         }, 30);
         // 渲染趨勢圖
         setTimeout(function(){ renderMealChart(recs, recProtein); }, 50);
@@ -1011,6 +1013,26 @@
         setTimeout(function(){ mealRenderWeightChart(); }, 80);
         // 同步居家體重統計到餐食紀錄
         setTimeout(function(){ mealHwSyncStats(); }, 100);
+    }
+
+    function mealTblSetHeight() {
+        var sc = document.getElementById('mealTblScroll');
+        if (!sc) return;
+        var rect = sc.getBoundingClientRect();
+        var h = window.innerHeight - rect.top - 8;
+        sc.style.height = Math.max(200, h) + 'px';
+    }
+    function mealTblScrollToToday() {
+        var sc = document.getElementById('mealTblScroll');
+        if (!sc) return;
+        var today = sc.querySelector('[data-today]');
+        if (today) {
+            var trRect = today.getBoundingClientRect();
+            var scRect = sc.getBoundingClientRect();
+            sc.scrollTop += trRect.top - scRect.top - sc.clientHeight / 2 + today.clientHeight / 2;
+        } else {
+            sc.scrollTop = sc.scrollHeight;
+        }
     }
 
     function mealHwSyncStats() {
@@ -1346,7 +1368,7 @@
             var dateStyle = isToday ? 'font-weight:800;color:var(--blue)' : '';
 
             html += '<div class="day-accordion" id="day-' + di + '">'
-                + '<div class="day-header' + (hasRec ? '' : ' no-rec') + '" style="' + todayStyle + '"' + (hasRec ? ' onclick="toggleDay(' + di + ')"' : '') + '>'
+                + '<div class="day-header' + (hasRec ? '' : ' no-rec') + '" style="' + todayStyle + '"' + (isToday ? ' data-today="1"' : '') + (hasRec ? ' onclick="toggleDay(' + di + ')"' : '') + '>'
                 + '<div class="day-col day-col-date"><span class="day-val" style="' + dateStyle + '">' + _dMon + '/' + _dDay + '<span style="font-size:11px;font-weight:400;color:var(--muted)">(' + _dWeek + ')</span></span></div>'
                 + '<div class="day-col day-col-carb">' + _carbHtml + '</div>'
                 + '<div class="day-col day-col-diff">' + _diffHtml + '</div>'
