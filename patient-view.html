@@ -1214,7 +1214,7 @@
             if (!grouped[key]) grouped[key] = [];
             grouped[key].push(r);
         });
-        var sortedKeys = Object.keys(grouped).sort(function(a,b){ return b.localeCompare(a); });
+        var sortedKeys = Object.keys(grouped).sort(function(a,b){ return a.localeCompare(b); });
         var html = '';
         sortedKeys.forEach(function(dateKey, di){
             var dayRecs = grouped[dateKey];
