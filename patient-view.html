@@ -155,10 +155,10 @@
         .meal-chart-card canvas{display:block;width:100%!important}
         .meal-fixed-layout{display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden}
         .meal-fixed-top{flex-shrink:0}
-        .meal-fixed-tbl{flex:1;min-height:0;display:flex;flex-direction:column;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:6px}
+        .meal-fixed-tbl{flex:1;min-height:0;display:flex;flex-direction:column;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:6px;max-height:38vh}
         .meal-fixed-tbl .meal-tbl-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
-        .meal-fixed-chart{flex-shrink:0;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:6px}
-        .meal-fixed-chart .hw-chart-wrap{height:160px}
+        .meal-fixed-chart{flex:1;min-height:0;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:6px;display:flex;flex-direction:column}
+        .meal-fixed-chart .hw-chart-wrap{flex:1;min-height:0}
         .meal-chart-toggle{display:flex;align-items:center;padding:6px 12px;gap:8px}
         .meal-chart-toggle-btn{padding:4px 14px;border-radius:14px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s}
         .meal-chart-toggle-btn.active{background:var(--blue);color:white;border-color:var(--blue)}
@@ -968,7 +968,7 @@
 
         // 上方固定區：排程 + 統計
         html += '<div class="meal-fixed-top">';
-        html += '<div id="mealHwScheduleBar" style="text-align:center;font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px;display:none"></div>';
+        html += '<div id="mealHwScheduleBar" style="text-align:center;font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;display:none"></div>';
         html += '<div class="hw-stats-row" style="margin-bottom:4px">';
         html += '<div class="hw-stat-item" onclick="hwToggleMinMax()"><div class="hw-stat-label" id="mealHwStatLeftLabel">最低體重</div><div class="hw-stat-value" id="mealHwStatLeft">-</div></div>';
         html += '<div class="hw-stat-item" onclick="hwCycleWeekStat()"><div class="hw-stat-label" id="mealHwStatMidLabel">平均一週</div><div class="hw-stat-value" id="mealHwStatMid">-</div></div>';
@@ -1003,8 +1003,8 @@
             + '<button class="meal-range-btn" data-mode="history" onclick="mealSetChartRange(\'history\')">歷史</button>'
             + '</div>'
             + '</div>';
-        html += '<div id="mealChartWeightArea"><div class="hw-chart-wrap" id="mealHwChartWrap"><div class="hw-chart-inner" id="mealHwChartInner"><canvas id="mealWeightChart"></canvas></div></div></div>';
-        html += '<div id="mealChartProteinArea" style="display:none"><div class="hw-chart-wrap" style="height:160px"><div class="hw-chart-inner"><canvas id="mealProteinChart"></canvas></div></div></div>';
+        html += '<div id="mealChartWeightArea" style="flex:1;min-height:0"><div class="hw-chart-wrap" id="mealHwChartWrap"><div class="hw-chart-inner" id="mealHwChartInner"><canvas id="mealWeightChart"></canvas></div></div></div>';
+        html += '<div id="mealChartProteinArea" style="display:none;flex:1;min-height:0"><div class="hw-chart-wrap"><div class="hw-chart-inner"><canvas id="mealProteinChart"></canvas></div></div></div>';
         html += '</div>';
 
         html += '</div>'; // end meal-fixed-layout
