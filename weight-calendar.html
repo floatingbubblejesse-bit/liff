@@ -640,8 +640,10 @@
 
             // 體重欄
             html += '<td class="wt-weight-cell">';
-            if (isEditing) {
-                html += '<input class="wt-edit-input" id="editInput_' + r.dateStr + '" type="text" inputmode="decimal" pattern="[0-9.]*" placeholder="--.-" value="' + (r.wt !== null ? r.wt.toFixed(1) : '') + '">';
+            if (isEditing || isDirty) {
+                // 優先用暫存值（使用者輸入但未儲存的），其次用 weightData
+                var inputVal = _pendingInputValues[r.dateStr] !== undefined ? _pendingInputValues[r.dateStr] : (r.wt !== null ? r.wt.toFixed(1) : '');
+                html += '<input class="wt-edit-input" id="editInput_' + r.dateStr + '" type="text" inputmode="decimal" pattern="[0-9.]*" placeholder="--.-" value="' + inputVal + '">';
             } else {
                 if (r.wt !== null) {
                     html += '<div class="wt-weight-val" onclick="startEdit(\'' + r.dateStr + '\')">' + r.wt.toFixed(1) + '</div>';
@@ -705,7 +707,26 @@
         if (tbl) { if (on) tbl.classList.add('editing-active'); else tbl.classList.remove('editing-active'); }
     }
 
+    // 暫存未儲存的 input 值（re-render 時不遺失）
+    var _pendingInputValues = {};
+
+    function captureEditingInput() {
+        // 把目前正在編輯的 input 值存到暫存，避免 re-render 時消失
+        if (editingDate) {
+            var inp = document.getElementById('editInput_' + editingDate);
+            if (inp) _pendingInputValues[editingDate] = inp.value;
+        }
+        // 也掃描所有 dirty 行的 input
+        var keys = Object.keys(dirtyRows);
+        for (var i = 0; i < keys.length; i++) {
+            var dk = keys[i];
+            var dinp = document.getElementById('editInput_' + dk);
+            if (dinp) _pendingInputValues[dk] = dinp.value;
+        }
+    }
+
     function preserveScrollRender() {
+        captureEditingInput();
         var sc = document.getElementById('tableScroll');
         var savedTop = sc ? sc.scrollTop : 0;
         renderTable(true);
@@ -724,6 +745,7 @@
             document.activeElement.blur();
         }
         editingDate = null;
+        _pendingInputValues = {}; // 清空暫存
         // 還原所有 dirty（未儲存）的碳日覆寫
         var keys = Object.keys(dirtyRows);
         for (var i = 0; i < keys.length; i++) {
@@ -742,6 +764,7 @@
 
     function startEdit(dateStr) {
         _actionTime = Date.now();
+        captureEditingInput();
         editingDate = dateStr;
         dirtyRows[dateStr] = true;
         setEditingClass(true);
@@ -757,6 +780,8 @@
                 if (node.classList.contains('wt-edit-input')) return true;
                 if (node.classList.contains('wt-row-save')) return true;
                 if (node.classList.contains('wt-type')) return true;
+                if (node.classList.contains('wt-weight-val')) return true;
+                if (node.classList.contains('wt-weight-cell')) return true;
             }
             if (node.tagName === 'INPUT') return true;
             node = node.parentElement;
