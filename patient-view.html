@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v2026-03-29-scroll -->
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -1002,10 +1003,11 @@
 
         el.innerHTML = html;
 
-        // 設定表格高度 + 捲到今天
+        // 設定表格高度 + 捲到今天 + 初始化無限滾動
         setTimeout(function(){
             mealTblSetHeight();
             mealTblScrollToToday();
+            mealTblInitScroll();
         }, 30);
         // 渲染趨勢圖
         setTimeout(function(){ renderMealChart(recs, recProtein); }, 50);
@@ -1014,6 +1016,12 @@
         // 同步居家體重統計到餐食紀錄
         setTimeout(function(){ mealHwSyncStats(); }, 100);
     }
+
+    // 萬年曆 infinite scroll 狀態
+    var _mealTblStartDate = null; // Date object
+    var _mealTblEndDate = null;   // Date object
+    var _mealTblGrouped = {};     // dateKey -> [recs]
+    var _mealTblDayIdx = 0;       // running day-accordion index counter
 
     function mealTblSetHeight() {
         var sc = document.getElementById('mealTblScroll');
@@ -1033,6 +1041,53 @@
         } else {
             sc.scrollTop = sc.scrollHeight;
         }
+    }
+
+    var _mealTblExpanding = false;
+    function mealTblInitScroll() {
+        var sc = document.getElementById('mealTblScroll');
+        if (!sc) return;
+        sc.addEventListener('scroll', function() {
+            if (_mealTblExpanding) return;
+            if (sc.scrollTop < 200) {
+                _mealTblExpanding = true;
+                mealTblExpandTop();
+                setTimeout(function(){ _mealTblExpanding = false; }, 100);
+            }
+            if (sc.scrollHeight - sc.scrollTop - sc.clientHeight < 200) {
+                _mealTblExpanding = true;
+                mealTblExpandBottom();
+                setTimeout(function(){ _mealTblExpanding = false; }, 100);
+            }
+        });
+        window.addEventListener('resize', mealTblSetHeight);
+    }
+
+    function mealTblExpandTop() {
+        var sc = document.getElementById('mealTblScroll');
+        if (!sc || !_mealTblStartDate) return;
+        var oldH = sc.scrollHeight;
+        var oldS = sc.scrollTop;
+        // 往前推 3 個月
+        var newStart = new Date(_mealTblStartDate.getFullYear(), _mealTblStartDate.getMonth() - 3, _mealTblStartDate.getDate());
+        var endBefore = new Date(_mealTblStartDate.getTime());
+        endBefore.setDate(endBefore.getDate() - 1);
+        _mealTblStartDate = newStart;
+        var newHtml = buildDayRows(newStart, endBefore);
+        if (newHtml) sc.insertAdjacentHTML('afterbegin', newHtml);
+        sc.scrollTop = oldS + (sc.scrollHeight - oldH);
+    }
+
+    function mealTblExpandBottom() {
+        var sc = document.getElementById('mealTblScroll');
+        if (!sc || !_mealTblEndDate) return;
+        // 往後推 3 個月
+        var newStart = new Date(_mealTblEndDate.getTime());
+        newStart.setDate(newStart.getDate() + 1);
+        var newEnd = new Date(_mealTblEndDate.getFullYear(), _mealTblEndDate.getMonth() + 3, _mealTblEndDate.getDate());
+        _mealTblEndDate = newEnd;
+        var newHtml = buildDayRows(newStart, newEnd);
+        if (newHtml) sc.insertAdjacentHTML('beforeend', newHtml);
     }
 
     function mealHwSyncStats() {
@@ -1236,31 +1291,32 @@
     }
 
     function buildDayAccordions(recs) {
-        // 按日期分組餐食紀錄
-        var grouped = {};
+        // 按日期分組餐食紀錄（存到全域供 expand 使用）
+        _mealTblGrouped = {};
         recs.forEach(function(r){
             var key = toMealDateKey(r.date);
             if (!key) return;
-            if (!grouped[key]) grouped[key] = [];
-            grouped[key].push(r);
+            if (!_mealTblGrouped[key]) _mealTblGrouped[key] = [];
+            _mealTblGrouped[key].push(r);
         });
 
-        // 找出日期範圍：最早紀錄 ~ 今天
-        var recKeys = Object.keys(grouped).sort();
-        var hwKeys = Object.keys(hwWeightData).sort();
-        var allDateKeys = recKeys.concat(hwKeys);
-        allDateKeys.sort();
-        if (allDateKeys.length === 0) return '';
+        // 初始範圍：今天往前 6 個月 ~ 今天往後 1 個月
+        var now = new Date(Date.now() + 8 * 3600000);
+        _mealTblStartDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+        _mealTblEndDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+        _mealTblDayIdx = 0;
+
+        return buildDayRows(_mealTblStartDate, _mealTblEndDate);
+    }
+
+    function buildDayRows(startDate, endDate) {
+        var _carbLabels = { high: '高', mid: '中', low: '低', fast: '斷' };
+        var _weekNames = ['日','一','二','三','四','五','六'];
         var now = new Date(Date.now() + 8 * 3600000);
         var todayStr = now.toISOString().split('T')[0];
-        var minKey = allDateKeys[0];
-        var maxKey = todayStr > allDateKeys[allDateKeys.length - 1] ? todayStr : allDateKeys[allDateKeys.length - 1];
 
         // 產生連續日期陣列
-        var startParts = minKey.split('-');
-        var cursor = new Date(parseInt(startParts[0]), parseInt(startParts[1]) - 1, parseInt(startParts[2]));
-        var endParts = maxKey.split('-');
-        var endDate = new Date(parseInt(endParts[0]), parseInt(endParts[1]) - 1, parseInt(endParts[2]));
+        var cursor = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
         var allDates = [];
         while (cursor <= endDate) {
             var y = cursor.getFullYear();
@@ -1270,12 +1326,10 @@
             cursor.setDate(cursor.getDate() + 1);
         }
 
-        var _carbLabels = { high: '高', mid: '中', low: '低', fast: '斷' };
-        var _weekNames = ['日','一','二','三','四','五','六'];
         var html = '';
-
-        allDates.forEach(function(dateKey, di) {
-            var dayRecs = grouped[dateKey] || [];
+        allDates.forEach(function(dateKey) {
+            var di = _mealTblDayIdx++;
+            var dayRecs = _mealTblGrouped[dateKey] || [];
             var hasRec = dayRecs.length > 0;
             var totalProtein = dayRecs.reduce(function(s,r){ return s + (r.protein||0); }, 0);
             var totalCal = dayRecs.reduce(function(s,r){ return s + (r.calories||0); }, 0);
@@ -1368,7 +1422,7 @@
             var dateStyle = isToday ? 'font-weight:800;color:var(--blue)' : '';
 
             html += '<div class="day-accordion" id="day-' + di + '">'
-                + '<div class="day-header' + (hasRec ? '' : ' no-rec') + '" style="' + todayStyle + '"' + (isToday ? ' data-today="1"' : '') + (hasRec ? ' onclick="toggleDay(' + di + ')"' : '') + '>'
+                + '<div class="day-header' + (!hasRec && !_hwWeight ? ' no-rec' : '') + '" style="' + todayStyle + '"' + (isToday ? ' data-today="1"' : '') + (hasRec ? ' onclick="toggleDay(' + di + ')"' : '') + '>'
                 + '<div class="day-col day-col-date"><span class="day-val" style="' + dateStyle + '">' + _dMon + '/' + _dDay + '<span style="font-size:11px;font-weight:400;color:var(--muted)">(' + _dWeek + ')</span></span></div>'
                 + '<div class="day-col day-col-carb">' + _carbHtml + '</div>'
                 + '<div class="day-col day-col-diff">' + _diffHtml + '</div>'
