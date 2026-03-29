@@ -172,28 +172,27 @@
         .meal-section-body{overflow:hidden}
         .meal-tbl-wrap{background:white;border-radius:0;overflow:hidden}
         .meal-tbl-head{display:flex;align-items:center;padding:6px 8px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2;position:relative}
-        .meal-tbl-head .day-col{font-size:12px;font-weight:700;color:var(--muted)}
+        .meal-tbl-head .day-col{font-size:13px;font-weight:700;color:var(--muted)}
         .meal-tbl-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
         .meal-tbl-today-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#C0CDD9;color:#fff;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-left:4px;flex-shrink:0}
         .meal-tbl-today-btn:active{opacity:0.5}
         .day-accordion{border-bottom:1px solid #F0EDE8}
         .day-accordion.chart-active .day-header{background:rgba(123,143,161,0.08)}
         .day-accordion:last-child{border-bottom:none}
-        .day-header{display:flex;align-items:center;padding:8px 8px;cursor:pointer;user-select:none;gap:0;-webkit-tap-highlight-color:transparent;position:relative}
+        .day-header{display:flex;align-items:center;padding:7px 6px;cursor:pointer;user-select:none;gap:0;-webkit-tap-highlight-color:transparent;position:relative}
         .day-header.no-rec{opacity:0.55}
         .day-header:active:not(.no-rec){background:#F5F3EF}
         .day-col{text-align:center;display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0}
         .day-col-date{flex:1.5 1 0;justify-content:flex-start;padding-left:2px}
         .day-col-count{flex:0.5 1 0}
-        .day-val{font-size:13px;font-weight:700;color:var(--text);line-height:1.2}
+        .day-val{font-size:14px;font-weight:700;color:var(--text);line-height:1.2}
         .day-lbl{font-size:15px;font-weight:700;color:var(--text)}
         .day-date-main{font-size:15px;font-weight:700;color:var(--text)}
         .day-date-sub{font-size:11px;color:var(--muted)}
         .day-carb-tag{font-size:11px;font-weight:700;padding:2px 5px;border-radius:6px;display:inline-block}
         .day-carb-tag.t-high{background:#F8D7DA;color:#A0626B}.day-carb-tag.t-mid{background:#FFF3CD;color:#B8926A}
         .day-carb-tag.t-low{background:#D4EDDA;color:#6B8F71}.day-carb-tag.t-fast{background:#E2E3E5;color:#4A4A4A}
-        .day-arrow{font-size:12px;color:var(--muted);transition:transform 0.25s ease;position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-        .day-accordion.open .day-arrow{transform:translateY(-50%) rotate(180deg)}
+        /* arrow removed — photo count is now the toggle */
         .day-body{display:none;border-top:1px solid var(--border);padding:8px 10px 10px;background:#FDFBF7}
         .day-accordion.open .day-body{display:block}
         .mc{background:white;border-radius:10px;margin-bottom:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid var(--border)}
@@ -1013,7 +1012,7 @@
             + '<div class="day-col day-col-protein">蛋白質</div>'
             + '<div class="day-col day-col-cal">赤字</div>'
             + '<div class="day-col day-col-nc">淨碳水</div>'
-            + '<div class="day-col day-col-count">張</div>'
+            + '<div class="day-col day-col-count">照片</div>'
             + '</div>';
         html += '<div class="meal-tbl-scroll" id="mealTblScroll">';
         html += buildDayAccordions(recs);
@@ -1685,8 +1684,8 @@
             } else if (_dayType === 'fast') {
                 _ncHtml = '<span style="color:#ccc">斷</span>';
             }
-            // 張數
-            var _cntHtml = hasRec ? '<span class="day-val">' + dayRecs.length + '</span>' : '';
+            // 照片數（點擊展開餐食）
+            var _cntHtml = hasRec ? '<span class="day-val" style="color:var(--blue);cursor:pointer" onclick="event.stopPropagation();toggleDay(' + di + ')">' + dayRecs.length + '</span>' : '';
 
             // 展開內容（只有有紀錄才有）
             var mealsHtml = '';
@@ -1742,7 +1741,6 @@
                 + '<div class="day-col day-col-cal">' + _calHtml + '</div>'
                 + '<div class="day-col day-col-nc">' + _ncHtml + '</div>'
                 + '<div class="day-col day-col-count">' + _cntHtml + '</div>'
-                + (hasRec ? '<span class="day-arrow" onclick="event.stopPropagation();toggleDay(' + di + ')">▼</span>' : '')
                 + '</div>'
                 + (hasRec ? '<div class="day-body">' + mealsHtml + '</div>' : '')
                 + '</div>';
