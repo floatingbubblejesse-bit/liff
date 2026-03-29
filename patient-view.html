@@ -174,9 +174,10 @@
         .meal-tbl-today-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#C0CDD9;color:#fff;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-left:4px;flex-shrink:0}
         .meal-tbl-today-btn:active{opacity:0.5}
         .day-accordion{border-bottom:1px solid #F0EDE8}
+        .day-accordion.chart-active .day-header{background:rgba(123,143,161,0.08)}
         .day-accordion:last-child{border-bottom:none}
         .day-header{display:flex;align-items:center;padding:8px 8px;cursor:pointer;user-select:none;gap:0;-webkit-tap-highlight-color:transparent;position:relative}
-        .day-header.no-rec{cursor:default;opacity:0.55}
+        .day-header.no-rec{opacity:0.55}
         .day-header:active:not(.no-rec){background:#F5F3EF}
         .day-col{text-align:center;display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0}
         .day-col-date{justify-content:flex-start;padding-left:2px}
@@ -187,7 +188,7 @@
         .day-carb-tag{font-size:12px;font-weight:700;padding:2px 6px;border-radius:6px;display:inline-block}
         .day-carb-tag.t-high{background:#F8D7DA;color:#A0626B}.day-carb-tag.t-mid{background:#FFF3CD;color:#B8926A}
         .day-carb-tag.t-low{background:#D4EDDA;color:#6B8F71}.day-carb-tag.t-fast{background:#E2E3E5;color:#4A4A4A}
-        .day-arrow{font-size:12px;color:var(--muted);transition:transform 0.25s ease;position:absolute;right:8px;top:50%;transform:translateY(-50%)}
+        .day-arrow{font-size:12px;color:var(--muted);transition:transform 0.25s ease;position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
         .day-accordion.open .day-arrow{transform:translateY(-50%) rotate(180deg)}
         .day-body{display:none;border-top:1px solid var(--border);padding:8px 10px 10px;background:#FDFBF7}
         .day-accordion.open .day-body{display:block}
@@ -1026,7 +1027,7 @@
             + '<button class="meal-chart-toggle-btn" id="mealChartBtnProtein" onclick="mealSwitchChart(\'protein\')">蛋白質</button>'
             + '</div>';
         html += '<div id="mealChartWeightArea"><div class="hw-chart-wrap" id="mealHwChartWrap"><div class="hw-chart-inner" id="mealHwChartInner"><canvas id="mealWeightChart"></canvas></div></div></div>';
-        html += '<div id="mealChartProteinArea" style="display:none;padding:4px 8px 8px"><canvas id="mealProteinChart" height="140"></canvas></div>';
+        html += '<div id="mealChartProteinArea" style="display:none"><div class="hw-chart-wrap" style="height:160px"><div class="hw-chart-inner"><canvas id="mealProteinChart"></canvas></div></div></div>';
         html += '</div>';
 
         html += '</div>'; // end meal-fixed-layout
@@ -1173,8 +1174,12 @@
     }
 
     var _mealWeightChartInst = null;
+    var _weightChartKeys = []; // 體重圖的日期 key 陣列，供 highlight 用
+    var _weightChartBaseRadius = 3;
+    var _weightChartColors = [];
     function mealRenderWeightChart() {
         var allKeys = Object.keys(hwWeightData).sort();
+        _weightChartKeys = allKeys;
         if (allKeys.length === 0) return;
         var canvas = document.getElementById('mealWeightChart');
         if (!canvas) return;
@@ -1190,6 +1195,7 @@
             }
             return HW_CARB_COLORS[dt] || HW_CARB_COLORS.none;
         });
+        _weightChartColors = colors.slice();
 
         var wrap = document.getElementById('mealHwChartWrap');
         var inner = document.getElementById('mealHwChartInner');
@@ -1209,7 +1215,8 @@
             }
             return dateStr;
         });
-        var ptR = pxPer < 10 ? 0 : pxPer < 20 ? 1 : Math.max(2, Math.min(8, 3));
+        _weightChartBaseRadius = pxPer < 10 ? 0 : pxPer < 20 ? 1 : Math.max(2, Math.min(8, 3));
+        var defaultRadii = allKeys.map(function(){ return _weightChartBaseRadius; });
         var bw = Math.max(1.5, Math.min(3, 2));
 
         _mealWeightChartInst = new Chart(canvas.getContext('2d'), {
@@ -1222,9 +1229,9 @@
                     borderColor: '#7B8FA1',
                     backgroundColor: 'rgba(123,143,161,0.1)',
                     borderWidth: bw,
-                    pointRadius: ptR,
-                    pointBackgroundColor: colors,
-                    pointBorderColor: colors,
+                    pointRadius: defaultRadii,
+                    pointBackgroundColor: colors.slice(),
+                    pointBorderColor: colors.slice(),
                     pointBorderWidth: 1,
                     fill: true,
                     tension: 0.35
@@ -1256,6 +1263,70 @@
                 }
             }
         });
+    }
+
+    // ── 點擊日期條 → 高亮圖表對應點 ──
+    var _highlightedDate = null;
+    function mealHighlightChartPoint(dateKey) {
+        // 如果點同一天，取消高亮
+        if (_highlightedDate === dateKey) {
+            _highlightedDate = null;
+        } else {
+            _highlightedDate = dateKey;
+        }
+
+        // 高亮體重圖
+        if (_mealWeightChartInst && _weightChartKeys.length > 0) {
+            var ds = _mealWeightChartInst.data.datasets[0];
+            var radii = [];
+            var bgColors = [];
+            var bdColors = [];
+            for (var i = 0; i < _weightChartKeys.length; i++) {
+                if (_highlightedDate && _weightChartKeys[i] === _highlightedDate) {
+                    radii.push(8);
+                    bgColors.push('#A0626B');
+                    bdColors.push('#A0626B');
+                } else {
+                    radii.push(_weightChartBaseRadius);
+                    bgColors.push(_weightChartColors[i] || '#7B8FA1');
+                    bdColors.push(_weightChartColors[i] || '#7B8FA1');
+                }
+            }
+            ds.pointRadius = radii;
+            ds.pointBackgroundColor = bgColors;
+            ds.pointBorderColor = bdColors;
+            _mealWeightChartInst.update('none');
+        }
+
+        // 高亮蛋白質圖
+        if (mealChartInstance && _proteinChartKeys.length > 0) {
+            var pds = mealChartInstance.data.datasets[0];
+            var pradii = [];
+            var pbg = [];
+            for (var j = 0; j < _proteinChartKeys.length; j++) {
+                if (_highlightedDate && _proteinChartKeys[j] === _highlightedDate) {
+                    pradii.push(8);
+                    pbg.push('#A0626B');
+                } else {
+                    pradii.push(3);
+                    pbg.push('#8B9D83');
+                }
+            }
+            pds.pointRadius = pradii;
+            pds.pointBackgroundColor = pbg;
+            mealChartInstance.update('none');
+        }
+
+        // 高亮日期行樣式
+        var allRows = document.querySelectorAll('.day-accordion');
+        for (var r = 0; r < allRows.length; r++) {
+            var dk = allRows[r].getAttribute('data-datekey');
+            if (_highlightedDate && dk === _highlightedDate) {
+                allRows[r].classList.add('chart-active');
+            } else {
+                allRows[r].classList.remove('chart-active');
+            }
+        }
     }
 
     function isMealToday(dateStr) {
@@ -1301,6 +1372,7 @@
         return s;
     }
 
+    var _proteinChartKeys = []; // 蛋白質圖的日期 key 陣列，供 highlight 用
     function renderMealChart(recs, recommended) {
         var byDate = {};
         recs.forEach(function(r){
@@ -1309,15 +1381,17 @@
             byDate[key] = (byDate[key] || 0) + (r.protein || 0);
         });
         var keys = Object.keys(byDate).sort();
+        _proteinChartKeys = keys;
         if (keys.length === 0) return;
         var canvas = document.getElementById('mealProteinChart');
         if (!canvas) return;
         var labels = keys.map(formatMealDateKey);
         var values = keys.map(function(k){ return Math.round(byDate[k]); });
+        var defaultRadius = keys.map(function(){ return 3; });
         var datasets = [{
             label: '每日蛋白質 (g)', data: values,
             borderColor: '#8B9D83', backgroundColor: 'rgba(139,157,131,0.12)',
-            borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#8B9D83',
+            borderWidth: 2, pointRadius: defaultRadius, pointBackgroundColor: '#8B9D83',
             fill: true, tension: 0.3
         }];
         if (recommended > 0) {
@@ -1331,15 +1405,17 @@
         mealChartInstance = new Chart(canvas.getContext('2d'), {
             type: 'line', data: { labels: labels, datasets: datasets },
             options: {
-                responsive: true, maintainAspectRatio: true,
+                responsive: true, maintainAspectRatio: false,
+                animation: false,
                 interaction: { mode: 'index', intersect: false },
+                layout: { padding: { bottom: 8, left: 4, right: 4 } },
                 plugins: {
-                    legend: { display: recommended > 0, position: 'bottom', labels: { font: { size: 11 }, padding: 10, boxWidth: 14 } },
+                    legend: { display: recommended > 0, position: 'bottom', labels: { font: { size: 10 }, padding: 8, boxWidth: 12 } },
                     tooltip: { callbacks: { label: function(ctx){ return ctx.dataset.label + ': ' + ctx.parsed.y + 'g'; } } }
                 },
                 scales: {
-                    x: { ticks: { font: { size: 11 }, color: '#8B8B8B' }, grid: { display: false } },
-                    y: { ticks: { font: { size: 11 }, color: '#8B8B8B', callback: function(v){ return v + 'g'; } }, grid: { color: 'rgba(0,0,0,0.05)' }, beginAtZero: true }
+                    x: { ticks: { font: { size: 10 }, color: '#8B8B8B' }, grid: { display: false } },
+                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B', callback: function(v){ return v + 'g'; } }, grid: { color: 'rgba(0,0,0,0.05)' }, beginAtZero: true }
                 }
             }
         });
@@ -1476,8 +1552,8 @@
             var todayStyle = isToday ? 'background:rgba(123,143,161,0.08);' : '';
             var dateStyle = isToday ? 'font-weight:800;color:var(--blue)' : '';
 
-            html += '<div class="day-accordion" id="day-' + di + '">'
-                + '<div class="day-header' + (!hasRec && !_hwWeight ? ' no-rec' : '') + '" style="' + todayStyle + '"' + (isToday ? ' data-today="1"' : '') + (hasRec ? ' onclick="toggleDay(' + di + ')"' : '') + '>'
+            html += '<div class="day-accordion" id="day-' + di + '" data-datekey="' + dateKey + '">'
+                + '<div class="day-header' + (!hasRec && !_hwWeight ? ' no-rec' : '') + '" style="' + todayStyle + '"' + (isToday ? ' data-today="1"' : '') + ' onclick="mealHighlightChartPoint(\'' + dateKey + '\')">'
                 + '<div class="day-col day-col-date"><span class="day-val" style="' + dateStyle + '">' + _dMon + '/' + _dDay + '<span style="font-size:11px;font-weight:400;color:var(--muted)">(' + _dWeek + ')</span></span></div>'
                 + '<div class="day-col day-col-carb">' + _carbHtml + '</div>'
                 + '<div class="day-col day-col-diff">' + _diffHtml + '</div>'
@@ -1485,7 +1561,7 @@
                 + '<div class="day-col day-col-cal">' + _calHtml + '</div>'
                 + '<div class="day-col day-col-protein">' + _proHtml + '</div>'
                 + '<div class="day-col day-col-count">' + _cntHtml + '</div>'
-                + (hasRec ? '<span class="day-arrow">▼</span>' : '')
+                + (hasRec ? '<span class="day-arrow" onclick="event.stopPropagation();toggleDay(' + di + ')">▼</span>' : '')
                 + '</div>'
                 + (hasRec ? '<div class="day-body">' + mealsHtml + '</div>' : '')
                 + '</div>';
