@@ -1024,6 +1024,7 @@
         html += '<div class="meal-chart-toggle">'
             + '<button class="meal-chart-toggle-btn active" id="mealChartBtnWeight" onclick="mealSwitchChart(\'weight\')">體重</button>'
             + '<button class="meal-chart-toggle-btn" id="mealChartBtnProtein" onclick="mealSwitchChart(\'protein\')">蛋白質</button>'
+            + '<button class="meal-chart-toggle-btn" id="mealChartBtnCalorie" onclick="mealSwitchChart(\'calorie\')">熱量</button>'
             + '<div class="meal-range-btns">'
             + '<button class="meal-range-btn" data-mode="week" id="mealRangeBtnWeek" onclick="mealCycleWeek()">週</button>'
             + '<button class="meal-range-btn active" data-mode="period" onclick="mealSetChartRange(\'period\')">期間</button>'
@@ -1032,6 +1033,7 @@
             + '</div>';
         html += '<div id="mealChartWeightArea" style="flex:1;min-height:0"><div class="hw-chart-wrap" id="mealHwChartWrap"><div class="hw-chart-inner" id="mealHwChartInner"><canvas id="mealWeightChart"></canvas></div></div></div>';
         html += '<div id="mealChartProteinArea" style="display:none;flex:1;min-height:0"><div class="hw-chart-wrap"><div class="hw-chart-inner"><canvas id="mealProteinChart"></canvas></div></div></div>';
+        html += '<div id="mealChartCalorieArea" style="display:none;flex:1;min-height:0"><div class="hw-chart-wrap"><div class="hw-chart-inner"><canvas id="mealCalorieChart"></canvas></div></div></div>';
         html += '</div>';
 
         html += '</div>'; // end meal-fixed-layout
@@ -1094,24 +1096,25 @@
     var _mealActiveChart = 'weight';
     function mealSwitchChart(type) {
         _mealActiveChart = type;
-        var wArea = document.getElementById('mealChartWeightArea');
-        var pArea = document.getElementById('mealChartProteinArea');
-        var wBtn = document.getElementById('mealChartBtnWeight');
-        var pBtn = document.getElementById('mealChartBtnProtein');
-        if (!wArea || !pArea) return;
-        if (type === 'weight') {
-            wArea.style.display = '';
-            pArea.style.display = 'none';
-            if (wBtn) wBtn.className = 'meal-chart-toggle-btn active';
-            if (pBtn) pBtn.className = 'meal-chart-toggle-btn';
-            setTimeout(function(){ mealRenderWeightChart(); }, 30);
-        } else {
-            wArea.style.display = 'none';
-            pArea.style.display = '';
-            if (wBtn) wBtn.className = 'meal-chart-toggle-btn';
-            if (pBtn) pBtn.className = 'meal-chart-toggle-btn active';
-            setTimeout(function(){ renderMealChart(_mealRecs, _mealRecProtein); }, 30);
+        var areas = {
+            weight: document.getElementById('mealChartWeightArea'),
+            protein: document.getElementById('mealChartProteinArea'),
+            calorie: document.getElementById('mealChartCalorieArea')
+        };
+        var btns = {
+            weight: document.getElementById('mealChartBtnWeight'),
+            protein: document.getElementById('mealChartBtnProtein'),
+            calorie: document.getElementById('mealChartBtnCalorie')
+        };
+        for (var k in areas) {
+            if (areas[k]) areas[k].style.display = k === type ? '' : 'none';
+            if (btns[k]) btns[k].className = 'meal-chart-toggle-btn' + (k === type ? ' active' : '');
         }
+        setTimeout(function(){
+            if (type === 'weight') mealRenderWeightChart();
+            else if (type === 'protein') renderMealChart(_mealRecs, _mealRecProtein);
+            else if (type === 'calorie') renderMealCalorieChart();
+        }, 30);
     }
     // ── 圖表日期範圍切換 ──
     function mealSetChartRange(mode) {
@@ -1138,8 +1141,10 @@
         // 重新渲染當前圖表
         if (_mealActiveChart === 'weight') {
             mealRenderWeightChart();
-        } else {
+        } else if (_mealActiveChart === 'protein') {
             renderMealChart(_mealRecs, _mealRecProtein);
+        } else if (_mealActiveChart === 'calorie') {
+            renderMealCalorieChart();
         }
         // 滾動表格到對應範圍起始
         mealScrollToRange(mode);
@@ -1419,6 +1424,24 @@
             pds.pointBackgroundColor = pbg;
             mealChartInstance.update('none');
         }
+        // 高亮熱量圖
+        if (_mealCalorieChartInst && _calorieChartKeys.length > 0) {
+            var cds = _mealCalorieChartInst.data.datasets[0];
+            var cradii = [];
+            var cbg = [];
+            for (var ci = 0; ci < _calorieChartKeys.length; ci++) {
+                if (_highlightedDate && _calorieChartKeys[ci] === _highlightedDate) {
+                    cradii.push(8);
+                    cbg.push(hlColor);
+                } else {
+                    cradii.push(3);
+                    cbg.push('#C4787E');
+                }
+            }
+            cds.pointRadius = cradii;
+            cds.pointBackgroundColor = cbg;
+            _mealCalorieChartInst.update('none');
+        }
         // 高亮日期行樣式 + 滾動定位
         var allRows = document.querySelectorAll('.day-accordion');
         var targetRow = null;
@@ -1561,6 +1584,73 @@
                 scales: {
                     x: { ticks: { font: { size: 10 }, color: '#8B8B8B' }, grid: { display: false } },
                     y: { ticks: { font: { size: 10 }, color: '#8B8B8B', callback: function(v){ return v + 'g'; } }, grid: { color: 'rgba(0,0,0,0.05)' }, beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    var _calorieChartKeys = []; // 熱量圖的日期 key 陣列，供 highlight 用
+    var _mealCalorieChartInst = null;
+
+    function renderMealCalorieChart() {
+        var byDate = {};
+        _mealRecs.forEach(function(r){
+            var key = toMealDateKey(r.date);
+            if (!key) return;
+            byDate[key] = (byDate[key] || 0) + (r.calories || 0);
+        });
+        var fullKeys = Object.keys(byDate).sort();
+        var keys = _getChartRangeKeys(fullKeys);
+        _calorieChartKeys = keys;
+        if (keys.length === 0) return;
+        var canvas = document.getElementById('mealCalorieChart');
+        if (!canvas) return;
+        var labels = keys.map(formatMealDateKey);
+        var values = keys.map(function(k){ return Math.round(byDate[k]); });
+        var defaultRadius = keys.map(function(){ return 3; });
+        var datasets = [{
+            label: '每日熱量 (kcal)', data: values,
+            borderColor: '#C4787E', backgroundColor: 'rgba(196,120,126,0.12)',
+            borderWidth: 2, pointRadius: defaultRadius, pointBackgroundColor: '#C4787E',
+            fill: true, tension: 0.3
+        }];
+        // 日耗熱量（TDEE）基準線：逐日查找適用的 TDEE
+        var hasTdee = false;
+        var tdeeValues = keys.map(function(k) {
+            var m = _getApplicableMeasure(k);
+            var v = m ? m.tdee : 0;
+            if (v > 0) hasTdee = true;
+            return v;
+        });
+        if (hasTdee) {
+            datasets.push({
+                label: '日耗熱量 (TDEE)', data: tdeeValues,
+                borderColor: '#B8926A', borderWidth: 1.5, borderDash: [6, 4],
+                pointRadius: 0, fill: false, tension: 0
+            });
+        }
+        if (_mealCalorieChartInst) _mealCalorieChartInst.destroy();
+        _mealCalorieChartInst = new Chart(canvas.getContext('2d'), {
+            type: 'line', data: { labels: labels, datasets: datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                animation: false,
+                interaction: { mode: 'index', intersect: false },
+                layout: { padding: { bottom: 8, left: 4, right: 4 } },
+                onClick: function(evt, elements) {
+                    if (elements.length > 0) {
+                        var idx = elements[0].index;
+                        var dateKey = _calorieChartKeys[idx];
+                        if (dateKey) mealHighlightChartPoint(dateKey);
+                    }
+                },
+                plugins: {
+                    legend: { display: hasTdee, position: 'bottom', labels: { font: { size: 10 }, padding: 8, boxWidth: 12 } },
+                    tooltip: { callbacks: { label: function(ctx){ return ctx.dataset.label + ': ' + ctx.parsed.y + ' kcal'; } } }
+                },
+                scales: {
+                    x: { ticks: { font: { size: 10 }, color: '#8B8B8B' }, grid: { display: false } },
+                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B', callback: function(v){ return v + 'kcal'; } }, grid: { color: 'rgba(0,0,0,0.05)' }, beginAtZero: true }
                 }
             }
         });
@@ -3671,8 +3761,10 @@
             // 重建圖表（歷史模式）
             if (_mealActiveChart === 'weight') {
                 mealRenderWeightChart();
-            } else {
+            } else if (_mealActiveChart === 'protein') {
                 renderMealChart(_mealRecs, _mealRecProtein);
+            } else if (_mealActiveChart === 'calorie') {
+                renderMealCalorieChart();
             }
             // 設定高亮並更新圖點與日期條（不經過 mealHighlightChartPoint 避免自動切範圍）
             _highlightedDate = targetDate;
