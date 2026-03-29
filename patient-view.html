@@ -1322,6 +1322,14 @@
             _highlightedDate = null;
         } else {
             _highlightedDate = dateKey;
+            // 自動切換圖表範圍：期間內→期間，期間外→歷史
+            var inPeriod = _hwScheduleStartStr && _hwScheduleEndStr && dateKey >= _hwScheduleStartStr && dateKey <= _hwScheduleEndStr;
+            var needMode = inPeriod ? 'period' : 'history';
+            if (_chartRangeMode !== needMode && _chartRangeMode.indexOf('week-') !== 0) {
+                mealSetChartRange(needMode);
+            } else if (_weightChartKeys.indexOf(dateKey) === -1) {
+                mealSetChartRange(needMode);
+            }
         }
 
         // 取得高亮日的碳日顏色
