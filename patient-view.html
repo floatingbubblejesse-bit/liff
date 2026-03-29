@@ -1308,7 +1308,7 @@
                 },
                 scales: {
                     x: { ticks: { font: { size: Math.max(9, Math.min(12, pxPer / 5)) }, color: '#8B8B8B', maxRotation: 45, autoSkip: pxPer < 30 }, grid: { display: false } },
-                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B', callback: function(v){ return v + 'kg'; } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B', precision: 0, callback: function(v){ return Math.round(v) + 'kg'; } }, grid: { color: 'rgba(0,0,0,0.05)' } }
                 }
             }
         });
@@ -3569,9 +3569,16 @@
         var mLbl = document.getElementById('mealHwStatLeftLabel');
         if (mEl) mEl.textContent = val;
         if (mLbl) mLbl.textContent = label;
-        // 同步高亮圖表對應點 + 滾動到日期條
+        // 確保圖表範圍包含目標日期，再高亮
         var targetDate = _hwShowMaxWeight ? _hwStatMaxWDate : _hwStatMinWDate;
-        if (targetDate) mealHighlightChartPoint(targetDate);
+        if (targetDate) {
+            var visibleKeys = _weightChartKeys;
+            if (visibleKeys.indexOf(targetDate) === -1) {
+                // 目標不在當前範圍，切換到歷史
+                mealSetChartRange('history');
+            }
+            mealHighlightChartPoint(targetDate);
+        }
     }
 
     function hwToggleDiffMode() {
@@ -3881,7 +3888,7 @@
                 },
                 scales: {
                     x: { ticks: { font: { size: Math.max(9, Math.min(12, pxPer / 5)) }, color: '#8B8B8B', maxRotation: 45, autoSkip: false }, grid: { display: false } },
-                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B', callback: function(v){ return v + 'kg'; } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B', precision: 0, callback: function(v){ return Math.round(v) + 'kg'; } }, grid: { color: 'rgba(0,0,0,0.05)' } }
                 }
             }
         });
