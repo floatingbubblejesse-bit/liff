@@ -151,7 +151,12 @@
         .meal-stat-detail.show{display:block}
         .meal-chart-card{background:white;border-radius:12px;padding:14px 12px 10px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
         .meal-chart-card canvas{display:block;width:100%!important}
-        .meal-tbl-wrap{background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+        .meal-section-wrap{background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:10px}
+        .meal-section-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;font-size:13px;font-weight:700;color:var(--text);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+        .meal-section-head:active{background:rgba(0,0,0,0.03)}
+        .meal-section-arrow{font-size:11px;color:var(--muted);transition:transform 0.25s ease}
+        .meal-section-body{overflow:hidden}
+        .meal-tbl-wrap{background:white;border-radius:0;overflow:hidden}
         .meal-tbl-head{display:flex;align-items:center;padding:6px 8px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2;position:relative}
         .meal-tbl-head .day-col{font-size:12px;font-weight:700;color:var(--muted)}
         .meal-tbl-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
@@ -961,6 +966,9 @@
             || parseFloat(patient['醫師建議蛋白質攝取量'])
             || patient.recommendedProtein
             || 0;
+        // 存到全域供收折後重新渲染
+        _mealRecs = recs;
+        _mealRecProtein = recProtein;
         var weight = patient.weight || 0;
         var el = document.getElementById('tab-meals');
 
@@ -979,7 +987,11 @@
         html += '<div class="hw-stat-item" onclick="hwToggleDiffMode();mealHwSyncStats()"><div class="hw-stat-value" id="mealHwStatRight">-</div><div class="hw-stat-label" id="mealHwStatRightLabel">期間變化</div></div>';
         html += '</div>';
 
-        // 4. 每日紀錄（連續日期表格，類似體重紀錄表）
+        // 4. 每日紀錄（14天，可收折展開全部）
+        html += '<div class="meal-section-wrap">';
+        html += '<div class="meal-section-head" onclick="mealToggleSection(\'mealTblBody\')">'
+            + '<span>每日紀錄</span><span class="meal-section-arrow" id="mealTblArrow">▼</span></div>';
+        html += '<div class="meal-section-body" id="mealTblBody">';
         html += '<div class="meal-tbl-wrap">';
         html += '<div class="meal-tbl-head">'
             + '<div class="day-col day-col-date">日期 <span class="meal-tbl-today-btn" onclick="mealTblScrollToToday()">↻</span></div>'
@@ -993,12 +1005,23 @@
         html += '<div class="meal-tbl-scroll" id="mealTblScroll">';
         html += buildDayAccordions(recs);
         html += '</div></div>';
+        html += '</div></div>';
 
-        // 5. 體重趨勢圖（每日紀錄下方）
-        html += '<div class="card"><div class="card-title">📈 體重趨勢</div><div class="hw-chart-wrap" id="mealHwChartWrap"><div class="hw-chart-inner" id="mealHwChartInner"><canvas id="mealWeightChart"></canvas></div></div></div>';
+        // 5. 體重趨勢圖（可收折）
+        html += '<div class="meal-section-wrap">';
+        html += '<div class="meal-section-head" onclick="mealToggleSection(\'mealWeightBody\')">'
+            + '<span>📈 體重趨勢</span><span class="meal-section-arrow" id="mealWeightBodyArrow">▶</span></div>';
+        html += '<div class="meal-section-body" id="mealWeightBody" style="display:none">';
+        html += '<div class="card" style="margin:0;box-shadow:none"><div class="hw-chart-wrap" id="mealHwChartWrap"><div class="hw-chart-inner" id="mealHwChartInner"><canvas id="mealWeightChart"></canvas></div></div></div>';
+        html += '</div></div>';
 
-        // 6. 蛋白質趨勢圖
-        html += '<div class="meal-chart-card"><div style="font-size:12px;font-weight:700;color:#8B8B8B;margin-bottom:8px">蛋白質趨勢</div><canvas id="mealProteinChart" height="160"></canvas></div>';
+        // 6. 蛋白質趨勢圖（可收折）
+        html += '<div class="meal-section-wrap">';
+        html += '<div class="meal-section-head" onclick="mealToggleSection(\'mealProteinBody\')">'
+            + '<span>蛋白質趨勢</span><span class="meal-section-arrow" id="mealProteinBodyArrow">▶</span></div>';
+        html += '<div class="meal-section-body" id="mealProteinBody" style="display:none">';
+        html += '<div class="meal-chart-card" style="margin:0;box-shadow:none"><canvas id="mealProteinChart" height="160"></canvas></div>';
+        html += '</div></div>';
 
         el.innerHTML = html;
 
@@ -1016,6 +1039,10 @@
         setTimeout(function(){ mealHwSyncStats(); }, 100);
     }
 
+    // 收折重渲染用全域變數
+    var _mealRecs = [];
+    var _mealRecProtein = 0;
+
     // 萬年曆 infinite scroll 狀態
     var _mealTblStartDate = null; // Date object
     var _mealTblEndDate = null;   // Date object
@@ -1025,9 +1052,27 @@
     function mealTblSetHeight() {
         var sc = document.getElementById('mealTblScroll');
         if (!sc) return;
-        var rect = sc.getBoundingClientRect();
-        var h = window.innerHeight - rect.top - 8;
-        sc.style.height = Math.max(200, h) + 'px';
+        // 顯示 14 天的高度（每列約 40px）
+        var rowH = 40;
+        sc.style.height = (rowH * 14) + 'px';
+    }
+
+    function mealToggleSection(bodyId) {
+        var body = document.getElementById(bodyId);
+        var arrow = document.getElementById(bodyId + 'Arrow');
+        if (!body) return;
+        var isHidden = body.style.display === 'none';
+        body.style.display = isHidden ? '' : 'none';
+        if (arrow) arrow.textContent = isHidden ? '▼' : '▶';
+        if (isHidden && bodyId === 'mealTblBody') {
+            setTimeout(function(){ mealTblSetHeight(); mealTblScrollToToday(); }, 30);
+        }
+        if (isHidden && bodyId === 'mealWeightBody') {
+            setTimeout(function(){ mealRenderWeightChart(); }, 50);
+        }
+        if (isHidden && bodyId === 'mealProteinBody') {
+            setTimeout(function(){ renderMealChart(_mealRecs, _mealRecProtein); }, 50);
+        }
     }
     function mealTblScrollToToday() {
         var sc = document.getElementById('mealTblScroll');
