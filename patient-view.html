@@ -152,14 +152,14 @@
         .meal-chart-card{background:white;border-radius:12px;padding:14px 12px 10px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
         .meal-chart-card canvas{display:block;width:100%!important}
         .meal-tbl-wrap{background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
-        .meal-tbl-head{display:flex;align-items:center;padding:6px 8px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
+        .meal-tbl-head{display:flex;align-items:center;padding:6px 8px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2;position:relative}
         .meal-tbl-head .day-col{font-size:12px;font-weight:700;color:var(--muted)}
         .meal-tbl-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
-        .meal-tbl-today-btn{display:inline-flex;align-items:center;justify-content:center;padding:2px 10px;border-radius:10px;background:#C0CDD9;color:#fff;font-size:11px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;gap:3px;margin-left:auto;flex-shrink:0}
+        .meal-tbl-today-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;justify-content:center;padding:2px 10px;border-radius:10px;background:#C0CDD9;color:#fff;font-size:11px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;gap:3px}
         .meal-tbl-today-btn:active{opacity:0.5}
         .day-accordion{border-bottom:1px solid #F0EDE8}
         .day-accordion:last-child{border-bottom:none}
-        .day-header{display:flex;align-items:center;padding:9px 8px;cursor:pointer;user-select:none;gap:0;-webkit-tap-highlight-color:transparent}
+        .day-header{display:flex;align-items:center;padding:9px 8px;cursor:pointer;user-select:none;gap:0;-webkit-tap-highlight-color:transparent;position:relative}
         .day-header.no-rec{cursor:default;opacity:0.55}
         .day-header:active:not(.no-rec){background:#F5F3EF}
         .day-col{text-align:center;display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0}
@@ -171,8 +171,8 @@
         .day-carb-tag{font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;display:inline-block}
         .day-carb-tag.t-high{background:#F8D7DA;color:#A0626B}.day-carb-tag.t-mid{background:#FFF3CD;color:#B8926A}
         .day-carb-tag.t-low{background:#D4EDDA;color:#6B8F71}.day-carb-tag.t-fast{background:#E2E3E5;color:#4A4A4A}
-        .day-arrow{font-size:11px;color:var(--muted);transition:transform 0.25s ease;flex-shrink:0}
-        .day-accordion.open .day-arrow{transform:rotate(180deg)}
+        .day-arrow{font-size:11px;color:var(--muted);transition:transform 0.25s ease;position:absolute;right:8px;top:50%;transform:translateY(-50%)}
+        .day-accordion.open .day-arrow{transform:translateY(-50%) rotate(180deg)}
         .day-body{display:none;border-top:1px solid var(--border);padding:8px 10px 10px;background:#FDFBF7}
         .day-accordion.open .day-body{display:block}
         .mc{background:white;border-radius:10px;margin-bottom:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid var(--border)}
@@ -1430,7 +1430,7 @@
                 + '<div class="day-col day-col-cal">' + _calHtml + '</div>'
                 + '<div class="day-col day-col-protein">' + _proHtml + '</div>'
                 + '<div class="day-col day-col-count">' + _cntHtml + '</div>'
-                + (hasRec ? '<span class="day-arrow">▼</span>' : '<span style="width:11px;flex-shrink:0"></span>')
+                + (hasRec ? '<span class="day-arrow">▼</span>' : '')
                 + '</div>'
                 + (hasRec ? '<div class="day-body">' + mealsHtml + '</div>' : '')
                 + '</div>';
