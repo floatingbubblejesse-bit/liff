@@ -987,11 +987,8 @@
         html += '<div class="hw-stat-item" onclick="hwToggleDiffMode();mealHwSyncStats()"><div class="hw-stat-value" id="mealHwStatRight">-</div><div class="hw-stat-label" id="mealHwStatRightLabel">期間變化</div></div>';
         html += '</div>';
 
-        // 4. 每日紀錄（14天，可收折展開全部）
+        // 4. 每日紀錄（直接顯示表格，不包收折標題）
         html += '<div class="meal-section-wrap">';
-        html += '<div class="meal-section-head" onclick="mealToggleSection(\'mealTblBody\')">'
-            + '<span>每日紀錄</span><span class="meal-section-arrow" id="mealTblArrow">▼</span></div>';
-        html += '<div class="meal-section-body" id="mealTblBody">';
         html += '<div class="meal-tbl-wrap">';
         html += '<div class="meal-tbl-head">'
             + '<div class="day-col day-col-date">日期 <span class="meal-tbl-today-btn" onclick="mealTblScrollToToday()">↻</span></div>'
@@ -1005,7 +1002,7 @@
         html += '<div class="meal-tbl-scroll" id="mealTblScroll">';
         html += buildDayAccordions(recs);
         html += '</div></div>';
-        html += '</div></div>';
+        html += '</div>';
 
         // 5. 體重趨勢圖（可收折）
         html += '<div class="meal-section-wrap">';
