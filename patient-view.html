@@ -1366,23 +1366,8 @@
 
     // ── 點擊日期條 → 高亮圖表對應點 ──
     var _highlightedDate = null;
-    function mealHighlightChartPoint(dateKey) {
-        // 如果點同一天，取消高亮
-        if (_highlightedDate === dateKey) {
-            _highlightedDate = null;
-        } else {
-            _highlightedDate = dateKey;
-            // 自動切換圖表範圍：期間內→期間，期間外→歷史
-            var inPeriod = _hwScheduleStartStr && _hwScheduleEndStr && dateKey >= _hwScheduleStartStr && dateKey <= _hwScheduleEndStr;
-            var needMode = inPeriod ? 'period' : 'history';
-            if (_chartRangeMode !== needMode && _chartRangeMode.indexOf('week-') !== 0) {
-                mealSetChartRange(needMode);
-            } else if (_weightChartKeys.indexOf(dateKey) === -1) {
-                mealSetChartRange(needMode);
-            }
-        }
-
-        // 取得高亮日的碳日顏色
+    // 共用：根據 _highlightedDate 更新圖點樣式 + 日期條高亮 + 滾動
+    function _applyChartHighlight() {
         var hlColor = '#7B8FA1';
         if (_highlightedDate) {
             var hlData = hwWeightData[_highlightedDate];
@@ -1394,7 +1379,6 @@
                 hlColor = HW_CARB_COLORS[hlDt] || HW_CARB_COLORS.none;
             }
         }
-
         // 高亮體重圖
         if (_mealWeightChartInst && _weightChartKeys.length > 0) {
             var ds = _mealWeightChartInst.data.datasets[0];
@@ -1417,7 +1401,6 @@
             ds.pointBorderColor = bdColors;
             _mealWeightChartInst.update('none');
         }
-
         // 高亮蛋白質圖
         if (mealChartInstance && _proteinChartKeys.length > 0) {
             var pds = mealChartInstance.data.datasets[0];
@@ -1436,7 +1419,6 @@
             pds.pointBackgroundColor = pbg;
             mealChartInstance.update('none');
         }
-
         // 高亮日期行樣式 + 滾動定位
         var allRows = document.querySelectorAll('.day-accordion');
         var targetRow = null;
@@ -1449,7 +1431,6 @@
                 allRows[r].classList.remove('chart-active');
             }
         }
-        // 滾動表格使高亮行可見
         if (targetRow) {
             var scrollEl = document.getElementById('mealTblScroll');
             if (scrollEl) {
@@ -1458,6 +1439,31 @@
                 scrollEl.scrollTo({ top: rowTop - scrollH / 2 + 20, behavior: 'smooth' });
             }
         }
+    }
+
+    function mealHighlightChartPoint(dateKey) {
+        // 如果點同一天，取消高亮
+        if (_highlightedDate === dateKey) {
+            _highlightedDate = null;
+        } else {
+            _highlightedDate = dateKey;
+            // 自動切換圖表範圍：期間內→期間，期間外→歷史
+            var inPeriod = _hwScheduleStartStr && _hwScheduleEndStr && dateKey >= _hwScheduleStartStr && dateKey <= _hwScheduleEndStr;
+            var needMode = inPeriod ? 'period' : 'history';
+            var needSwitch = false;
+            if (_chartRangeMode !== needMode && _chartRangeMode.indexOf('week-') !== 0) {
+                needSwitch = true;
+            } else if (_weightChartKeys.indexOf(dateKey) === -1) {
+                needSwitch = true;
+            }
+            if (needSwitch) {
+                // 保留高亮日期，切範圍後再套用高亮
+                var savedDate = _highlightedDate;
+                mealSetChartRange(needMode); // 這會 reset _highlightedDate
+                _highlightedDate = savedDate;
+            }
+        }
+        _applyChartHighlight();
     }
 
     function isMealToday(dateStr) {
@@ -3670,8 +3676,25 @@
         // 一律切到歷史模式，高亮對應日期點
         var targetDate = _hwShowMaxWeight ? _hwStatMaxWDate : _hwStatMinWDate;
         if (targetDate) {
-            mealSetChartRange('history');
-            mealHighlightChartPoint(targetDate);
+            // 先切歷史，再強制設高亮日期後手動更新圖表與日期條
+            _chartRangeMode = 'history';
+            _highlightedDate = null;
+            // 更新按鈕狀態
+            var btns = document.querySelectorAll('.meal-range-btn');
+            for (var b = 0; b < btns.length; b++) {
+                btns[b].classList.toggle('active', btns[b].getAttribute('data-mode') === 'history');
+            }
+            var weekBtn = document.getElementById('mealRangeBtnWeek');
+            if (weekBtn) weekBtn.textContent = '週';
+            // 重建圖表（歷史模式）
+            if (_mealActiveChart === 'weight') {
+                mealRenderWeightChart();
+            } else {
+                renderMealChart(_mealRecs, _mealRecProtein);
+            }
+            // 設定高亮並更新圖點與日期條（不經過 mealHighlightChartPoint 避免自動切範圍）
+            _highlightedDate = targetDate;
+            _applyChartHighlight();
         }
     }
 
