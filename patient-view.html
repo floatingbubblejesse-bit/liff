@@ -3569,14 +3569,10 @@
         var mLbl = document.getElementById('mealHwStatLeftLabel');
         if (mEl) mEl.textContent = val;
         if (mLbl) mLbl.textContent = label;
-        // 確保圖表範圍包含目標日期，再高亮
+        // 一律切到歷史模式，高亮對應日期點
         var targetDate = _hwShowMaxWeight ? _hwStatMaxWDate : _hwStatMinWDate;
         if (targetDate) {
-            var visibleKeys = _weightChartKeys;
-            if (visibleKeys.indexOf(targetDate) === -1) {
-                // 目標不在當前範圍，切換到歷史
-                mealSetChartRange('history');
-            }
+            mealSetChartRange('history');
             mealHighlightChartPoint(targetDate);
         }
     }
