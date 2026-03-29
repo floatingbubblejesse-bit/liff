@@ -968,12 +968,6 @@
 
         var html = '';
 
-        // 1. 居家體重趨勢圖（與居家體重 tab 相同的折線圖）
-        html += '<div class="card"><div class="card-title">📈 體重趨勢</div><div class="hw-chart-wrap" id="mealHwChartWrap"><div class="hw-chart-inner" id="mealHwChartInner"><canvas id="mealWeightChart"></canvas></div></div></div>';
-
-        // 3. 蛋白質趨勢圖
-        html += '<div class="meal-chart-card"><div style="font-size:12px;font-weight:700;color:#8B8B8B;margin-bottom:8px">蛋白質趨勢</div><canvas id="mealProteinChart" height="160"></canvas></div>';
-
         // 3.5 居家體重排程區塊（與居家體重 tab 相同）
         html += '<div id="mealHwScheduleBar" style="text-align:center;font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;display:none"></div>';
         html += '<div class="hw-stats-row">';
@@ -997,6 +991,12 @@
         html += '<div class="meal-tbl-scroll" id="mealTblScroll">';
         html += buildDayAccordions(recs);
         html += '</div></div>';
+
+        // 5. 體重趨勢圖（每日紀錄下方）
+        html += '<div class="card"><div class="card-title">📈 體重趨勢</div><div class="hw-chart-wrap" id="mealHwChartWrap"><div class="hw-chart-inner" id="mealHwChartInner"><canvas id="mealWeightChart"></canvas></div></div></div>';
+
+        // 6. 蛋白質趨勢圖
+        html += '<div class="meal-chart-card"><div style="font-size:12px;font-weight:700;color:#8B8B8B;margin-bottom:8px">蛋白質趨勢</div><canvas id="mealProteinChart" height="160"></canvas></div>';
 
         el.innerHTML = html;
 
