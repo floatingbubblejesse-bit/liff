@@ -968,85 +968,8 @@
 
         var html = '';
 
-        // 1. 蛋白質進度卡
-        var todayRecs = recs.filter(function(r){ return isMealToday(r.date); });
-        var todayProtein = todayRecs.reduce(function(s,r){ return s + (r.protein||0); },0);
-        var todayCal = todayRecs.reduce(function(s,r){ return s + (r.calories||0); },0);
-        var excess = Math.min(weight * 2, 140);
-
-        html += '<div class="meal-protein-card">';
-        // 碳日標籤：優先從居家體重紀錄取（含患者覆寫），fallback 排程計算
-        var _pvTodayStr = hwFormatDate(new Date());
-        var _pvSavedDayType = (hwWeightData[_pvTodayStr] && hwWeightData[_pvTodayStr].dayType) ? hwWeightData[_pvTodayStr].dayType : '';
-        var _pvCarbDay = _pvSavedDayType || hwGetDayType(new Date());
-        var _pvCarbLabels = { high: '高碳日', mid: '中碳日', low: '低碳日', fast: '斷食日' };
-        var _pvCarbLabel = _pvCarbLabels[_pvCarbDay] || '';
-        var _pvProteinTitle = _pvCarbLabel ? '今日（' + _pvCarbLabel + '）蛋白質進度' : '今日蛋白質進度';
-        html += '<div class="meal-protein-header"><span class="meal-protein-label">' + _pvProteinTitle + '</span>';
-        html += '<span class="meal-protein-value">' + Math.round(todayProtein) + 'g' + (recProtein ? ' / ' + Math.round(recProtein) + 'g' : '') + '</span></div>';
-        var pct = recProtein > 0 ? Math.min((todayProtein / recProtein) * 100, 100) : 0;
-        var _proteinOverLimit = excess > 0 && todayProtein > excess;
-        if (_proteinOverLimit) pct = 100;
-        var _fillStyle = 'width:' + pct + '%';
-        if (_proteinOverLimit) _fillStyle += ';background:#C4787E';
-        html += '<div class="mprog-bg"><div class="mprog-fill" style="' + _fillStyle + '"></div></div>';
-        var statusMsg = '';
-        if (recProtein > 0) {
-            if (todayProtein >= excess && excess > 0) statusMsg = '🚨 蛋白質過量喔！今日已攝取 ' + Math.round(todayProtein) + 'g，超過上限 ' + Math.round(excess) + 'g';
-            else if (todayProtein >= recProtein) statusMsg = '🎉 恭喜達標！今日蛋白質共 ' + Math.round(todayProtein) + 'g';
-            else statusMsg = '💪 距離目標還有 ' + Math.round(recProtein - todayProtein) + 'g，加油！';
-        } else {
-            statusMsg = '今日攝取：' + Math.round(todayProtein) + 'g';
-        }
-        html += '<div class="meal-protein-status">' + statusMsg + '</div></div>';
-
-        // 2. 今日統計：熱量赤字、淨碳水、今日張數
-        var _pvTdee = 0;
-        if (allData && allData.measurements && allData.measurements.length > 0) {
-            var _lastM = allData.measurements[allData.measurements.length - 1];
-            _pvTdee = parseFloat(_lastM['日耗熱量']) || 0;
-            if (!_pvTdee) { var _bmr = parseFloat(_lastM['基礎代謝 (BMR)']); if (_bmr > 0) _pvTdee = Math.round(_bmr * 1.2); }
-        }
-        var _pvDeficit = _pvTdee > 0 ? Math.round(todayCal - _pvTdee) : null;
-        var _pvDeficitStr = _pvDeficit !== null ? String(_pvDeficit) : '—';
-        var _pvDeficitColor = _pvDeficit !== null ? (_pvDeficit < 0 ? 'color:#c0392b' : 'color:#27ae60') : '';
-        var _pvDeficitFormula = _pvTdee > 0 ? ' / ' + Math.round(todayCal) + '−' + Math.round(_pvTdee) : '';
-
-        var _pvNetCarbs = todayRecs.reduce(function(s,r){ return s + (r.netCarbs||0); }, 0);
-        var _pvNcColor = '';
-        var _pvW = patient.weight || 0;
-        if (_pvW > 0 && _pvCarbDay !== 'none' && _pvCarbDay !== 'fast') {
-            var _ncLo = 0, _ncHi = 0;
-            if (_pvCarbDay === 'low')  { _ncLo = 0;       _ncHi = _pvW * 1; }
-            if (_pvCarbDay === 'mid')  { _ncLo = _pvW * 1; _ncHi = _pvW * 2; }
-            if (_pvCarbDay === 'high') { _ncLo = _pvW * 2; _ncHi = _pvW * 3; }
-            if (_pvNetCarbs < _ncLo) _pvNcColor = 'color:#8B8B8B';
-            else if (_pvNetCarbs > _ncHi) _pvNcColor = 'color:#c0392b';
-            else _pvNcColor = 'color:#27ae60';
-        }
-        var _pvNcRange = '';
-        if (_pvW > 0 && _pvCarbDay && _pvCarbDay !== 'none' && _pvCarbDay !== 'fast') {
-            var _rLo = 0, _rHi = 0;
-            if (_pvCarbDay === 'low')  { _rLo = 0;              _rHi = Math.round(_pvW); }
-            if (_pvCarbDay === 'mid')  { _rLo = Math.round(_pvW);  _rHi = Math.round(_pvW * 2); }
-            if (_pvCarbDay === 'high') { _rLo = Math.round(_pvW * 2); _rHi = Math.round(_pvW * 3); }
-            _pvNcRange = ' / ' + _rLo + '~' + _rHi + 'g';
-        }
-
-        html += '<div class="meal-stats-row">';
-        html += '<div class="meal-stat-card" onclick="var d=this.querySelector(\'.meal-stat-detail\');if(d)d.classList.toggle(\'show\')">'
-              + '<div class="meal-stat-value" style="' + _pvDeficitColor + '">' + _pvDeficitStr + '</div>'
-              + '<div class="meal-stat-label">熱量赤字 kcal</div>'
-              + (_pvDeficitFormula ? '<div class="meal-stat-detail">' + _pvDeficitFormula.replace(' / ','') + '</div>' : '')
-              + '</div>';
-        var _pvNcDetailText = _pvNcRange ? '範圍 ' + _pvNcRange.replace(' / ','') : '無碳日排程';
-        html += '<div class="meal-stat-card" onclick="var d=this.querySelector(\'.meal-stat-detail\');if(d)d.classList.toggle(\'show\')">'
-              + '<div class="meal-stat-value" style="' + _pvNcColor + '">' + Math.round(_pvNetCarbs) + '</div>'
-              + '<div class="meal-stat-label">淨碳水 g</div>'
-              + '<div class="meal-stat-detail">' + _pvNcDetailText + '</div>'
-              + '</div>';
-        html += '<div class="meal-stat-card"><div class="meal-stat-value">' + todayRecs.length + '</div><div class="meal-stat-label">今日張數</div></div>';
-        html += '</div>';
+        // 1. 居家體重趨勢圖（與居家體重 tab 相同的折線圖）
+        html += '<div class="card"><div class="card-title">📈 體重趨勢</div><div class="hw-chart-wrap" id="mealHwChartWrap"><div class="hw-chart-inner" id="mealHwChartInner"><canvas id="mealWeightChart"></canvas></div></div></div>';
 
         // 3. 蛋白質趨勢圖
         html += '<div class="meal-chart-card"><div style="font-size:12px;font-weight:700;color:#8B8B8B;margin-bottom:8px">蛋白質趨勢</div><canvas id="mealProteinChart" height="160"></canvas></div>';
@@ -1077,6 +1000,8 @@
 
         // 渲染趨勢圖
         setTimeout(function(){ renderMealChart(recs, recProtein); }, 50);
+        // 渲染居家體重趨勢圖
+        setTimeout(function(){ mealRenderWeightChart(); }, 80);
         // 同步居家體重統計到餐食紀錄
         setTimeout(function(){ mealHwSyncStats(); }, 100);
     }
@@ -1106,6 +1031,92 @@
             dstBar.innerHTML = srcBar.innerHTML;
             dstBar.style.display = srcBar.style.display;
         }
+    }
+
+    var _mealWeightChartInst = null;
+    function mealRenderWeightChart() {
+        var allKeys = Object.keys(hwWeightData).sort();
+        if (allKeys.length === 0) return;
+        var canvas = document.getElementById('mealWeightChart');
+        if (!canvas) return;
+        if (_mealWeightChartInst) _mealWeightChartInst.destroy();
+
+        var values = allKeys.map(function(k){ return hwWeightData[k].weight; });
+        var colors = allKeys.map(function(k){
+            var dt = hwWeightData[k].dayType;
+            if (!dt) {
+                var p = k.split('-');
+                var d = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+                dt = hwGetDayType(d);
+            }
+            return HW_CARB_COLORS[dt] || HW_CARB_COLORS.none;
+        });
+
+        var wrap = document.getElementById('mealHwChartWrap');
+        var inner = document.getElementById('mealHwChartInner');
+        if (!wrap || !inner) return;
+        var baseW = wrap.offsetWidth;
+        inner.style.width = baseW + 'px';
+
+        var n = allKeys.length || 1;
+        var pxPer = baseW / n;
+        var labels = allKeys.map(function(k) {
+            if (pxPer < 22) return '';
+            var p = k.split('-');
+            var dateStr = parseInt(p[1]) + '/' + parseInt(p[2]);
+            if (pxPer >= 50) {
+                var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+                return dateStr + '(' + HW_DAY_NAMES[d.getDay()] + ')';
+            }
+            return dateStr;
+        });
+        var ptR = pxPer < 10 ? 0 : pxPer < 20 ? 1 : Math.max(2, Math.min(8, 3));
+        var bw = Math.max(1.5, Math.min(3, 2));
+
+        _mealWeightChartInst = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '體重 (kg)',
+                    data: values,
+                    borderColor: '#7B8FA1',
+                    backgroundColor: 'rgba(123,143,161,0.1)',
+                    borderWidth: bw,
+                    pointRadius: ptR,
+                    pointBackgroundColor: colors,
+                    pointBorderColor: colors,
+                    pointBorderWidth: 1,
+                    fill: true,
+                    tension: 0.35
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                layout: { padding: { bottom: 18, left: 4, right: 4 } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: function(items) {
+                                var idx = items[0].dataIndex;
+                                var k = allKeys[idx];
+                                var p = k.split('-');
+                                var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+                                return parseInt(p[1]) + '/' + parseInt(p[2]) + '(' + HW_DAY_NAMES[d.getDay()] + ')';
+                            },
+                            label: function(ctx) { return ctx.parsed.y + ' kg'; }
+                        }
+                    }
+                },
+                scales: {
+                    x: { ticks: { font: { size: Math.max(9, Math.min(12, pxPer / 5)) }, color: '#8B8B8B', maxRotation: 45, autoSkip: false }, grid: { display: false } },
+                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B', callback: function(v){ return v + 'kg'; } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                }
+            }
+        });
     }
 
     function isMealToday(dateStr) {
