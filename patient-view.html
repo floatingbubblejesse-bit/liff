@@ -159,8 +159,10 @@
         .meal-fixed-tbl .meal-tbl-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
         .meal-fixed-chart{flex-shrink:0;height:32vh;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:2px;display:flex;flex-direction:column}
         .meal-fixed-chart .hw-chart-wrap{flex:1;min-height:0}
-        .meal-chart-toggle{display:flex;align-items:center;padding:4px 12px;gap:8px;flex-shrink:0}
-        .meal-chart-toggle-btn{padding:4px 14px;border-radius:14px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s}
+        .meal-chart-toggle{display:flex;align-items:center;padding:4px 12px;gap:6px;flex-shrink:0}
+        .meal-chart-pills{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-shrink:0}
+        .meal-chart-pills::-webkit-scrollbar{display:none}
+        .meal-chart-toggle-btn{padding:4px 12px;border-radius:14px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;flex-shrink:0}
         .meal-chart-toggle-btn.active{background:var(--blue);color:white;border-color:var(--blue)}
         .meal-range-btns{display:flex;align-items:center;gap:4px;margin-left:auto}
         .meal-range-btn{padding:3px 10px;border-radius:12px;border:1.5px solid var(--border);background:white;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s}
@@ -185,6 +187,8 @@
         .day-col{text-align:center;display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0}
         .day-col-date{flex:1.5 1 0;justify-content:flex-start;padding-left:2px}
         .day-col-count{flex:0.5 1 0}
+        .day-col-st,.day-col-so{flex:0.6 1 0}
+        .meal-tbl-head .day-col-st,.meal-tbl-head .day-col-so{font-size:11px}
         .day-val{font-size:14px;font-weight:700;color:var(--text);line-height:1.2}
         .day-lbl{font-size:15px;font-weight:700;color:var(--text)}
         .day-date-main{font-size:15px;font-weight:700;color:var(--text)}
@@ -1006,12 +1010,12 @@
         html += '<div class="meal-fixed-tbl">';
         html += '<div class="meal-tbl-head" style="flex-shrink:0;position:relative">'
             + '<div class="day-col day-col-date">日期 <span class="meal-tbl-today-btn" onclick="mealTblScrollToToday()">↻</span></div>'
+            + '<div class="day-col day-col-st">排糖</div>'
+            + '<div class="day-col day-col-so">排油</div>'
             + '<div class="day-col day-col-carb">碳日</div>'
             + '<div class="day-col day-col-diff">變化</div>'
             + '<div class="day-col day-col-wt">體重</div>'
             + '<div class="day-col day-col-protein">蛋白質</div>'
-            + '<div class="day-col day-col-cal">熱量</div>'
-            + '<div class="day-col day-col-nc">淨碳水</div>'
             + '<div class="day-col day-col-count">照片</div>'
             + '</div>';
         html += '<div class="meal-tbl-scroll" id="mealTblScroll">';
@@ -1022,9 +1026,15 @@
         // 下方固定區：趨勢圖（體重/蛋白質切換）
         html += '<div class="meal-fixed-chart">';
         html += '<div class="meal-chart-toggle">'
+            + '<div class="meal-chart-pills">'
             + '<button class="meal-chart-toggle-btn active" id="mealChartBtnWeight" onclick="mealSwitchChart(\'weight\')">體重</button>'
             + '<button class="meal-chart-toggle-btn" id="mealChartBtnProtein" onclick="mealSwitchChart(\'protein\')">蛋白質</button>'
             + '<button class="meal-chart-toggle-btn" id="mealChartBtnCalorie" onclick="mealSwitchChart(\'calorie\')">熱量</button>'
+            + '<button class="meal-chart-toggle-btn" id="mealChartBtnNetcarb" onclick="mealSwitchChart(\'netcarb\')">淨碳水</button>'
+            + '<button class="meal-chart-toggle-btn" id="mealChartBtnMealrep" onclick="mealSwitchChart(\'mealrep\')">代餐</button>'
+            + '<button class="meal-chart-toggle-btn" id="mealChartBtnFormula" onclick="mealSwitchChart(\'formula\')">配方</button>'
+            + '<button class="meal-chart-toggle-btn" id="mealChartBtnQbao" onclick="mealSwitchChart(\'qbao\')">Q飽</button>'
+            + '</div>'
             + '<div class="meal-range-btns">'
             + '<button class="meal-range-btn" data-mode="week" id="mealRangeBtnWeek" onclick="mealCycleWeek()">週</button>'
             + '<button class="meal-range-btn active" data-mode="period" onclick="mealSetChartRange(\'period\')">期間</button>'
@@ -1034,6 +1044,10 @@
         html += '<div id="mealChartWeightArea" style="flex:1;min-height:0"><div class="hw-chart-wrap" id="mealHwChartWrap"><div class="hw-chart-inner" id="mealHwChartInner"><canvas id="mealWeightChart"></canvas></div></div></div>';
         html += '<div id="mealChartProteinArea" style="display:none;flex:1;min-height:0"><div class="hw-chart-wrap"><div class="hw-chart-inner"><canvas id="mealProteinChart"></canvas></div></div></div>';
         html += '<div id="mealChartCalorieArea" style="display:none;flex:1;min-height:0"><div class="hw-chart-wrap"><div class="hw-chart-inner"><canvas id="mealCalorieChart"></canvas></div></div></div>';
+        html += '<div id="mealChartNetcarbArea" style="display:none;flex:1;min-height:0"><div class="hw-chart-wrap"><div class="hw-chart-inner"><canvas id="mealNetcarbChart"></canvas></div></div></div>';
+        html += '<div id="mealChartMealrepArea" style="display:none;flex:1;min-height:0"><div class="hw-chart-wrap"><div class="hw-chart-inner"><canvas id="mealMealrepChart"></canvas></div></div></div>';
+        html += '<div id="mealChartFormulaArea" style="display:none;flex:1;min-height:0"><div class="hw-chart-wrap"><div class="hw-chart-inner"><canvas id="mealFormulaChart"></canvas></div></div></div>';
+        html += '<div id="mealChartQbaoArea" style="display:none;flex:1;min-height:0"><div class="hw-chart-wrap"><div class="hw-chart-inner"><canvas id="mealQbaoChart"></canvas></div></div></div>';
         html += '</div>';
 
         html += '</div>'; // end meal-fixed-layout
@@ -1096,26 +1110,28 @@
     var _mealActiveChart = 'weight';
     function mealSwitchChart(type) {
         _mealActiveChart = type;
-        var areas = {
-            weight: document.getElementById('mealChartWeightArea'),
-            protein: document.getElementById('mealChartProteinArea'),
-            calorie: document.getElementById('mealChartCalorieArea')
-        };
-        var btns = {
-            weight: document.getElementById('mealChartBtnWeight'),
-            protein: document.getElementById('mealChartBtnProtein'),
-            calorie: document.getElementById('mealChartBtnCalorie')
-        };
-        for (var k in areas) {
-            if (areas[k]) areas[k].style.display = k === type ? '' : 'none';
-            if (btns[k]) btns[k].className = 'meal-chart-toggle-btn' + (k === type ? ' active' : '');
-        }
+        var chartTypes = ['weight','protein','calorie','netcarb','mealrep','formula','qbao'];
+        var areaIds = { weight:'mealChartWeightArea', protein:'mealChartProteinArea', calorie:'mealChartCalorieArea', netcarb:'mealChartNetcarbArea', mealrep:'mealChartMealrepArea', formula:'mealChartFormulaArea', qbao:'mealChartQbaoArea' };
+        var btnIds = { weight:'mealChartBtnWeight', protein:'mealChartBtnProtein', calorie:'mealChartBtnCalorie', netcarb:'mealChartBtnNetcarb', mealrep:'mealChartBtnMealrep', formula:'mealChartBtnFormula', qbao:'mealChartBtnQbao' };
+        chartTypes.forEach(function(k){
+            var a = document.getElementById(areaIds[k]);
+            var b = document.getElementById(btnIds[k]);
+            if (a) a.style.display = k === type ? '' : 'none';
+            if (b) b.className = 'meal-chart-toggle-btn' + (k === type ? ' active' : '');
+        });
         setTimeout(function(){
-            if (type === 'weight') mealRenderWeightChart();
-            else if (type === 'protein') renderMealChart(_mealRecs, _mealRecProtein);
-            else if (type === 'calorie') renderMealCalorieChart();
+            _renderActiveChart(type);
             if (_highlightedDate) _applyChartHighlight();
         }, 30);
+    }
+    function _renderActiveChart(type) {
+        if (type === 'weight') mealRenderWeightChart();
+        else if (type === 'protein') renderMealChart(_mealRecs, _mealRecProtein);
+        else if (type === 'calorie') renderMealCalorieChart();
+        else if (type === 'netcarb') renderMealNetcarbChart();
+        else if (type === 'mealrep') renderMealSupplChart('mealrep');
+        else if (type === 'formula') renderMealSupplChart('formula');
+        else if (type === 'qbao') renderMealSupplChart('qbao');
     }
     // ── 圖表日期範圍切換 ──
     function mealSetChartRange(mode) {
@@ -1140,13 +1156,7 @@
             weekBtn.textContent = '週';
         }
         // 重新渲染當前圖表
-        if (_mealActiveChart === 'weight') {
-            mealRenderWeightChart();
-        } else if (_mealActiveChart === 'protein') {
-            renderMealChart(_mealRecs, _mealRecProtein);
-        } else if (_mealActiveChart === 'calorie') {
-            renderMealCalorieChart();
-        }
+        _renderActiveChart(_mealActiveChart);
         // 滾動表格到對應範圍起始
         mealScrollToRange(mode);
     }
@@ -1445,6 +1455,48 @@
             cds.pointBackgroundColor = cbg;
             _mealCalorieChartInst.update('none');
         }
+        // 高亮淨碳水圖
+        if (_mealNetcarbChartInst && _netcarbChartKeys.length > 0) {
+            var nds = _mealNetcarbChartInst.data.datasets[0];
+            var nradii = [];
+            var nbg = [];
+            for (var ni = 0; ni < _netcarbChartKeys.length; ni++) {
+                var nHasData = nds.data[ni] != null;
+                if (_highlightedDate && _netcarbChartKeys[ni] === _highlightedDate && nHasData) {
+                    nradii.push(8);
+                    nbg.push(hlColor);
+                } else {
+                    nradii.push(nHasData ? 3 : 0);
+                    nbg.push('#B8926A');
+                }
+            }
+            nds.pointRadius = nradii;
+            nds.pointBackgroundColor = nbg;
+            _mealNetcarbChartInst.update('none');
+        }
+        // 高亮補充品圖（代餐/配方/Q飽）
+        ['mealrep','formula','qbao'].forEach(function(sType){
+            var sInst = _supplChartInst[sType];
+            var sKeys = _supplChartKeys[sType];
+            if (!sInst || sKeys.length === 0) return;
+            var sMeta = _supplChartMeta[sType];
+            var sds = sInst.data.datasets[0];
+            var sradii = [];
+            var sbg = [];
+            for (var si = 0; si < sKeys.length; si++) {
+                var sHasData = sds.data[si] != null;
+                if (_highlightedDate && sKeys[si] === _highlightedDate && sHasData) {
+                    sradii.push(8);
+                    sbg.push(hlColor);
+                } else {
+                    sradii.push(sHasData ? 3 : 0);
+                    sbg.push(sMeta.color);
+                }
+            }
+            sds.pointRadius = sradii;
+            sds.pointBackgroundColor = sbg;
+            sInst.update('none');
+        });
         // 高亮日期行樣式 + 滾動定位
         var allRows = document.querySelectorAll('.day-accordion');
         var targetRow = null;
@@ -1669,6 +1721,169 @@
         });
     }
 
+    // ── 淨碳水圖表 ──
+    var _netcarbChartKeys = [];
+    var _mealNetcarbChartInst = null;
+
+    function renderMealNetcarbChart() {
+        var byDate = {};
+        _mealRecs.forEach(function(r){
+            var key = toMealDateKey(r.date);
+            if (!key) return;
+            byDate[key] = (byDate[key] || 0) + ((r.carbs||0) - (r.fiber||0));
+        });
+        var fullKeys = _getAllDateKeys();
+        var keys = _getChartRangeKeys(fullKeys);
+        _netcarbChartKeys = keys;
+        if (keys.length === 0) return;
+        var canvas = document.getElementById('mealNetcarbChart');
+        if (!canvas) return;
+        var labels = keys.map(formatMealDateKey);
+        var values = keys.map(function(k){ return byDate[k] != null ? Math.round(byDate[k]) : null; });
+        var defaultRadius = keys.map(function(k){ return byDate[k] != null ? 3 : 0; });
+        var datasets = [{
+            label: '每日淨碳水 (g)', data: values,
+            borderColor: '#B8926A', backgroundColor: 'rgba(184,146,106,0.12)',
+            borderWidth: 2, pointRadius: defaultRadius, pointBackgroundColor: '#B8926A',
+            fill: true, tension: 0.3, spanGaps: true
+        }];
+        // 上限線：根據每日碳日類型 × 適用體重計算
+        var hasUpperLine = false;
+        var upperValues = keys.map(function(k){
+            var m = _getApplicableMeasure(k);
+            var w = m ? m.weight : 0;
+            if (w <= 0) return null;
+            var parts = k.split('-');
+            var dt = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+            var dayType = hwGetDayType(dt);
+            if (!dayType || dayType === 'none') return null;
+            hasUpperLine = true;
+            if (dayType === 'high') return Math.round(w * 3);
+            if (dayType === 'mid') return Math.round(w * 2);
+            return Math.round(w * 1); // low & fast
+        });
+        if (hasUpperLine) {
+            datasets.push({
+                label: '淨碳水上限', data: upperValues,
+                borderColor: '#A0626B', borderWidth: 1.5, borderDash: [6, 4],
+                pointRadius: 0, fill: false, tension: 0, spanGaps: true
+            });
+        }
+        if (_mealNetcarbChartInst) _mealNetcarbChartInst.destroy();
+        _mealNetcarbChartInst = new Chart(canvas.getContext('2d'), {
+            type: 'line', data: { labels: labels, datasets: datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                animation: false,
+                interaction: { mode: 'index', intersect: false },
+                layout: { padding: { bottom: 8, left: 4, right: 4 } },
+                onClick: function(evt, elements) {
+                    if (elements.length > 0) {
+                        var idx = elements[0].index;
+                        var dateKey = _netcarbChartKeys[idx];
+                        if (dateKey) mealHighlightChartPoint(dateKey);
+                    }
+                },
+                plugins: {
+                    legend: { display: hasUpperLine, position: 'bottom', labels: { font: { size: 10 }, padding: 8, boxWidth: 12 } },
+                    tooltip: { callbacks: { label: function(ctx){ return ctx.dataset.label + ': ' + ctx.parsed.y + 'g'; } } }
+                },
+                scales: {
+                    x: { ticks: { font: { size: 10 }, color: '#8B8B8B' }, grid: { display: false } },
+                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B', callback: function(v){ return v + 'g'; } }, grid: { color: 'rgba(0,0,0,0.05)' }, beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    // ── 補充品圖表（代餐/配方/Q飽 共用渲染器）──
+    var _supplChartKeys = { mealrep: [], formula: [], qbao: [] };
+    var _supplChartInst = { mealrep: null, formula: null, qbao: null };
+    var _supplChartMeta = {
+        mealrep: { label: '代餐 (包)', color: '#7B8FA1', bg: 'rgba(123,143,161,0.12)', canvasId: 'mealMealrepChart', field: 'mr' },
+        formula: { label: '配方 (包)', color: '#8B9D83', bg: 'rgba(139,157,131,0.12)', canvasId: 'mealFormulaChart', field: 'fm' },
+        qbao:    { label: 'Q飽 (包)', color: '#C4A882', bg: 'rgba(196,168,130,0.12)', canvasId: 'mealQbaoChart', field: 'qb' }
+    };
+
+    function renderMealSupplChart(type) {
+        var meta = _supplChartMeta[type];
+        if (!meta) return;
+        // 逐日從 FIXED_PLANS 查詢補充品數量
+        var fullKeys = _getAllDateKeys();
+        var keys = _getChartRangeKeys(fullKeys);
+        _supplChartKeys[type] = keys;
+        if (keys.length === 0) return;
+        var canvas = document.getElementById(meta.canvasId);
+        if (!canvas) return;
+        var labels = keys.map(formatMealDateKey);
+        var values = keys.map(function(k){
+            var parts = k.split('-');
+            var dt = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+            var dayType = hwGetDayType(dt);
+            if (!dayType || dayType === 'none') return null;
+            var prot = _getApplicableProtein(k) || _mealRecProtein;
+            var suppl = _getDaySupplements(dayType, prot);
+            return suppl[meta.field];
+        });
+        var defaultRadius = values.map(function(v){ return v != null ? 3 : 0; });
+        var datasets = [{
+            label: meta.label, data: values,
+            borderColor: meta.color, backgroundColor: meta.bg,
+            borderWidth: 2, pointRadius: defaultRadius, pointBackgroundColor: meta.color,
+            fill: true, tension: 0.3, spanGaps: true
+        }];
+        if (_supplChartInst[type]) _supplChartInst[type].destroy();
+        _supplChartInst[type] = new Chart(canvas.getContext('2d'), {
+            type: 'line', data: { labels: labels, datasets: datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                animation: false,
+                interaction: { mode: 'index', intersect: false },
+                layout: { padding: { bottom: 8, left: 4, right: 4 } },
+                onClick: function(evt, elements) {
+                    if (elements.length > 0) {
+                        var idx = elements[0].index;
+                        var dateKey = _supplChartKeys[type][idx];
+                        if (dateKey) mealHighlightChartPoint(dateKey);
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: function(ctx){ return meta.label + ': ' + ctx.parsed.y; } } }
+                },
+                scales: {
+                    x: { ticks: { font: { size: 10 }, color: '#8B8B8B' }, grid: { display: false } },
+                    y: { ticks: { font: { size: 10 }, color: '#8B8B8B', stepSize: 1, callback: function(v){ return v + '包'; } }, grid: { color: 'rgba(0,0,0,0.05)' }, beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    // ── 排糖/排油 查詢輔助 ──
+    function _getDaySupplements(dayType, proteinLevel) {
+        // 根據碳日類型和蛋白質等級，從 FIXED_PLANS 查詢各補充品包數
+        // DIET_COLS: 0=代餐, 1=配方, 2=排糖排油, 5=Q寶
+        var empty = { st: 0, so: 0, mr: 0, fm: 0, qb: 0 };
+        if (!dayType || dayType === 'none') return empty;
+        var plan;
+        if (dayType === 'fast') {
+            plan = FIXED_PLANS.fast;
+        } else {
+            var fixedSet = FIXED_PLANS[proteinLevel];
+            if (!fixedSet || !fixedSet[dayType]) return empty;
+            plan = fixedSet[dayType];
+        }
+        if (!plan || !plan.meals) return empty;
+        var stCount = 0, soCount = 0, mrCount = 0, fmCount = 0, qbCount = 0;
+        plan.meals.forEach(function(m){
+            if (m[0] === '1') mrCount++;  // 代餐
+            if (m[1] === '1') fmCount++;  // 配方
+            if (m[2] === '1') { stCount++; soCount++; } // 排糖排油
+            if (m[5] === '1') qbCount++;  // Q寶
+        });
+        return { st: stCount, so: soCount, mr: mrCount, fm: fmCount, qb: qbCount };
+    }
+
     function buildDayAccordions(recs) {
         // 按日期分組餐食紀錄（存到全域供 expand 使用）
         _mealTblGrouped = {};
@@ -1757,25 +1972,10 @@
 
             // 蛋白質（日總量）
             var _proHtml = hasRec ? '<span class="day-val" style="color:#A0626B">' + Math.round(totalProtein) + '</span>' : '<span style="color:#ccc">-</span>';
-            // 熱量（日總量）
-            var _calHtml = hasRec ? '<span class="day-val">' + Math.round(totalCal) + '</span>' : '<span style="color:#ccc">-</span>';
-            // 淨碳水（少/平/超；體重來源：身體組成測量時間軸）
-            var _ncWeight = _appWeight;
-            var _ncHtml = '<span style="color:#ccc">-</span>';
-            if (hasRec && _dayType && _ncWeight > 0) {
-                var _totalNetCarb = dayRecs.reduce(function(s,r){ return s + ((r.carbs||0) - (r.fiber||0)); }, 0);
-                var _ncLower = 0, _ncUpper = 0;
-                if (_dayType === 'high') { _ncLower = _ncWeight * 2; _ncUpper = _ncWeight * 3; }
-                else if (_dayType === 'mid') { _ncLower = _ncWeight * 1; _ncUpper = _ncWeight * 2; }
-                else { _ncLower = 0; _ncUpper = _ncWeight * 1; } // low & fast 同範圍
-                if (_totalNetCarb < _ncLower) {
-                    _ncHtml = '<span class="day-val" style="color:#6B8F71">少</span>';
-                } else if (_totalNetCarb > _ncUpper) {
-                    _ncHtml = '<span class="day-val" style="color:#A0626B">超</span>';
-                } else {
-                    _ncHtml = '<span class="day-val" style="color:#B8926A">平</span>';
-                }
-            }
+            // 排糖/排油（從 FIXED_PLANS 依碳日+蛋白質等級查詢）
+            var _suppl = _getDaySupplements(_dayType, _appProtein || _mealRecProtein);
+            var _stHtml = _suppl.st > 0 ? '<span class="day-val" style="color:#B8926A">' + _suppl.st + '</span>' : '<span style="color:#ccc">-</span>';
+            var _soHtml = _suppl.so > 0 ? '<span class="day-val" style="color:#B8926A">' + _suppl.so + '</span>' : '<span style="color:#ccc">-</span>';
             // 照片數（點擊展開餐食）
             var _cntHtml = hasRec ? '<span class="day-val" style="color:var(--blue);cursor:pointer" onclick="event.stopPropagation();toggleDay(' + di + ')">' + dayRecs.length + '</span>' : '';
 
@@ -1826,12 +2026,12 @@
             html += '<div class="day-accordion" id="day-' + di + '" data-datekey="' + dateKey + '">'
                 + '<div class="day-header' + (!hasRec && !_hwWeight ? ' no-rec' : '') + '" style="' + todayStyle + '"' + (isToday ? ' data-today="1"' : '') + ' onclick="mealHighlightChartPoint(\'' + dateKey + '\')">'
                 + '<div class="day-col day-col-date"><span class="day-val" style="' + dateStyle + '">' + _dMon + '/' + _dDay + '<span style="font-size:11px;font-weight:400;color:var(--muted)">(' + _dWeek + ')</span></span></div>'
+                + '<div class="day-col day-col-st">' + _stHtml + '</div>'
+                + '<div class="day-col day-col-so">' + _soHtml + '</div>'
                 + '<div class="day-col day-col-carb">' + _carbHtml + '</div>'
                 + '<div class="day-col day-col-diff">' + _diffHtml + '</div>'
                 + '<div class="day-col day-col-wt">' + _wtHtml + '</div>'
                 + '<div class="day-col day-col-protein">' + _proHtml + '</div>'
-                + '<div class="day-col day-col-cal">' + _calHtml + '</div>'
-                + '<div class="day-col day-col-nc">' + _ncHtml + '</div>'
                 + '<div class="day-col day-col-count">' + _cntHtml + '</div>'
                 + '</div>'
                 + (hasRec ? '<div class="day-body">' + mealsHtml + '</div>' : '')
@@ -3773,13 +3973,7 @@
             var weekBtn = document.getElementById('mealRangeBtnWeek');
             if (weekBtn) weekBtn.textContent = '週';
             // 重建圖表（歷史模式）
-            if (_mealActiveChart === 'weight') {
-                mealRenderWeightChart();
-            } else if (_mealActiveChart === 'protein') {
-                renderMealChart(_mealRecs, _mealRecProtein);
-            } else if (_mealActiveChart === 'calorie') {
-                renderMealCalorieChart();
-            }
+            _renderActiveChart(_mealActiveChart);
             // 設定高亮並更新圖點與日期條（不經過 mealHighlightChartPoint 避免自動切範圍）
             _highlightedDate = targetDate;
             _applyChartHighlight();
