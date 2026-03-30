@@ -1413,11 +1413,12 @@
             var pradii = [];
             var pbg = [];
             for (var j = 0; j < _proteinChartKeys.length; j++) {
-                if (_highlightedDate && _proteinChartKeys[j] === _highlightedDate) {
+                var pHasData = pds.data[j] != null;
+                if (_highlightedDate && _proteinChartKeys[j] === _highlightedDate && pHasData) {
                     pradii.push(8);
                     pbg.push(hlColor);
                 } else {
-                    pradii.push(3);
+                    pradii.push(pHasData ? 3 : 0);
                     pbg.push('#8B9D83');
                 }
             }
@@ -1431,11 +1432,12 @@
             var cradii = [];
             var cbg = [];
             for (var ci = 0; ci < _calorieChartKeys.length; ci++) {
-                if (_highlightedDate && _calorieChartKeys[ci] === _highlightedDate) {
+                var cHasData = cds.data[ci] != null;
+                if (_highlightedDate && _calorieChartKeys[ci] === _highlightedDate && cHasData) {
                     cradii.push(8);
                     cbg.push(hlColor);
                 } else {
-                    cradii.push(3);
+                    cradii.push(cHasData ? 3 : 0);
                     cbg.push('#C4787E');
                 }
             }
@@ -1534,6 +1536,16 @@
     }
 
     var _proteinChartKeys = []; // 蛋白質圖的日期 key 陣列，供 highlight 用
+    // 合併所有日期（居家體重 + 餐食紀錄），確保三張圖 X 軸範圍一致
+    function _getAllDateKeys() {
+        var map = {};
+        Object.keys(hwWeightData).forEach(function(k){ map[k] = true; });
+        _mealRecs.forEach(function(r){
+            var k = toMealDateKey(r.date);
+            if (k) map[k] = true;
+        });
+        return Object.keys(map).sort();
+    }
     function renderMealChart(recs, recommended) {
         var byDate = {};
         recs.forEach(function(r){
@@ -1541,20 +1553,20 @@
             if (!key) return;
             byDate[key] = (byDate[key] || 0) + (r.protein || 0);
         });
-        var fullKeys = Object.keys(byDate).sort();
+        var fullKeys = _getAllDateKeys();
         var keys = _getChartRangeKeys(fullKeys);
         _proteinChartKeys = keys;
         if (keys.length === 0) return;
         var canvas = document.getElementById('mealProteinChart');
         if (!canvas) return;
         var labels = keys.map(formatMealDateKey);
-        var values = keys.map(function(k){ return Math.round(byDate[k]); });
-        var defaultRadius = keys.map(function(){ return 3; });
+        var values = keys.map(function(k){ return byDate[k] != null ? Math.round(byDate[k]) : null; });
+        var defaultRadius = keys.map(function(k){ return byDate[k] != null ? 3 : 0; });
         var datasets = [{
             label: '每日蛋白質 (g)', data: values,
             borderColor: '#8B9D83', backgroundColor: 'rgba(139,157,131,0.12)',
             borderWidth: 2, pointRadius: defaultRadius, pointBackgroundColor: '#8B9D83',
-            fill: true, tension: 0.3
+            fill: true, tension: 0.3, spanGaps: true
         }];
         if (recommended > 0) {
             datasets.push({
@@ -1600,20 +1612,20 @@
             if (!key) return;
             byDate[key] = (byDate[key] || 0) + (r.calories || 0);
         });
-        var fullKeys = Object.keys(byDate).sort();
+        var fullKeys = _getAllDateKeys();
         var keys = _getChartRangeKeys(fullKeys);
         _calorieChartKeys = keys;
         if (keys.length === 0) return;
         var canvas = document.getElementById('mealCalorieChart');
         if (!canvas) return;
         var labels = keys.map(formatMealDateKey);
-        var values = keys.map(function(k){ return Math.round(byDate[k]); });
-        var defaultRadius = keys.map(function(){ return 3; });
+        var values = keys.map(function(k){ return byDate[k] != null ? Math.round(byDate[k]) : null; });
+        var defaultRadius = keys.map(function(k){ return byDate[k] != null ? 3 : 0; });
         var datasets = [{
             label: '每日熱量 (kcal)', data: values,
             borderColor: '#C4787E', backgroundColor: 'rgba(196,120,126,0.12)',
             borderWidth: 2, pointRadius: defaultRadius, pointBackgroundColor: '#C4787E',
-            fill: true, tension: 0.3
+            fill: true, tension: 0.3, spanGaps: true
         }];
         // 日耗熱量（TDEE）基準線：逐日查找適用的 TDEE
         var hasTdee = false;
