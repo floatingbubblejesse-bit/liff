@@ -186,11 +186,8 @@
         .day-header:active:not(.no-rec){background:#F5F3EF}
         .day-col{text-align:center;display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0}
         .day-col-date{justify-content:flex-start;padding-left:6px}
+        .day-col-st,.day-col-so{flex:0.6 1 0}
         .day-col-count{padding-right:4px}
-        .day-suppl-icons{display:inline-flex;gap:2px;margin-left:3px;vertical-align:middle}
-        .day-suppl-icon{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:3px;font-size:8px;font-weight:700;line-height:1;color:white}
-        .day-suppl-icon.ic-st{background:#B8926A}
-        .day-suppl-icon.ic-so{background:#A0626B}
         .day-val{font-size:14px;font-weight:700;color:var(--text);line-height:1.2}
         .day-lbl{font-size:15px;font-weight:700;color:var(--text)}
         .day-date-main{font-size:15px;font-weight:700;color:var(--text)}
@@ -1011,7 +1008,9 @@
         // 中間彈性區：每日紀錄表（flex:1 填滿剩餘空間）
         html += '<div class="meal-fixed-tbl">';
         html += '<div class="meal-tbl-head" style="flex-shrink:0;position:relative">'
-            + '<div class="day-col day-col-date">日期 <span class="meal-tbl-today-btn" onclick="mealTblScrollToToday()">↻</span> <span class="day-suppl-icons"><span class="day-suppl-icon ic-st">糖</span><span class="day-suppl-icon ic-so">油</span></span></div>'
+            + '<div class="day-col day-col-date">日期 <span class="meal-tbl-today-btn" onclick="mealTblScrollToToday()">↻</span></div>'
+            + '<div class="day-col day-col-st">排糖</div>'
+            + '<div class="day-col day-col-so">排油</div>'
             + '<div class="day-col day-col-carb">碳日</div>'
             + '<div class="day-col day-col-diff">變化</div>'
             + '<div class="day-col day-col-wt">體重</div>'
@@ -2032,7 +2031,9 @@
 
             html += '<div class="day-accordion" id="day-' + di + '" data-datekey="' + dateKey + '">'
                 + '<div class="day-header' + (!hasRec && !_hwWeight ? ' no-rec' : '') + '" style="' + todayStyle + '"' + (isToday ? ' data-today="1"' : '') + ' onclick="mealHighlightChartPoint(\'' + dateKey + '\')">'
-                + '<div class="day-col day-col-date"><span class="day-val" style="' + dateStyle + '">' + _dMon + '/' + _dDay + '<span style="font-size:11px;font-weight:400;color:var(--muted)">(' + _dWeek + ')</span></span>' + (_suppl.st > 0 || _suppl.so > 0 ? '<span class="day-suppl-icons">' + (_suppl.st > 0 ? '<span class="day-suppl-icon ic-st">糖</span>' : '') + (_suppl.so > 0 ? '<span class="day-suppl-icon ic-so">油</span>' : '') + '</span>' : '') + '</div>'
+                + '<div class="day-col day-col-date"><span class="day-val" style="' + dateStyle + '">' + _dMon + '/' + _dDay + '<span style="font-size:11px;font-weight:400;color:var(--muted)">(' + _dWeek + ')</span></span></div>'
+                + '<div class="day-col day-col-st">' + _stHtml + '</div>'
+                + '<div class="day-col day-col-so">' + _soHtml + '</div>'
                 + '<div class="day-col day-col-carb">' + _carbHtml + '</div>'
                 + '<div class="day-col day-col-diff">' + _diffHtml + '</div>'
                 + '<div class="day-col day-col-wt">' + _wtHtml + '</div>'
