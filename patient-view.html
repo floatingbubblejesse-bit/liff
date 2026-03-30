@@ -188,6 +188,9 @@
         .day-col-date{justify-content:flex-start;padding-left:6px}
         .day-col-st,.day-col-so{flex:0.6 1 0}
         .day-col-count{padding-right:4px}
+        .day-head-icon{display:inline-flex;align-items:center;justify-content:center;padding:2px 6px;border-radius:4px;font-size:12px;font-weight:700;color:white;line-height:1}
+        .day-head-icon.ic-st{background:#B8926A}
+        .day-head-icon.ic-so{background:#A0626B}
         .day-val{font-size:14px;font-weight:700;color:var(--text);line-height:1.2}
         .day-lbl{font-size:15px;font-weight:700;color:var(--text)}
         .day-date-main{font-size:15px;font-weight:700;color:var(--text)}
@@ -1009,8 +1012,8 @@
         html += '<div class="meal-fixed-tbl">';
         html += '<div class="meal-tbl-head" style="flex-shrink:0;position:relative">'
             + '<div class="day-col day-col-date">日期 <span class="meal-tbl-today-btn" onclick="mealTblScrollToToday()">↻</span></div>'
-            + '<div class="day-col day-col-st">排糖</div>'
-            + '<div class="day-col day-col-so">排油</div>'
+            + '<div class="day-col day-col-st"><span class="day-head-icon ic-st">排糖</span></div>'
+            + '<div class="day-col day-col-so"><span class="day-head-icon ic-so">排油</span></div>'
             + '<div class="day-col day-col-carb">碳日</div>'
             + '<div class="day-col day-col-diff">變化</div>'
             + '<div class="day-col day-col-wt">體重</div>'
