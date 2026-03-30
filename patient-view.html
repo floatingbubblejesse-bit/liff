@@ -1745,25 +1745,32 @@
             borderWidth: 2, pointRadius: defaultRadius, pointBackgroundColor: '#B8926A',
             fill: true, tension: 0.3, spanGaps: true
         }];
-        // 上限線：根據每日碳日類型 × 適用體重計算
-        var hasUpperLine = false;
-        var upperValues = keys.map(function(k){
+        // 上限/下限線：根據每日碳日類型 × 適用體重計算
+        var hasRangeLine = false;
+        var upperValues = [];
+        var lowerValues = [];
+        keys.forEach(function(k){
             var m = _getApplicableMeasure(k);
             var w = m ? m.weight : 0;
-            if (w <= 0) return null;
+            if (w <= 0) { upperValues.push(null); lowerValues.push(null); return; }
             var parts = k.split('-');
             var dt = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
             var dayType = hwGetDayType(dt);
-            if (!dayType || dayType === 'none') return null;
-            hasUpperLine = true;
-            if (dayType === 'high') return Math.round(w * 3);
-            if (dayType === 'mid') return Math.round(w * 2);
-            return Math.round(w * 1); // low & fast
+            if (!dayType || dayType === 'none') { upperValues.push(null); lowerValues.push(null); return; }
+            hasRangeLine = true;
+            if (dayType === 'high') { lowerValues.push(Math.round(w * 2)); upperValues.push(Math.round(w * 3)); }
+            else if (dayType === 'mid') { lowerValues.push(Math.round(w * 1)); upperValues.push(Math.round(w * 2)); }
+            else { lowerValues.push(0); upperValues.push(Math.round(w * 1)); } // low & fast
         });
-        if (hasUpperLine) {
+        if (hasRangeLine) {
             datasets.push({
                 label: '淨碳水上限', data: upperValues,
                 borderColor: '#A0626B', borderWidth: 1.5, borderDash: [6, 4],
+                pointRadius: 0, fill: false, tension: 0, spanGaps: true
+            });
+            datasets.push({
+                label: '淨碳水下限', data: lowerValues,
+                borderColor: '#6B8F71', borderWidth: 1.5, borderDash: [6, 4],
                 pointRadius: 0, fill: false, tension: 0, spanGaps: true
             });
         }
@@ -1783,7 +1790,7 @@
                     }
                 },
                 plugins: {
-                    legend: { display: hasUpperLine, position: 'bottom', labels: { font: { size: 10 }, padding: 8, boxWidth: 12 } },
+                    legend: { display: hasRangeLine, position: 'bottom', labels: { font: { size: 10 }, padding: 8, boxWidth: 12 } },
                     tooltip: { callbacks: { label: function(ctx){ return ctx.dataset.label + ': ' + ctx.parsed.y + 'g'; } } }
                 },
                 scales: {
