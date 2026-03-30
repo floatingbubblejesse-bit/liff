@@ -1114,6 +1114,7 @@
             if (type === 'weight') mealRenderWeightChart();
             else if (type === 'protein') renderMealChart(_mealRecs, _mealRecProtein);
             else if (type === 'calorie') renderMealCalorieChart();
+            if (_highlightedDate) _applyChartHighlight();
         }, 30);
     }
     // ── 圖表日期範圍切換 ──
@@ -1746,14 +1747,15 @@
             var _proHtml = hasRec ? '<span class="day-val" style="color:#A0626B">' + Math.round(totalProtein) + '</span>' : '<span style="color:#ccc">-</span>';
             // 熱量（日總量）
             var _calHtml = hasRec ? '<span class="day-val">' + Math.round(totalCal) + '</span>' : '<span style="color:#ccc">-</span>';
-            // 淨碳水（少/平/超，使用該日期適用的體重計算範圍；斷食日比照低碳日）
+            // 淨碳水（少/平/超；體重來源：身體組成測量時間軸）
+            var _ncWeight = _appWeight;
             var _ncHtml = '<span style="color:#ccc">-</span>';
-            if (hasRec && _dayType && _appWeight > 0) {
+            if (hasRec && _dayType && _ncWeight > 0) {
                 var _totalNetCarb = dayRecs.reduce(function(s,r){ return s + ((r.carbs||0) - (r.fiber||0)); }, 0);
                 var _ncLower = 0, _ncUpper = 0;
-                if (_dayType === 'high') { _ncLower = _appWeight * 2; _ncUpper = _appWeight * 3; }
-                else if (_dayType === 'mid') { _ncLower = _appWeight * 1; _ncUpper = _appWeight * 2; }
-                else { _ncLower = 0; _ncUpper = _appWeight * 1; } // low & fast 同範圍
+                if (_dayType === 'high') { _ncLower = _ncWeight * 2; _ncUpper = _ncWeight * 3; }
+                else if (_dayType === 'mid') { _ncLower = _ncWeight * 1; _ncUpper = _ncWeight * 2; }
+                else { _ncLower = 0; _ncUpper = _ncWeight * 1; } // low & fast 同範圍
                 if (_totalNetCarb < _ncLower) {
                     _ncHtml = '<span class="day-val" style="color:#6B8F71">少</span>';
                 } else if (_totalNetCarb > _ncUpper) {
