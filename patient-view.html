@@ -609,7 +609,7 @@
             if (mDate && !isNaN(mWt) && mWt > 0) {
                 _measureTimeline.push({
                     date: mDate,
-                    tdee: (!isNaN(mBmr) && mBmr > 0) ? Math.round(mBmr * 1.2) : 0,
+                    bmr: (!isNaN(mBmr) && mBmr > 0) ? Math.round(mBmr) : 0,
                     weight: mWt
                 });
             }
@@ -620,7 +620,7 @@
             if (!cust['體重'] && latest['體重']) cust['體重'] = latest['體重'];
             if (!cust.weight && latest['體重']) cust.weight = latest['體重'];
             var _bmrVal = parseFloat(latest['基礎代謝 (BMR)']);
-            if (!isNaN(_bmrVal) && _bmrVal > 0) _mealLatestTdee = Math.round(_bmrVal * 1.2);
+            if (!isNaN(_bmrVal) && _bmrVal > 0) _mealLatestBmr = Math.round(_bmrVal);
         }
         fillProteinField(cust);
         fillTargetWeightField(cust, data.measurements || []);
@@ -1073,9 +1073,9 @@
     var _mealRecs = [];
     var _mealRecProtein = 0;
     var _mealPatientWeight = 0; // 最新體重（用於淨碳水範圍計算 fallback）
-    var _mealLatestTdee = 0;    // 最新日耗熱量 fallback
-    // 身體組成時間軸：每筆測量的日期、TDEE、體重（用於逐日查找適用值）
-    var _measureTimeline = []; // [{ date:'YYYY-MM-DD', tdee:number, weight:number }, ...]
+    var _mealLatestBmr = 0;     // 最新基礎代謝 fallback
+    // 身體組成時間軸：每筆測量的日期、BMR、體重（用於逐日查找適用值）
+    var _measureTimeline = []; // [{ date:'YYYY-MM-DD', bmr:number, weight:number }, ...]
     // 蛋白質目標時間軸：每次醫師發送飲食計劃的日期與蛋白質目標
     var _proteinTimeline = []; // [{ date:'YYYY-MM-DD', protein:number }, ...]
 
@@ -1682,17 +1682,17 @@
             borderWidth: 2, pointRadius: defaultRadius, pointBackgroundColor: '#C4787E',
             fill: true, tension: 0.3, spanGaps: true
         }];
-        // 日耗熱量（TDEE）基準線：逐日查找適用的 TDEE
-        var hasTdee = false;
-        var tdeeValues = keys.map(function(k) {
+        // 基礎代謝（BMR）基準線：逐日查找適用的 BMR
+        var hasBmr = false;
+        var bmrValues = keys.map(function(k) {
             var m = _getApplicableMeasure(k);
-            var v = m ? m.tdee : 0;
-            if (v > 0) hasTdee = true;
+            var v = m ? m.bmr : 0;
+            if (v > 0) hasBmr = true;
             return v;
         });
-        if (hasTdee) {
+        if (hasBmr) {
             datasets.push({
-                label: '日耗熱量 (TDEE)', data: tdeeValues,
+                label: '基礎代謝 (BMR)', data: bmrValues,
                 borderColor: '#B8926A', borderWidth: 1.5, borderDash: [6, 4],
                 pointRadius: 0, fill: false, tension: 0
             });
@@ -1977,7 +1977,7 @@
             // 查找此日期適用的身體組成與蛋白質目標
             var _appMeasure = _getApplicableMeasure(dateKey);
             var _appProtein = _getApplicableProtein(dateKey);
-            var _appTdee = _appMeasure ? _appMeasure.tdee : 0;
+            var _appBmr = _appMeasure ? _appMeasure.bmr : 0;
             var _appWeight = _appMeasure ? _appMeasure.weight : 0;
 
             // 蛋白質（日總量）
