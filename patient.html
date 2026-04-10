@@ -146,7 +146,7 @@
             </div>
         </header>
         <div class="stats-row" id="stats-row">
-            <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">熱量赤字 kcal</div></div>
+            <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">熱量額度 kcal</div></div>
             <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">淨碳水 g</div></div>
             <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">今日張數</div></div>
         </div>
@@ -314,7 +314,7 @@
         });
     }
 
-    var _patientTdee = 0; // 日耗熱量，由 API patient.tdee 設定
+    var _patientBmr = 0; // 基礎代謝，由 API patient.bmr 設定
     var _latestWeight = 0; // 最新測量體重
     var _lastRecords = []; // 最近一次 records，供 refreshStatsRow 用
     function renderProteinProgress(records, recommended, weight) {
@@ -360,11 +360,11 @@
         const totalProtein = todayRecs.reduce((s, r) => s + (r.protein || 0), 0);
         const netCarbs = todayRecs.reduce((s, r) => s + (r.netCarbs || 0), 0);
 
-        /* 熱量赤字 */
-        const deficit = _patientTdee > 0 ? Math.round(cal - _patientTdee) : null;
-        const deficitStr = deficit !== null ? String(deficit) : '—';
-        const deficitColor = deficit !== null ? (deficit < 0 ? 'color:#c0392b' : 'color:#27ae60') : '';
-        const deficitFormula = _patientTdee > 0 ? ' / ' + Math.round(cal) + '−' + Math.round(_patientTdee) : '';
+        /* 熱量額度：剩餘 = BMR − 已吃 */
+        const calorieLeft = _patientBmr > 0 ? Math.round(_patientBmr - cal) : null;
+        const calLeftStr = calorieLeft !== null ? String(calorieLeft) : '—';
+        const calLeftColor = calorieLeft !== null ? (calorieLeft >= 0 ? 'color:#6B8F71' : 'color:#C4787E') : '';
+        const calLeftDetail = _patientBmr > 0 ? Math.round(_patientBmr) + '−' + Math.round(cal) : '';
 
         /* 淨碳水 + 正常範圍 */
         const ncStr = Math.round(netCarbs);
@@ -380,9 +380,9 @@
 
         document.getElementById('stats-row').innerHTML = `
             <div class="stat-card" onclick="this.querySelector('.stat-detail').classList.toggle('show')">
-                <div class="stat-value" style="${deficitColor}">${deficitStr}</div>
-                <div class="stat-label">熱量赤字 kcal</div>
-                ${deficitFormula ? '<div class="stat-detail">' + deficitFormula.replace(' / ','') + '</div>' : ''}
+                <div class="stat-value" style="${calLeftColor}">${calLeftStr}</div>
+                <div class="stat-label">熱量額度 kcal</div>
+                ${calLeftDetail ? '<div class="stat-detail">' + calLeftDetail + '</div>' : ''}
             </div>
             <div class="stat-card" onclick="this.querySelector('.stat-detail').classList.toggle('show')">
                 <div class="stat-value" style="${ncColor}">${ncStr}</div>
@@ -632,7 +632,7 @@
                 loadingEl.classList.add('fade-out');
                 setTimeout(() => { loadingEl.style.display = 'none'; }, 300);
                 if (cached.patient?.name) { document.getElementById('patient-name').textContent = cached.patient.name; }
-                if (cached.patient?.tdee) { _patientTdee = cached.patient.tdee; }
+                if (cached.patient?.bmr) { _patientBmr = cached.patient.bmr; }
                 if (cached.patient?.weight) { _latestWeight = cached.patient.weight; }
                 // 碳日秒開：從主快取還原碳日
                 if (cached._carbDay && cached._carbDate === getTaipeiToday() && cached._carbDay !== 'none') {
@@ -654,7 +654,7 @@
                 saveCache(userId, data);
                 if (!cached) { loadingEl.classList.add('fade-out'); setTimeout(function(){ loadingEl.style.display = 'none'; }, 300); }
                 if (data.patient?.name) { document.getElementById('patient-name').textContent = data.patient.name; }
-                if (data.patient?.tdee) { _patientTdee = data.patient.tdee; }
+                if (data.patient?.bmr) { _patientBmr = data.patient.bmr; }
                 if (data.patient?.weight) { _latestWeight = data.patient.weight; }
                 if (data.patient?.id) { fetchAndShowCarbDay(data.patient.id); }
                 var recs = data.records || [];
