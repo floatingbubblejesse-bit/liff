@@ -681,7 +681,7 @@
     // ====== Edit / Dismiss 系統 ======
     var _actionTime = 0;       // 最近一次操作時間戳（防止開啟瞬間被外部點擊關掉）
     var _idleTimer = null;
-    var IDLE_TIMEOUT = 8000;
+    var IDLE_TIMEOUT = 15000;
     var GUARD_MS = 400;
 
     function clearIdleTimer() {
@@ -849,29 +849,34 @@
           + (overrideDayType ? '&dayType=' + encodeURIComponent(overrideDayType) : '');
 
         clearIdleTimer();
-        fetch(saveUrl, { mode: 'no-cors', redirect: 'follow' })
-        .then(function(){
+        fetch(saveUrl, { redirect: 'follow' })
+        .then(function(r){ return r.json(); })
+        .then(function(result){
             btn.disabled = false;
-            btn.textContent = '✓';
-            btn.style.color = '#6B8F71';
-            btn.style.borderColor = '#6B8F71';
-            delete dirtyRows[dateStr];
-            // 存檔成功 → 同步到 _savedOverrides
-            if (dayTypeOverrides[dateStr]) {
-                _savedOverrides[dateStr] = dayTypeOverrides[dateStr];
+            if (result && result.ok) {
+                btn.textContent = '✓';
+                btn.style.color = '#6B8F71';
+                btn.style.borderColor = '#6B8F71';
+                delete dirtyRows[dateStr];
+                if (dayTypeOverrides[dateStr]) {
+                    _savedOverrides[dateStr] = dayTypeOverrides[dateStr];
+                }
+            } else {
+                btn.textContent = '✗';
+                btn.style.color = '#A0626B';
+                btn.style.borderColor = '#A0626B';
+                console.log('[存檔失敗]', result);
             }
             setTimeout(function(){
                 dismissAll();
             }, 800);
         })
-        .catch(function(){
+        .catch(function(err){
             btn.disabled = false;
-            btn.textContent = '✓';
-            btn.style.color = '#6B8F71';
-            delete dirtyRows[dateStr];
-            if (dayTypeOverrides[dateStr]) {
-                _savedOverrides[dateStr] = dayTypeOverrides[dateStr];
-            }
+            btn.textContent = '✗';
+            btn.style.color = '#A0626B';
+            btn.style.borderColor = '#A0626B';
+            console.log('[存檔錯誤]', err);
             setTimeout(function(){
                 dismissAll();
             }, 800);
