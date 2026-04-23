@@ -3639,7 +3639,7 @@
         if (cached && cached.length > 0) {
             _hwApplyRecords(cached);
             hwLoaded = true;
-            if (mealsLoaded && activeTab === 'meals') renderMealsTab();
+            if (activeTab === 'meals') { hwUpdateStats(); mealRenderWeightChart(); }
         }
         _hwPrefetchPromise = fetch(MEALS_GAS + '?homeWeight=' + encodeURIComponent(patientSn))
             .then(function(r){ return r.json(); })
@@ -3650,7 +3650,7 @@
                     hwWeightData = {}; // 清空再填入最新
                     _hwApplyRecords(data.records);
                 }
-                if (mealsLoaded && activeTab === 'meals') renderMealsTab();
+                if (activeTab === 'meals') { hwUpdateStats(); mealRenderWeightChart(); }
             })
             .catch(function(e){ hwLoaded = true; console.log('[居家體重] 預取失敗:', e); });
     }
@@ -4206,6 +4206,59 @@
         for (var rli = 0; rli < rightLabels.length; rli++) {
             var rlEl = document.getElementById(rightLabels[rli]);
             if (rlEl) rlEl.textContent = rightLabel;
+        }
+        // 就地更新表格中的體重、變化、碳日欄位
+        _updateTableWeightCells();
+    }
+
+    // ── 就地更新表格中的體重 & 變化欄位（hwUpdateStats 完成後呼叫） ──
+    function _updateTableWeightCells() {
+        var rows = document.querySelectorAll('.day-accordion[data-datekey]');
+        if (!rows.length) return;
+        // 建立排序後的有體重日期清單（供變化計算用）
+        var weightKeys = Object.keys(hwWeightData).filter(function(k){ return hwWeightData[k].weight; }).sort();
+        for (var i = 0; i < rows.length; i++) {
+            var dk = rows[i].getAttribute('data-datekey');
+            if (!dk) continue;
+            var header = rows[i].querySelector('.day-header');
+            if (!header) continue;
+            var wtCol = header.querySelector('.day-col-wt');
+            var diffCol = header.querySelector('.day-col-diff');
+            if (!wtCol || !diffCol) continue;
+            var hwData = hwWeightData[dk];
+            var wt = (hwData && hwData.weight) ? hwData.weight : null;
+            // 體重
+            wtCol.innerHTML = wt ? '<span class="day-val">' + wt + '</span>' : '<span style="color:#ccc">-</span>';
+            // 變化（下一個有體重的日 - 當天體重）
+            var diff = null;
+            if (wt) {
+                for (var wi = 0; wi < weightKeys.length; wi++) {
+                    if (weightKeys[wi] > dk) { diff = hwWeightData[weightKeys[wi]].weight - wt; break; }
+                }
+            }
+            if (diff !== null) {
+                var sign = diff > 0 ? '+' : '';
+                var clr = diff < 0 ? '#6B8F71' : (diff > 0 ? '#A0626B' : '#8B8B8B');
+                diffCol.innerHTML = '<span class="day-val" style="color:' + clr + '">' + sign + diff.toFixed(1) + '</span>';
+            } else {
+                diffCol.innerHTML = '<span style="color:#ccc">-</span>';
+            }
+            // 碳日（也順便更新）
+            var carbCol = header.querySelector('.day-col-carb');
+            if (carbCol) {
+                var dtParts = dk.split('-');
+                var dtObj = new Date(parseInt(dtParts[0]), parseInt(dtParts[1]) - 1, parseInt(dtParts[2]));
+                var dayType = (hwData && hwData.dayType) ? hwData.dayType : hwGetDayType(dtObj);
+                var carbLabels = { high: '高', mid: '中', low: '低', fast: '斷' };
+                carbCol.innerHTML = (dayType && carbLabels[dayType])
+                    ? '<span class="day-carb-tag t-' + dayType + '">' + carbLabels[dayType] + '</span>'
+                    : '<span style="color:#ccc">-</span>';
+            }
+            // 有體重時移除 no-rec class
+            if (wt && header.classList.contains('no-rec')) {
+                var hasRec = header.querySelector('.day-col-count span.day-val');
+                if (hasRec || wt) header.classList.remove('no-rec');
+            }
         }
     }
 
