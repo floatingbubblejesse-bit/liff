@@ -3639,7 +3639,7 @@
         if (cached && cached.length > 0) {
             _hwApplyRecords(cached);
             hwLoaded = true;
-            if (activeTab === 'weight') hwRenderAll();
+            if (mealsLoaded && activeTab === 'meals') renderMealsTab();
         }
         _hwPrefetchPromise = fetch(MEALS_GAS + '?homeWeight=' + encodeURIComponent(patientSn))
             .then(function(r){ return r.json(); })
@@ -3650,7 +3650,7 @@
                     hwWeightData = {}; // 清空再填入最新
                     _hwApplyRecords(data.records);
                 }
-                if (activeTab === 'weight') hwRenderAll();
+                if (mealsLoaded && activeTab === 'meals') renderMealsTab();
             })
             .catch(function(e){ hwLoaded = true; console.log('[居家體重] 預取失敗:', e); });
     }
