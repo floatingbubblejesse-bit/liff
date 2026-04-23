@@ -401,10 +401,13 @@
         fetch(MEALS_GAS + '?homeWeight=' + encodeURIComponent(patientSn))
             .then(function(r){ return r.json(); })
             .then(function(data){
+                // 記住 API 回傳的體重日期（供補傳比對）
+                var apiWeightDates = {};
                 if (data.records && data.records.length > 0) {
                     for (var i = 0; i < data.records.length; i++) {
                         var rec = data.records[i];
                         if (rec.date && rec.weight) {
+                            apiWeightDates[rec.date] = true;
                             if (!weightData[rec.date]) weightData[rec.date] = {};
                             weightData[rec.date].weight = parseFloat(rec.weight);
                             if (rec.dayType) weightData[rec.date].dayType = rec.dayType;
@@ -412,6 +415,8 @@
                     }
                     saveLocalWeights();
                 }
+                // 自動補傳：localStorage 有體重但 API 沒有的日期，重新送出
+                _syncMissingWeights(apiWeightDates);
                 checkDone();
             }).catch(function(e){ checkDone(); });
 
@@ -451,6 +456,49 @@
         try {
             localStorage.setItem(storageKey(), JSON.stringify({ weights: weightData, overrides: dayTypeOverrides }));
         } catch(e) {}
+    }
+
+    // 自動補傳：localStorage 有體重但 API 沒有的日期，逐筆重新送出
+    function _syncMissingWeights(apiWeightDates) {
+        var missing = [];
+        var keys = Object.keys(weightData);
+        for (var i = 0; i < keys.length; i++) {
+            var k = keys[i];
+            if (weightData[k].weight && !apiWeightDates[k]) {
+                missing.push({ date: k, weight: weightData[k].weight });
+            }
+        }
+        if (missing.length === 0) return;
+        console.log('[補傳] 發現 ' + missing.length + ' 筆遺失體重，開始補傳');
+        var idx = 0;
+        function next() {
+            if (idx >= missing.length) {
+                console.log('[補傳] 完成');
+                return;
+            }
+            var m = missing[idx];
+            idx++;
+            var url = MEALS_GAS
+                + '?saveHomeWeight=true'
+                + '&patientSn=' + encodeURIComponent(patientSn)
+                + '&date=' + encodeURIComponent(m.date)
+                + '&weight=' + encodeURIComponent(m.weight);
+            fetch(url, { redirect: 'follow' })
+                .then(function(r){ return r.json(); })
+                .then(function(result){
+                    if (result && result.ok) {
+                        console.log('[補傳] ' + m.date + ' ' + m.weight + ' ✓');
+                    } else {
+                        console.log('[補傳] ' + m.date + ' 失敗:', result);
+                    }
+                    setTimeout(next, 500); // 間隔 500ms 避免 GAS 過載
+                })
+                .catch(function(err){
+                    console.log('[補傳] ' + m.date + ' 錯誤:', err);
+                    setTimeout(next, 500);
+                });
+        }
+        next();
     }
 
     var _dataReadyDone = false;
