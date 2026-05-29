@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>金鶯診所 - 醫師個人班表</title>
+<link rel="preconnect" href="https://www.drking.com.tw">
+<style>
+  /* 金鶯診所官網色票（取自 drking.com.tw 主視覺） */
+  :root {
+    --primary-dark: #007d78;
+    --primary: #00b0a6;
+    --primary-soft: #57c2c3;
+    --primary-light: #d5efef;
+    --accent: #fbaf1e;
+    --text: #4a4a4a;
+    --text-strong: #000;
+    --border: #e1e1e1;
+    --bg: #ffffff;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: "Microsoft JhengHei", "PingFang TC", PMingLiU, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { text-decoration: none; color: inherit; }
+
+  /* Header / Logo */
+  .top-bar {
+    background: #fff;
+    border-bottom: 3px solid var(--primary);
+    padding: 12px 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .top-bar img {
+    height: 44px; width: auto; display: block;
+  }
+
+  /* 頁面標題（仿 .producttitle） */
+  .page-title-bar {
+    background: var(--primary-light);
+    padding: 18px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .page-title {
+    color: var(--primary-dark);
+    font-weight: bold;
+    font-size: 22px;
+    line-height: 1.3;
+    margin: 0;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  .page-title::before {
+    content: "";
+    display: inline-block;
+    width: 24px; height: 3px;
+    background: var(--primary);
+    vertical-align: middle;
+    margin-right: 10px;
+  }
+  .page-title::after {
+    content: "";
+    display: inline-block;
+    width: 24px; height: 3px;
+    background: var(--primary);
+    vertical-align: middle;
+    margin-left: 10px;
+  }
+  .page-sub {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: var(--primary-dark);
+    text-align: center;
+    opacity: 0.85;
+  }
+
+  /* 院區 tabs（仿 .link_btn 按鈕風格） */
+  .tabs {
+    position: sticky; top: 0; z-index: 50;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs-inner { display: inline-flex; padding: 10px 12px; gap: 6px; }
+  .tab {
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    font-size: 14px;
+    color: var(--primary-dark);
+    background: #fff;
+    border: 1px solid var(--primary-soft);
+    border-radius: 22px;
+    transition: all 0.18s;
+  }
+  .tab.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+    font-weight: 500;
+  }
+
+  /* 院區區塊 */
+  .clinic {
+    padding: 22px 14px 6px;
+    scroll-margin-top: 60px;
+  }
+  .clinic-head {
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 2px solid var(--primary-light);
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+  }
+  .clinic-icon {
+    width: 6px; height: 22px;
+    background: var(--primary);
+    border-radius: 1px;
+  }
+  .clinic-name {
+    margin: 0;
+    font-size: 19px;
+    font-weight: bold;
+    color: var(--primary-dark);
+    letter-spacing: 1px;
+  }
+  .clinic-count {
+    margin-left: auto;
+    font-size: 12px;
+    color: #fff;
+    background: var(--primary-soft);
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-weight: 400;
+  }
+
+  /* 醫師卡片網格（仿 .col-xs-6 col-md-3） */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  @media (min-width: 600px) {
+    .grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (min-width: 900px) {
+    .grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  .card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 10px;
+    text-align: center;
+    transition: all 0.18s;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 70px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--primary-soft);
+    transform: scaleX(0);
+    transition: transform 0.2s;
+  }
+  .card:active {
+    border-color: var(--primary);
+    background: var(--primary-light);
+  }
+  .card:active::before {
+    transform: scaleX(1);
+    background: var(--primary);
+  }
+  .title-tag {
+    display: inline-block;
+    font-size: 11px;
+    color: #fff;
+    background: var(--accent);
+    padding: 1px 8px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+  }
+  .doctor-name {
+    font-size: 16px;
+    line-height: 1.3;
+    color: var(--text-strong);
+    font-weight: 500;
+    word-break: keep-all;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 24px;
+    padding: 22px 16px 30px;
+    background: var(--primary-dark);
+    color: #fff;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .footer a {
+    color: var(--primary-light);
+    text-decoration: underline;
+  }
+  .schedule-btn {
+    display: inline-block;
+    margin: 0 0 14px;
+    padding: 10px 26px;
+    background: var(--primary);
+    color: #fff !important;
+    border-radius: 22px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none !important;
+    letter-spacing: 1px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .footer .brand {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  .footer .divider {
+    width: 36px; height: 2px;
+    background: var(--primary-soft);
+    margin: 8px auto;
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <a href="https://www.drking.com.tw/">
+    <img src="https://www.drking.com.tw/uploads/use/20250731111412d249.jpg" alt="金鶯診所">
+  </a>
+</div>
+
+<div class="page-title-bar">
+  <h1 class="page-title">醫師個人班表</h1>
+  <p class="page-sub">點選醫師查看醫師個人班表</p>
+</div>
+
+<nav class="tabs">
+  <div class="tabs-inner" id="tabsInner"></div>
+</nav>
+
+<main id="main"></main>
+
+<div class="footer">
+  <a class="schedule-btn" href="https://www.drking.com.tw/info_all.html">查看詳細班表</a>
+  <div class="divider"></div>
+  <div class="brand">金鶯診所 · 全年無休</div>
+  <div>鶯歌／三樹／樹林／桃園／土城／八德／龍潭／大溪院區　7:30–21:30</div>
+  <div>大竹／大湳／平鎮／埔心／觀音院區　7:30–12:00、14:00–18:00、18:30–21:30</div>
+  <div style="margin-top:8px;opacity:0.7;">
+    資料來源：<a href="https://www.drking.com.tw/">drking.com.tw</a>
+  </div>
+</div>
+
+<script>
+// 院區醫師資料：依各醫師「實際門診表」整理（已過濾僅掛名、未實際看診的醫師）
+const CLINICS = [
+  { id:"yingge", name:"鶯歌院區", doctors:[
+    { name:"林永昌院長", url:"product-8.html" },
+    { name:"陳珠醫師", url:"product-7.html" },
+    { name:"鍾偉瑋醫師", url:"product-6-2.html" },
+    { name:"李軍逸醫師", url:"product-5-2.html" },
+    { name:"陳郁凡醫師", url:"product-4-2.html" },
+  ]},
+  { id:"sanshu", name:"三樹院區", doctors:[
+    { name:"蕭捷存執行長", url:"product-11-3.html" },
+    { name:"黃錦崧執行長", url:"product-10-3.html" },
+    { name:"蕭捷健醫師", url:"product-9-3.html" },
+    { name:"張慧馨院長", url:"product-16.html" },
+    { name:"陳富玫醫師", url:"product-15.html" },
+    { name:"闕壯理醫師", url:"product-14.html" },
+    { name:"黃允玫醫師", url:"product-13.html" },
+    { name:"張覲麟醫師", url:"product-12.html" },
+    { name:"林昆澤醫師", url:"product-37.html" },
+    { name:"李軍逸醫師", url:"product-5-3.html" },
+    { name:"陳郁凡醫師", url:"product-4-3.html" },
+  ]},
+  { id:"shulin", name:"樹林院區", doctors:[
+    { name:"林秉承院長", url:"product-21-4.html" },
+    { name:"廖崇淵醫師", url:"product-20-4.html" },
+    { name:"尤騰醫師", url:"product-19-4.html" },
+    { name:"何中誠醫師", url:"product-18-4.html" },
+    { name:"陳永仁醫師", url:"product-17-4.html" },
+    { name:"李軍逸醫師", url:"product-5-4.html" },
+    { name:"黃炯達院長", url:"product-67.html" },
+  ]},
+  { id:"taoyuan", name:"桃園院區", doctors:[
+    { name:"蕭捷健醫師", url:"product-9-5.html" },
+    { name:"蕭宇伯醫師", url:"product-25.html" },
+    { name:"李豪權醫師", url:"product-24.html" },
+    { name:"陳韋思醫師", url:"product-23.html" },
+    { name:"曾㨗聖醫師", url:"product-22.html" },
+    { name:"鍾偉瑋醫師", url:"product-6-5.html" },
+    { name:"廖崑竹院長", url:"product-76.html" },
+  ]},
+  { id:"tucheng", name:"土城院區", doctors:[
+    { name:"蕭捷健醫師", url:"product-9-6.html" },
+    { name:"張簡千郁院長", url:"product-28.html" },
+    { name:"陳麒中醫師", url:"product-27.html" },
+    { name:"黃濰醫師", url:"product-56.html" },
+    { name:"何金蔚醫師", url:"product-26.html" },
+    { name:"林秉承院長", url:"product-21-6.html" },
+    { name:"廖崇淵醫師", url:"product-20-6.html" },
+    { name:"尤騰醫師", url:"product-19-6.html" },
+    { name:"何中誠醫師", url:"product-18-6.html" },
+    { name:"陳永仁醫師", url:"product-17-6.html" },
+  ]},
+  { id:"bade", name:"八德院區", doctors:[
+    { name:"蕭捷存執行長", url:"product-11-2.html" },
+    { name:"黃錦崧執行長", url:"product-10-3.html" },
+    { name:"廖崑竹院長", url:"product-31.html" },
+    { name:"李彥輝醫師", url:"product-30-7.html" },
+    { name:"楊大緯醫師", url:"product-60.html" },
+    { name:"王志冉醫師", url:"product-63.html" },
+    { name:"曾韋綸醫師", url:"product-72.html" },
+    { name:"黃炯達院長", url:"product-66.html" },
+  ]},
+  { id:"longtan", name:"龍潭院區", doctors:[
+    { name:"何冠達院長", url:"product-35.html" },
+    { name:"何中庸醫師", url:"product-33.html" },
+    { name:"華志倫醫師", url:"product-32.html" },
+    { name:"林昱仁醫師", url:"product-51.html" },
+    { name:"陳昭銘院長", url:"product-34.html" },
+  ]},
+  { id:"daxi", name:"大溪院區", doctors:[
+    { name:"林鼎盛院長", url:"product-39.html" },
+    { name:"林昆澤醫師", url:"product-79.html" },
+    { name:"巫清隆醫師", url:"product-71.html" },
+    { name:"呂瑩純醫師", url:"product-70.html" },
+    { name:"廖崑竹院長", url:"product-74.html" },
+    { name:"李逸瑋院長", url:"product-78.html" },
+  ]},
+  { id:"dazhu", name:"大竹院區", doctors:[
+    { name:"陳秉峰院長", url:"product-41.html" },
+    { name:"沈士強醫師", url:"product-40.html" },
+    { name:"彭榆真醫師", url:"product-55.html" },
+    { name:"李軍逸醫師", url:"product-5-10.html" },
+  ]},
+  { id:"danan", name:"大湳院區", doctors:[
+    { name:"黃炯達院長", url:"product-65.html" },
+    { name:"洪岱熙醫師", url:"product-59.html" },
+    { name:"鍾偉瑋醫師", url:"product-6-11.html" },
+    { name:"李彥輝醫師", url:"product-30-11.html" },
+    { name:"陳永仁醫師", url:"product-17-11.html" },
+  ]},
+  { id:"pingzhen", name:"平鎮院區", doctors:[
+    { name:"蕭捷存執行長", url:"product-11-2.html" },
+    { name:"蕭捷健醫師", url:"product-9-12.html" },
+    { name:"陳昭銘院長", url:"product-68.html" },
+    { name:"甘家銘醫師", url:"product-57.html" },
+    { name:"何冠達院長", url:"product-64.html" },
+    { name:"廖崑竹院長", url:"product-31.html" },
+  ]},
+  { id:"puxin", name:"埔心院區", doctors:[
+    { name:"黃錦崧執行長", url:"product-10-3.html" },
+    { name:"梁培毅院長", url:"product-29.html" },
+    { name:"黃炯達院長", url:"product-42.html" },
+    { name:"廖崑竹院長", url:"product-75.html" },
+    { name:"陳昭銘院長", url:"product-69.html" },
+  ]},
+  { id:"guanyin", name:"觀音院區", doctors:[
+    { name:"林鼎盛院長", url:"product-77.html" },
+    { name:"李逸瑋院長", url:"product-38.html" },
+    { name:"侯進坤醫師", url:"product-73.html" },
+  ]},
+];
+
+const SITE = "https://www.drking.com.tw/";
+
+const tabsInner = document.getElementById("tabsInner");
+tabsInner.innerHTML = CLINICS.map(c =>
+  `<a class="tab" href="#${c.id}" data-id="${c.id}">${c.name}</a>`
+).join("");
+
+const main = document.getElementById("main");
+main.innerHTML = CLINICS.map(c => `
+  <section class="clinic" id="${c.id}">
+    <div class="clinic-head">
+      <div class="clinic-icon"></div>
+      <h2 class="clinic-name">${c.name}</h2>
+    </div>
+    <div class="grid">
+      ${c.doctors.map(d => `
+        <a class="card" href="${SITE}${d.url}" data-url="${SITE}${d.url}">
+          ${d.title ? `<span class="title-tag">${d.title}</span>` : ""}
+          <div class="doctor-name">${d.name}</div>
+        </a>
+      `).join("")}
+    </div>
+  </section>
+`).join("");
+
+// 點擊醫師卡片：在 LIFF 內用外部瀏覽器開啟
+document.querySelectorAll(".card").forEach(card => {
+  card.addEventListener("click", (e) => {
+    e.preventDefault();
+    const url = card.dataset.url;
+    if (window.liff && liff.isInClient && liff.isInClient()) {
+      liff.openWindow({ url, external: true });
+    } else {
+      window.open(url, "_blank");
+    }
+  });
+});
+
+// tabs 高亮
+const tabEls = [...document.querySelectorAll(".tab")];
+const setActive = (id) => {
+  tabEls.forEach(t => t.classList.toggle("active", t.dataset.id === id));
+  const active = tabEls.find(t => t.dataset.id === id);
+  if (active) active.scrollIntoView({ behavior:"smooth", block:"nearest", inline:"center" });
+};
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); });
+}, { rootMargin: "-60px 0px -65% 0px", threshold: 0 });
+document.querySelectorAll(".clinic").forEach(s => io.observe(s));
+setActive(CLINICS[0].id);
+
+// tabs 平滑滾動
+tabEls.forEach(t => {
+  t.addEventListener("click", e => {
+    e.preventDefault();
+    const target = document.getElementById(t.dataset.id);
+    if (target) {
+      const y = target.getBoundingClientRect().top + window.pageYOffset - 55;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    }
+  });
+});
+</script>
+</body>
+</html>
