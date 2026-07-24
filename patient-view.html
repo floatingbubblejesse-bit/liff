@@ -444,7 +444,7 @@
                 </div>
             </div>
             <div class="card" id="dietPlanCard">
-                <div class="card-title" style="justify-content:space-between;align-items:center"><span>🔄 碳水循環計劃</span><button class="diet-btn-save" id="saveAllDietBtn" onclick="saveAllDietPlans()" style="flex:none;width:auto;font-size:12px;font-weight:600;padding:8px 10px;border-radius:8px;white-space:nowrap">儲存並發送給客戶</button></div>
+                <div class="card-title" style="justify-content:space-between;align-items:center"><span>🔄 碳水循環計劃</span><span style="display:flex;align-items:center;gap:8px"><span id="dietSentBadge" style="display:none;font-size:11px;font-weight:600;color:#6B8F71;background:#E8EDE6;border:1px solid #C9D6C4;padding:3px 9px;border-radius:999px;white-space:nowrap"></span><button class="diet-btn-save" id="saveAllDietBtn" onclick="saveAllDietPlans()" style="flex:none;width:auto;font-size:12px;font-weight:600;padding:8px 10px;border-radius:8px;white-space:nowrap">儲存並發送給客戶</button></span></div>
                 <div class="cycle-top-layout">
                     <div class="cycle-weeks-packs-row" id="cycleWeeksSummary"></div>
                     <div class="cycle-schedule" id="cycleSchedule"></div>
@@ -3141,6 +3141,7 @@
 
             if (gasOk && lineOk) {
                 btn.textContent = '已發送'; btn.style.background = '#6B8F71';
+                showDietSentBadge(new Date());
             } else if (gasOk && !lineOk) {
                 btn.textContent = '已儲存（推播失敗）'; btn.style.background = '#C4A882';
                 alert('Sheet 已儲存，但 LINE 推播失敗：' + (lineRes.error || JSON.stringify(lineRes)));
@@ -3176,6 +3177,20 @@
         return plan;
     }
 
+    // 顯示「已發送」永久註記（碳水循環計劃卡片標題列）
+    function showDietSentBadge(dateVal) {
+        var el = document.getElementById('dietSentBadge');
+        if (!el) return;
+        var label = '✓ 已發送';
+        var ymd = hwParseDateToYMD(dateVal);
+        if (ymd) {
+            var p = ymd.split('-');
+            label += ' ' + parseInt(p[1], 10) + '/' + parseInt(p[2], 10);
+        }
+        el.textContent = label;
+        el.style.display = 'inline-block';
+    }
+
     function loadAllDietPlans() {
         // 先用預設值立刻渲染，讓頁面不留白
         PLAN_TYPES.forEach(function(p) { generateDietPlan(p); });
@@ -3192,6 +3207,8 @@
                 // 載入排程
                 if (data.schedule && data.schedule.length === 7) {
                     cycleSchedule = data.schedule;
+                    // 曾儲存並發送過 → 永久顯示已發送註記
+                    showDietSentBadge(data.date);
                 }
                 renderCycleSchedule();
 
