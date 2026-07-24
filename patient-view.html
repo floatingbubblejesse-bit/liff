@@ -1728,6 +1728,14 @@
     var _netcarbChartKeys = [];
     var _mealNetcarbChartInst = null;
 
+    // 取得某日「實際」碳日：優先用病人自行變更的碳日（居家體重 dayType 覆寫），否則按排程
+    function getEffectiveDayType(dateKey) {
+        var hd = hwWeightData[dateKey];
+        if (hd && hd.dayType) return hd.dayType;
+        var p = dateKey.split('-');
+        return hwGetDayType(new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2])));
+    }
+
     function renderMealNetcarbChart() {
         var byDate = {};
         _mealRecs.forEach(function(r){
@@ -1758,9 +1766,7 @@
             var m = _getApplicableMeasure(k);
             var w = m ? m.weight : 0;
             if (w <= 0) { upperValues.push(null); lowerValues.push(null); return; }
-            var parts = k.split('-');
-            var dt = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-            var dayType = hwGetDayType(dt);
+            var dayType = getEffectiveDayType(k);
             if (!dayType || dayType === 'none') { upperValues.push(null); lowerValues.push(null); return; }
             hasRangeLine = true;
             if (dayType === 'high') { lowerValues.push(Math.round(w * 2)); upperValues.push(Math.round(w * 3)); }
@@ -1827,9 +1833,7 @@
         if (!canvas) return;
         var labels = keys.map(formatMealDateKey);
         var values = keys.map(function(k){
-            var parts = k.split('-');
-            var dt = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-            var dayType = hwGetDayType(dt);
+            var dayType = getEffectiveDayType(k);
             if (!dayType || dayType === 'none') return null;
             var prot = _getApplicableProtein(k) || _mealRecProtein;
             var suppl = _getDaySupplements(dayType, prot);
