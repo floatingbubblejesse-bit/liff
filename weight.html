@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>成人 URI 開藥系統</title>
+<title>金鶯減重開藥系統</title>
 <style>
 :root{
   --bg:#F5F3F0; --card:#FFFFFF; --ink:#4A4A48; --sub:#8C8A85;
@@ -156,7 +156,7 @@ footer{font-size:11px;color:var(--sub);text-align:center;margin-top:6px;line-hei
 <body>
 <div class="wrap">
 <header>
-  <h1>成人 URI 開藥系統</h1><span class="ver">v2.5・82品項・內建醫師規則</span>
+  <h1>減重開藥系統</h1><span class="ver">v1.0・減重輔助用藥・點色標嚴重度</span>
   <button class="gear" id="gearBtn">⚙️ 規則設定</button>
 </header>
 <!-- 上：主訴（追問展開在右邊） -->
@@ -295,50 +295,12 @@ const DRUGS={
    二、主訴與追問
    ================================================================ */
 const SYMPTOM_GROUPS=[
- {t:"全身", items:[
-   {id:"fever",label:"發燒"},
-   {id:"headache",label:"頭痛"},
-   {id:"myalgia",label:"身體酸痛"},
-   {id:"fatigue",label:"倦怠"},
- ]},
- {t:"咽喉口腔", items:[
-   {id:"throat",label:"喉嚨痛"},
-   {id:"throatstuck",label:"喉嚨卡"},
-   {id:"throatitch",label:"喉嚨癢"},
-   {id:"mouthulcer",label:"嘴破"},
- ]},
- {t:"鼻", items:[
-   {id:"rhino",label:"流鼻涕"},
-   {id:"yellowrhino",label:"黃鼻涕"},
-   {id:"greenrhino",label:"綠鼻涕"},
-   {id:"postnasal",label:"鼻涕倒流"},
-   {id:"sneeze",label:"打噴嚏"},
-   {id:"nasal",label:"鼻塞"},
-   {id:"nasalvoice",label:"鼻音"},
- ]},
- {t:"咳嗽", items:[
-   {id:"cough",label:"咳嗽"},
-   {id:"nightcough",label:"夜咳"},
-   {id:"sputum",label:"痰"},
-   {id:"wheeze",label:"喘"},
- ]},
- {t:"耳", items:[
-   {id:"earache",label:"耳痛"},
-   {id:"earfull",label:"耳悶"},
-   {id:"earpus",label:"耳流膿"},
-   {id:"earwax",label:"耳屎多"},
- ]},
- {t:"腸胃", items:[
-   {id:"vomit",label:"吐"},
+ {t:"主訴", items:[
+   {id:"gibad",label:"胃不好"},
+   {id:"constip",label:"便秘"},
+   {id:"dizzy",label:"頭暈"},
    {id:"nausea",label:"噁心"},
-   {id:"reflux",label:"胃酸逆流"},
-   {id:"stomachache",label:"胃痛"},
-   {id:"abdpain",label:"腹痛"},
-   {id:"diarrhea",label:"腹瀉"},
- ]},
- {t:"皮膚", items:[
-   {id:"skinitch",label:"皮膚癢"},
-   {id:"skinpain",label:"皮膚痛"},
+   {id:"vomit",label:"吐"},
  ]},
 ];
 const SYMPTOMS=SYMPTOM_GROUPS.flatMap(g=>g.items);
@@ -356,102 +318,21 @@ const BASICS=[
 /* 每個主訴都有 普通（綠）/ 嚴重（紅）兩條規則；rx 留空 = 暫不配藥，可在規則設定加 */
 const R=(id,g,label,sym,lvl,rx)=>({id,g,label,cond:s=>s.sev(sym)===lvl,rx});
 const RULE_DEFS=[
- // 全身
- R("fever_lo","全身","發燒普通（綠）","fever","普通",["PANA"]),
- R("fever_hi","全身","發燒嚴重（紅）","fever","嚴重",["MEF1"]),
- R("ha_mild","全身","頭痛普通（綠）","headache","普通",["PANA"]),
- R("ha_mod","全身","頭痛嚴重（紅）","headache","嚴重",["MEF1"]),
- R("myalgia","全身","身體酸痛普通（綠）","myalgia","普通",["PANA"]),
- R("myalgia_sev","全身","身體酸痛嚴重（紅）","myalgia","嚴重",["MEF1"]),
- R("fatigue","全身","倦怠普通（綠）","fatigue","普通",[]),
- R("fatigue_sev","全身","倦怠嚴重（紅）","fatigue","嚴重",[]),
- // 咽喉口腔
- R("throat_mod","咽喉口腔","喉嚨痛普通（綠）","throat","普通",["MEF1"]),
- R("throat_sev","咽喉口腔","喉嚨痛嚴重（紅）","throat","嚴重",["MEF1","PRED1"]),
- R("throatstuck","咽喉口腔","喉嚨卡普通（綠）","throatstuck","普通",[]),
- R("throatstuck_sev","咽喉口腔","喉嚨卡嚴重（紅）","throatstuck","嚴重",[]),
- R("throatitch","咽喉口腔","喉嚨癢普通（綠）","throatitch","普通",["CTM1"]),
- R("throatitch_sev","咽喉口腔","喉嚨癢嚴重（紅）","throatitch","嚴重",["BIL"]),
- R("mouthulcer","咽喉口腔","嘴破普通（綠）","mouthulcer","普通",[]),
- R("mouthulcer_sev","咽喉口腔","嘴破嚴重（紅）","mouthulcer","嚴重",[]),
- // 鼻
- R("rhino_mod","鼻","流鼻涕普通（綠）","rhino","普通",["TOMI"]),
- R("rhino_sev","鼻","流鼻涕嚴重（紅）","rhino","嚴重",["BIL"]),
- R("yellowrhino","鼻","黃鼻涕普通（綠）","yellowrhino","普通",[]),
- R("yellowrhino_sev","鼻","黃鼻涕嚴重（紅）","yellowrhino","嚴重",[]),
- R("greenrhino","鼻","綠鼻涕普通（綠）","greenrhino","普通",[]),
- R("greenrhino_sev","鼻","綠鼻涕嚴重（紅）","greenrhino","嚴重",[]),
- R("postnasal","鼻","鼻涕倒流普通（綠）","postnasal","普通",["CTM1"]),
- R("postnasal_sev","鼻","鼻涕倒流嚴重（紅）","postnasal","嚴重",["BIL"]),
- R("sneeze","鼻","打噴嚏普通（綠）","sneeze","普通",["CTM1"]),
- R("sneeze_sev","鼻","打噴嚏嚴重（紅）","sneeze","嚴重",["BIL"]),
- R("nasal_mod","鼻","鼻塞普通（綠）","nasal","普通",["PSE1"]),
- R("nasal_sev","鼻","鼻塞嚴重（紅）","nasal","嚴重",["HIR0"]),
- R("nasalvoice","鼻","鼻音普通（綠）","nasalvoice","普通",[]),
- R("nasalvoice_sev","鼻","鼻音嚴重（紅）","nasalvoice","嚴重",[]),
- // 咳嗽
- R("cough_mod","咳嗽","咳嗽普通（綠）","cough","普通",["EUF0"]),
- R("cough_sev","咳嗽","咳嗽嚴重（紅）","cough","嚴重",["COD1"]),
- R("nightcough","咳嗽","夜咳普通（綠）","nightcough","普通",[]),
- R("nightcough_sev","咳嗽","夜咳嚴重（紅）","nightcough","嚴重",[]),
- R("cough_sputum","咳嗽","痰普通（綠）","sputum","普通",["AMB"]),
- R("sputum_sev","咳嗽","痰嚴重（紅）","sputum","嚴重",["AMB"]),
- R("wheeze","咳嗽","喘普通（綠）","wheeze","普通",["BRI2"]),
- R("wheeze_sev","咳嗽","喘嚴重（紅）","wheeze","嚴重",["BRI2"]),
- // 耳
- R("earache","耳","耳痛普通（綠）","earache","普通",["PANA"]),
- R("earache_sev","耳","耳痛嚴重（紅）","earache","嚴重",["MEF1"]),
- R("earfull","耳","耳悶普通（綠）","earfull","普通",[]),
- R("earfull_sev","耳","耳悶嚴重（紅）","earfull","嚴重",[]),
- R("earpus","耳","耳流膿普通（綠）","earpus","普通",[]),
- R("earpus_sev","耳","耳流膿嚴重（紅）","earpus","嚴重",[]),
- R("earwax","耳","耳屎多普通（綠）","earwax","普通",[]),
- R("earwax_sev","耳","耳屎多嚴重（紅）","earwax","嚴重",[]),
- // 腸胃
- R("vomit","腸胃","吐普通（綠）","vomit","普通",["MOT5"]),
- R("vomit_sev","腸胃","吐嚴重（紅）","vomit","嚴重",["MOT5"]),
- R("nausea","腸胃","噁心普通（綠）","nausea","普通",["MOT5"]),
- R("nausea_sev","腸胃","噁心嚴重（紅）","nausea","嚴重",["MOT5"]),
- R("reflux","腸胃","胃酸逆流普通（綠）","reflux","普通",["ALG1"]),
- R("reflux_sev","腸胃","胃酸逆流嚴重（紅）","reflux","嚴重",["OMEP1"]),
- R("stomachache","腸胃","胃痛普通（綠）","stomachache","普通",["STR1"]),
- R("stomachache_sev","腸胃","胃痛嚴重（紅）","stomachache","嚴重",["OMEP1"]),
- R("abdpain","腸胃","腹痛普通（綠）","abdpain","普通",["BUSM"]),
- R("abdpain_sev","腸胃","腹痛嚴重（紅）","abdpain","嚴重",["BUSM"]),
- R("diarrhea","腸胃","腹瀉普通（綠）","diarrhea","普通",["BISM"]),
- R("diarrhea_sev","腸胃","腹瀉嚴重（紅）","diarrhea","嚴重",["IMO"]),
- // 皮膚
- R("skinitch","皮膚","皮膚癢普通（綠）","skinitch","普通",["CTM1"]),
- R("skinitch_sev","皮膚","皮膚癢嚴重（紅）","skinitch","嚴重",["BIL"]),
- R("skinpain","皮膚","皮膚痛普通（綠）","skinpain","普通",["PANA"]),
- R("skinpain_sev","皮膚","皮膚痛嚴重（紅）","skinpain","嚴重",["MEF1"]),
- // 胃藥（標配：只要有開藥就加）
- {id:"gi_std", g:"胃藥", label:"每張處方標配", cond:s=>s.anyRx(), rx:["MGO"]},
- // 自動
- {id:"gi_protect",  g:"自動加藥", label:"開NSAID時併用胃藥", cond:s=>s.rxCat("nsaid"), rx:["MGO"]},
- {id:"nsaid_sub",   g:"自動換藥", label:"NSAID過敏/潰瘍時改用", cond:()=>false, rx:["PANA"]}, // 由引擎特殊處理
+ R("gibad","主訴","胃不好普通（綠）","gibad","普通",["GAST2"]),
+ R("gibad_sev","主訴","胃不好嚴重（紅）","gibad","嚴重",["OMEP1","GAST2"]),
+ R("constip","主訴","便秘普通（綠）","constip","普通",["MGO"]),
+ R("constip_sev","主訴","便秘嚴重（紅）","constip","嚴重",["MGO","DUL1"]),
+ R("dizzy","主訴","頭暈普通（綠）","dizzy","普通",["BON2"]),
+ R("dizzy_sev","主訴","頭暈嚴重（紅）","dizzy","嚴重",["BON2"]),
+ R("nausea","主訴","噁心普通（綠）","nausea","普通",["MOT5"]),
+ R("nausea_sev","主訴","噁心嚴重（紅）","nausea","嚴重",["MOT5"]),
+ R("vomit","主訴","吐普通（綠）","vomit","普通",["MOT5"]),
+ R("vomit_sev","主訴","吐嚴重（紅）","vomit","嚴重",["MOT5"]),
+ {id:"nsaid_sub", g:"自動換藥", label:"NSAID過敏/潰瘍時改用", cond:()=>false, rx:["PANA"]},
 ];
-/* ===== 醫師自訂預設（2026-07-24 Jesse 匯出寫入；規則設定仍可改，改動存各裝置瀏覽器） ===== */
-const DOCTOR_RX={fever_lo:["PANA"],fever_hi:["IBU"],ha_mild:["PANA"],ha_mod:["IBU"],myalgia:["PANA"],myalgia_sev:["IBU"],fatigue:["PANA"],fatigue_sev:["IBU"],
- throat_mod:["PANA"],throat_sev:["IBU"],throatstuck:["PANA"],throatstuck_sev:["IBU"],throatitch:["PANA"],throatitch_sev:["PANA"],mouthulcer:["IBU"],mouthulcer_sev:["IBU"],
- rhino_mod:["LCETI3","TOMI"],rhino_sev:["LCETI3","TOMI"],yellowrhino:["LCETI3","TOMI"],yellowrhino_sev:["LCETI3","TOMI","AUG"],greenrhino:["LCETI3","TOMI"],greenrhino_sev:["LCETI3","TOMI","AUG"],
- postnasal:["LCETI3","TOMI"],postnasal_sev:["LCETI3","TOMI"],sneeze:["LCETI3","TOMI"],sneeze_sev:["LCETI3","TOMI"],nasal_mod:["MPE1"],nasal_sev:["HIR0"],nasalvoice:["MPE1"],nasalvoice_sev:["MPE1"],
- cough_mod:["EUF0"],cough_sev:["COD1","THE1"],nightcough:["INO"],nightcough_sev:["INO"],cough_sputum:["AMB"],sputum_sev:["AMB"],wheeze:["THE1"],wheeze_sev:["THE1","INO"],
- earache:["VOR50"],earache_sev:["IBU"],earfull:["MINI1"],earfull_sev:["MINI1"],earpus:["VIBR"],earpus_sev:["AUG"],earwax:[],earwax_sev:[],
- vomit:["MOT5"],vomit_sev:["MOT5"],nausea:["MOT5"],nausea_sev:["MOT5"],reflux:["MOT5"],reflux_sev:["MOT5","OMEP1","GAST2"],stomachache:["GAST2"],stomachache_sev:["OMEP1","GAST2"],
- abdpain:["BUSM","BENT"],abdpain_sev:["BUSM"],diarrhea:["BENT"],diarrhea_sev:["BISM"],skinitch:["CTM1"],skinitch_sev:["BIL"],skinpain:["PANA"],skinpain_sev:["MEF1"],
- gi_std:["GAST2"],gi_protect:[],nsaid_sub:["PANA"]};
+const DOCTOR_RX={};
 RULE_DEFS.forEach(r=>{if(DOCTOR_RX[r.id]!==undefined)r.rx=DOCTOR_RX[r.id]});
-const DOCTOR_PK={fever_lo:{PANA:[1,1,1,1]},fever_hi:{IBU:[1,1,1,1]},ha_mod:{IBU:[1,1,1,1]},myalgia_sev:{IBU:[1,1,1,1]},fatigue_sev:{IBU:[1,1,1,1]},
- throat_sev:{IBU:[1,1,1,1]},throatstuck_sev:{IBU:[1,1,1,1]},mouthulcer:{IBU:[1,1,1,1]},mouthulcer_sev:{IBU:[1,1,1,1]},
- rhino_mod:{LCETI3:[1,0,1,0],TOMI:[0,0,0,1]},rhino_sev:{LCETI3:[1,0,1,0]},yellowrhino:{LCETI3:[1,0,1,0],TOMI:[0,0,0,1]},yellowrhino_sev:{LCETI3:[1,0,1,0],AUG:[1,1,1,0]},
- greenrhino:{LCETI3:[1,0,1,0],TOMI:[0,0,0,1]},greenrhino_sev:{LCETI3:[1,0,1,0],TOMI:[0,0,0,1],AUG:[1,1,1,0]},
- postnasal:{LCETI3:[1,0,1,0],TOMI:[0,0,0,1]},postnasal_sev:{LCETI3:[1,0,1,0],TOMI:[0,0,0,1]},sneeze:{LCETI3:[1,0,1,0],TOMI:[0,0,0,1]},sneeze_sev:{TOMI:[0,0,0,1]},
- nasal_mod:{MPE1:[1,1,1,1]},nasal_sev:{HIR0:[1,0,1,0]},nasalvoice:{MPE1:[1,1,1,1]},nasalvoice_sev:{MPE1:[1,1,1,1]},
- cough_mod:{EUF0:[1,1,1,1]},cough_sev:{COD1:[1,1,1,1],THE1:[1,0,1,0]},nightcough:{INO:[0,0,0,1]},nightcough_sev:{INO:[0,0,0,1]},
- cough_sputum:{AMB:[1,1,1,1]},sputum_sev:{AMB:[1,1,1,1]},wheeze:{THE1:[1,0,1,0]},wheeze_sev:{INO:[0,1,0,1],THE1:[1,0,1,0]},
- earache:{VOR50:[1,1,1,1]},earache_sev:{IBU:[1,1,1,1]},earfull:{MINI1:[1,0,0,1]},earfull_sev:{MINI1:[1,1,0,1]},earpus:{VIBR:[1,0,1,0]},earpus_sev:{AUG:[1,1,1,0]},
- stomachache:{GAST2:[1,1,1,1]},stomachache_sev:{GAST2:[0,1,1,1]},reflux_sev:{GAST2:[0,1,1,1]},gi_std:{GAST2:[1,1,1,1]}};
+const DOCTOR_PK={};
 
 /* 安全警示（固定邏輯） */
 const WARNS=[
@@ -463,12 +344,12 @@ const WARNS=[
 /* ================================================================
    四、引擎與畫面（一般不需修改）
    ================================================================ */
-const LS_KEY="uri_rules_v1";
+const LS_KEY="wrx_rules_v1";
 let ruleRx={};   // {ruleId:[codes]} 醫師自訂
 try{ruleRx=JSON.parse(localStorage.getItem(LS_KEY)||"{}")}catch(e){ruleRx={}}
 const getRx=r=>ruleRx[r.id]||r.rx;
 /* 規則層級的頻率（四燈號＝第1234包），存瀏覽器 */
-const LS_PK="uri_rulepk_v1";
+const LS_PK="wrx_rulepk_v1";
 let rulePk={};   // {ruleId:{code:[bool,bool,bool,bool]}}
 try{rulePk=JSON.parse(localStorage.getItem(LS_PK)||"{}")}catch(e){rulePk={}}
 const getRulePk=(rid,code)=>{

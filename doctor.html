@@ -391,6 +391,27 @@
             setTimeout(function(){ _ldEl.style.display = 'none'; }, 300);
         }
         document.getElementById('main').style.display = 'block';
+        handleAutoQuery();
+    }
+
+    // ====== ?q=姓名 自動搜尋（展望浮動按鈕跳轉用）======
+    // 唯一完全符合 → 直接進病人頁（hash 例如 #rx 會原樣帶過去）
+    var _qDone = false;
+    function handleAutoQuery() {
+        if (_qDone) return;
+        var q = new URLSearchParams(window.location.search).get('q') || '';
+        if (!q.trim()) return;
+        _qDone = true;
+        var input = document.getElementById('searchInput');
+        if (input) input.value = q;
+        filterPatients(q);
+        var kw = q.trim().toLowerCase();
+        var hits = allPatients.filter(function(p) {
+            return getDisplayName(p).toLowerCase() === kw || (p.name || '').toLowerCase() === kw;
+        });
+        if (hits.length === 1) {
+            location.href = PATIENT_URL + '?id=' + encodeURIComponent(hits[0].sn) + (location.hash || '');
+        }
     }
 
     function renderPatientList(patients) {
