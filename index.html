@@ -1,892 +1,374 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>成人 URI 開藥系統</title>
-<style>
-:root{
-  --bg:#F5F3F0; --card:#FFFFFF; --ink:#4A4A48; --sub:#8C8A85;
-  --sage:#8FA98F; --sage-dark:#6E8B6E; --sage-bg:#EEF3EE;
-  --sand:#C9A87C; --sand-bg:#F7F0E5;
-  --rose:#C08B8B; --rose-bg:#F6ECEC;
-  --blue:#8FA3B8; --blue-bg:#ECF1F5;
-  --line:#E5E1DB;
-}
-*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif}
-body{background:var(--bg);color:var(--ink);padding:16px}
-.wrap{max-width:1150px;margin:0 auto}
-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-header h1{font-size:20px;font-weight:700}
-header .ver{font-size:12px;color:var(--sub);flex:1}
-.gear{font-size:13px;padding:6px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:760px){.grid{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
-.card h2{font-size:14px;color:var(--sage-dark);margin-bottom:10px;letter-spacing:1px}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{padding:8px 14px;border-radius:20px;border:1px solid var(--line);background:#FAFAF8;font-size:14px;cursor:pointer;user-select:none;transition:.15s;touch-action:manipulation}
-.lt,.tgl,.rxdel,button{touch-action:manipulation}
-.chip.on{background:var(--sage);border-color:var(--sage);color:#fff}
-.chip.sev{background:var(--rose);border-color:var(--rose);color:#fff}
-.sevhint{font-weight:400;font-size:12px;color:var(--sub);margin-left:8px;letter-spacing:0}
-.sevhint .dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:-1px;margin-right:2px}
-.sevhint .dot.g{background:var(--sage)}
-.sevhint .dot.r{background:var(--rose)}
-.ptbar{background:var(--blue-bg);border:1px solid #DCE4EB;color:#5A6E80;border-radius:12px;padding:9px 14px;font-size:14px;font-weight:700;margin-bottom:14px}
-.sym-row{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
-.sym-left{flex:2 1 400px}
-.fu-side{flex:1 1 220px;min-width:200px;display:flex;flex-direction:column}
-.symgroup{margin-bottom:10px}
-.symgroup .gt{font-size:12px;color:var(--sub);font-weight:700;margin-bottom:5px}
-.fu-side .fu-block:first-child{border-top:none;margin-top:0;padding-top:0}
-@media(max-width:760px){.sym-left{flex:1 1 100%}}
-.fu-block{border-top:1px dashed var(--line);padding-top:10px;margin-top:10px}
-.fu-block .fu-title{font-size:13px;font-weight:700;margin-bottom:6px}
-.fu-q{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:8px}
-.fu-q .ql{font-size:12px;color:var(--sub);min-width:70px}
-.opt{padding:4px 10px;border-radius:14px;border:1px solid var(--line);background:#FAFAF8;font-size:12px;cursor:pointer;user-select:none}
-.opt.on{background:var(--blue);border-color:var(--blue);color:#fff}
-.basics .fu-q .ql{min-width:110px}
-.drug{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#FCFCFB}
-.drug .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.drug .code{font-weight:800;font-size:15px;color:var(--sage-dark);font-family:ui-monospace,Menlo,monospace}
-.drug .nm{font-weight:700;font-size:14px}
-.drug .gn{font-size:12px;color:var(--sub)}
-.drug .why{font-size:11px;color:var(--sage-dark);background:var(--sage-bg);border-radius:8px;padding:2px 8px;display:inline-block;margin-top:5px}
-.drug.off{opacity:.45}
-.drug select{margin-top:6px;font-size:12px;padding:3px 6px;border:1px solid var(--line);border-radius:8px;background:#fff;max-width:100%}
-.tgl{font-size:11px;color:var(--sub);cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:2px 8px;white-space:nowrap}
-.alert{border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:8px}
-.alert.red{background:var(--rose-bg);color:#9B6A6A;border:1px solid #E3CDCD}
-.alert.amber{background:var(--sand-bg);color:#A07F4F;border:1px solid #EADDC6}
-.empty{color:var(--sub);font-size:13px;text-align:center;padding:24px 0}
-/* 處方表（仿 HIS 排列，一藥一行） */
-.rxtab{width:100%;border-collapse:collapse;font-size:12px}
-.rxtab th{text-align:left;color:var(--sub);font-weight:600;font-size:11px;padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
-.rxtab td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap}
-.rxtab tr.off td{opacity:.4}
-.rxtab .c-code{font-family:ui-monospace,Menlo,monospace;font-weight:800;color:var(--sage-dark)}
-.rxtab td.nmcell{white-space:normal}
-.rxtab .c-nm{font-weight:700}
-.rxtab .c-gn{font-size:11px;color:var(--sub);font-weight:400}
-.rxtab .why{display:inline-block;font-size:10px;color:var(--sage-dark);background:var(--sage-bg);border-radius:6px;padding:1px 6px;margin-left:2px;font-weight:500}
-.rxtab .num{text-align:right;font-variant-numeric:tabular-nums}
-.rxtab .ctr{text-align:center}
-.rxtab select{font-size:11px;padding:2px 4px;border:1px solid var(--line);border-radius:7px;background:#fff;max-width:160px}
-.rxtab .daysin{width:40px;text-align:center;font-size:12px;border:1px solid var(--line);border-radius:6px;padding:2px;font-variant-numeric:tabular-nums}
-.rxtab .qtyin{width:54px;text-align:right;font-size:12px;border:1px solid var(--line);border-radius:6px;padding:2px;font-variant-numeric:tabular-nums}
-.rxtab .codesel{max-width:130px;font-weight:700;color:var(--sage-dark)}
-.rxdel{cursor:pointer;color:var(--rose);font-weight:700;margin-left:5px;font-size:13px;padding:0 2px}
-.rxdel:hover{color:#9B5A5A}
-.rxtab .freqsel{font-size:11px}
-.rxtab .tgl{font-size:10px}
-/* 四燈號（第1234包：藍綠黃紅） */
-.lights{display:inline-flex;gap:3px}
-.lt{width:15px;height:15px;border-radius:50%;cursor:pointer;border:1px solid rgba(0,0,0,.12);background:#E2DDD5;transition:.12s}
-.lt.on.blue{background:#6E8FB8}
-.lt.on.green{background:#6E9B6E}
-.lt.on.yellow{background:#D9B14A}
-.lt.on.red{background:#C07A7A}
-/* 處方標題列統計 */
-.rxhead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.rxstat{display:inline-flex;align-items:center;gap:9px;font-weight:600}
-.rxstat .stlbl{font-size:11px;color:var(--sub);font-weight:600}
-.rxstat .st{display:inline-flex;align-items:center;gap:3px;font-size:12px;color:var(--ink);font-variant-numeric:tabular-nums}
-.rxstat .lt{cursor:default;width:13px;height:13px}
-/* 頻率欄表頭的每包顆數 */
-.rxtab .freqhead{vertical-align:bottom}
-.fhstat{display:flex;align-items:center;gap:7px;margin-top:4px}
-.fhstat .fhlbl{font-size:10px;color:var(--sub);font-weight:600}
-.fhstat .st{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
-.fhstat .lt{width:11px;height:11px;cursor:default}
-.btnrow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-button.act{flex:1;min-width:110px;padding:10px;border:none;border-radius:10px;font-size:14px;cursor:pointer}
-#copyCode{background:var(--sage);color:#fff}
-#copyFull{background:var(--blue);color:#fff}
-#resetBtn{background:#EDEAE5;color:var(--ink)}
-footer{font-size:11px;color:var(--sub);text-align:center;margin-top:6px;line-height:1.6}
-/* 規則編輯 modal */
-#modal{position:fixed;inset:0;background:rgba(60,55,50,.45);display:none;align-items:flex-start;justify-content:center;padding:24px;overflow:auto;z-index:10}
-#modal.show{display:flex}
-.mbox{background:#fff;border-radius:16px;max-width:760px;width:100%;padding:20px;margin:auto}
-.mbox h2{font-size:16px;margin-bottom:4px}
-.mbox .hint{font-size:12px;color:var(--sub);margin-bottom:12px}
-.rgroup{font-size:13px;font-weight:700;color:var(--sage-dark);margin:10px 0 0;padding:8px 6px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;border-top:1px solid var(--line)}
-.rgroup .arr{font-size:10px;transition:.15s;color:var(--sub)}
-.rgroup.open .arr{transform:rotate(90deg)}
-.rgroup .cnt{font-size:11px;color:var(--sub);font-weight:400}
-.rbody{display:none;padding-bottom:4px}
-.rbody.open{display:block}
-.rrow{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap}
-.rrow .rlabel{font-size:13px;min-width:150px}
-.rdrug{display:inline-flex;align-items:center;gap:5px;background:var(--sage-bg);border-radius:10px;padding:3px 8px;font-size:12px;font-family:ui-monospace,Menlo,monospace}
-.rdrug .lights{gap:2px}
-.rdrug .lt{width:12px;height:12px}
-.rdrug b{font-weight:700}
-.rdrug .x{cursor:pointer;color:var(--rose);font-weight:700;padding:0 2px}
-.rrow select{font-size:12px;padding:3px 6px;border:1px solid var(--line);border-radius:8px;background:#fff}
-.mbtns{display:flex;gap:8px;margin-top:16px}
-.mbtns button{flex:1;padding:10px;border:none;border-radius:10px;font-size:13px;cursor:pointer}
-#mClose{background:var(--sage);color:#fff}
-#mReset{background:#EDEAE5}
-#mExport{background:var(--blue);color:#fff}
-#mImport{background:#EDEAE5}
-#impBox textarea{width:100%;height:120px;font-size:12px;font-family:ui-monospace,Menlo,monospace;border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:10px;box-sizing:border-box}
-#impBox .impGo{margin-top:6px;padding:9px 16px;border:none;border-radius:8px;background:var(--sage);color:#fff;cursor:pointer;font-size:13px}
-/* ============ 手機 RWD ============ */
-#rx{overflow-x:auto;-webkit-overflow-scrolling:touch}
-@media(max-width:600px){
- body{padding:10px}
- header{flex-wrap:wrap;gap:6px}
- header h1{font-size:17px}
- header .ver{flex:1 1 auto;font-size:11px;white-space:nowrap}
- .gear{padding:5px 10px;font-size:12px}
- .card{padding:12px;border-radius:12px}
- .chip{padding:9px 14px;font-size:14px} /* 加大觸控目標 */
- .sevhint{display:block;margin:4px 0 0}
- .rxtab{min-width:660px} /* 處方表橫向捲動，不擠壓 */
- .mbox{padding:14px;border-radius:12px}
- #modal{padding:10px}
- .rrow .rlabel{min-width:100%;padding-bottom:2px}
- .btnrow button.act{padding:12px}
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
+    <title>身體組成</title>
+    <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
+    <link rel="preconnect" href="https://huangcs.app.n8n.cloud" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <script>
+    (function() {
+        var _origReplace = history.replaceState.bind(history);
+        var _origPush = history.pushState.bind(history);
+        history.replaceState = function(s, t, u) {
+            try { _origReplace(s, t, u); } catch(e) { console.warn('[iOS patch] replaceState suppressed:', e && e.message); }
+        };
+        history.pushState = function(s, t, u) {
+            try { _origPush(s, t, u); } catch(e) { console.warn('[iOS patch] pushState suppressed:', e && e.message); }
+        };
+    })();
+    </script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+    <style>
+        :root {
+            --primary: #7B8FA1;
+            --primary-dark: #6B7F91;
+            --primary-light: #EDE8E0;
+            --warning: #C4A882;
+            --danger: #A0626B;
+            --success: #6B8F71;
+            --text: #4A4A4A;
+            --text-muted: #8B8B8B;
+            --border: #E8E4DC;
+            --bg: #F5F3EF;
+            --card: #FDFBF7;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 32px; }
+        #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--primary-light); z-index: 999; gap: 16px; transition: opacity 0.3s ease; }
+        #loading.fade-out { opacity: 0; pointer-events: none; }
+        .spinner { width: 48px; height: 48px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #loading p { color: var(--text-muted); font-size: 14px; }
+        header { background: linear-gradient(135deg, #6B7F91 0%, #7B8FA1 100%); padding: 20px 16px 24px; color: white; }
+        .header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .avatar { width: 48px; height: 48px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); object-fit: cover; background: rgba(255,255,255,0.3); }
+        .avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        .header-info h1 { font-size: 18px; font-weight: 600; }
+        .header-info p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+        .empty-state { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+        .empty-icon { font-size: 48px; margin-bottom: 12px; }
+        #error-screen { display: none; padding: 32px 24px; text-align: center; }
+        #error-screen .error-icon { font-size: 56px; margin-bottom: 16px; }
+        #error-screen h2 { font-size: 18px; margin-bottom: 8px; }
+        #error-screen p { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+        #main { display: none; }
+        .bc-section { padding: 0 12px 8px; }
+        .bc-card { background: var(--card); border-radius: 14px; padding: 14px 12px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        .bc-card-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+        .bc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .bc-item { text-align: center; padding: 8px 4px; background: #F0EDE6; border-radius: 10px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.15s; }
+        .bc-item:active { background: #E4DFD5; }
+        .bc-item.active { background: #7B8FA1; }
+        .bc-item.active .bc-val { color: white; }
+        .bc-item.active .bc-lbl { color: rgba(255,255,255,0.85); }
+        .bc-val { font-size: 18px; font-weight: 700; color: #6B7F91; }
+        .bc-lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+        /* tabs removed — grid items are clickable */
+        .bc-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .bc-table th { background: #F0EDE6; color: var(--text-muted); font-size: 10px; font-weight: 600; padding: 6px 5px; white-space: nowrap; text-align: center; }
+        .bc-table td { padding: 6px 5px; text-align: center; border-top: 1px solid var(--border); white-space: nowrap; }
+        .bc-table tr:first-child td { font-weight: 600; color: var(--primary-dark); }
+    </style>
 </head>
 <body>
-<div class="wrap">
-<header>
-  <h1>成人 URI 開藥系統</h1><span class="ver">v2.5・82品項・內建醫師規則</span>
-  <button class="gear" id="gearBtn">⚙️ 規則設定</button>
-</header>
-<!-- 上：主訴（追問展開在右邊） -->
-<div class="card">
-  <h2>主訴（可複選）<span class="sevhint">點一下 <span class="dot g"></span>普通・再點 <span class="dot r"></span>嚴重・第三下取消</span></h2>
-  <div id="symChips"></div>
-</div>
+    <div id="loading">
+        <div class="spinner"></div>
+        <p id="loading-text">正在連線…</p>
+    </div>
+    <div id="error-screen">
+        <div class="error-icon">🔒</div>
+        <h2>無法載入</h2>
+        <p id="error-msg">請在 LINE App 中開啟此頁面</p>
+    </div>
+    <div id="main">
+        <header>
+            <div class="header-top">
+                <div id="avatar-wrap"><div class="avatar-placeholder">🧑</div></div>
+                <div class="header-info">
+                    <h1 id="patient-name">載入中…</h1>
+                </div>
+            </div>
+        </header>
+        <div id="bc-section" class="bc-section" style="display:none">
+            <div class="bc-card">
+                <div class="bc-card-title">📋 最新身體組成</div>
+                <div class="bc-grid" id="bc-grid"></div>
+            </div>
+            <div class="bc-card">
+                <div class="bc-card-title" id="bc-chart-title">📈 趨勢圖</div>
+                <div style="position:relative;height:200px"><canvas id="bc-chart"></canvas></div>
+            </div>
+            <div class="bc-card">
+                <div class="bc-card-title">📄 測量歷史</div>
+                <div style="overflow-x:auto" id="bc-history-table"></div>
+            </div>
+        </div>
+        <!-- meal section removed — body composition only -->
+    </div>
 
-<!-- 下：處方 -->
-<div class="card">
-  <h2>處方</h2>
-  <div id="rx"><div class="empty">勾選主訴後自動產生</div></div>
-  <div class="btnrow">
-    <button class="act" id="resetBtn">清除重來</button>
-  </div>
-</div>
-<footer>本系統僅供臨床輔助參考，藥品、劑量與最終處方均以醫師專業判斷為準。</footer>
-</div>
+    <script>
+    const LIFF_ID = '2009326025-XAQhb1rA';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwLo76QFAO1EYpCY8PvQIWj0U4eUWuRYDRRNBN_uppxvd0T-HtFRl71t4RIQyFx5j_I/exec';
 
-<!-- 規則編輯 -->
-<div id="modal"><div class="mbox">
-  <h2>規則設定（醫師經驗）</h2>
-  <div class="hint">每條規則對應一或多個藥。點 ✕ 移除、下拉新增。改完自動存在這台電腦的瀏覽器，下次打開直接生效。</div>
-  <div id="ruleList"></div>
-  <div class="mbtns">
-    <button id="mExport">匯出規則 JSON</button>
-    <button id="mImport">匯入規則 JSON</button>
-    <button id="mReset">恢復預設</button>
-    <button id="mClose">完成</button>
-  </div>
-</div></div>
+    const BC_METRICS = [
+        ['體重','體重','kg',true],['體脂率','體脂率','%',true],['肌肉量','肌肉量','kg',false],
+        ['蛋白質','蛋白質','kg',false],
+        ['水分比率','水分','%',false],['內臟脂肪指數','內臟脂肪','',true],
+        ['身體質量參數 (BMI)','BMI','',true],['基礎代謝 (BMR)','基礎代謝','kcal',false],
+        ['日耗熱量','日耗熱量','kcal',false],
+        ['腰圍','腰圍','cm',true],['臀圍','臀圍','cm',true],
+        ['腰臀比','腰臀比','',true],
+    ];
 
-<script>
-/* ================================================================
-   一、藥品庫（成人 URI 顆粒版 74 品項，key = 院內代碼）
-   cat: abx抗生素 nsaid acet止痛退熱 ster類固醇 gi胃藥
-        tuss止咳 muco化痰 bron擴張 ah1第一代抗組織胺 ah2第二代 dec鼻塞
-   ================================================================ */
-const CAT_LABEL={abx:"抗生素",nsaid:"NSAID",acet:"止痛退熱",ster:"類固醇",gi:"胃藥",
-  tuss:"止咳",muco:"化痰",bron:"支氣管擴張",ah1:"抗組織胺(一代)",ah2:"抗組織胺(二代)",dec:"鼻塞藥"};
-const DRUGS={
- // 抗生素
- AMO52:{zh:"安謀黴素膠囊(大)",gn:"Amoxicillin 500mg",cat:"abx",dose:"1# TID"},
- AMO2:{zh:"安謀黴素膠囊(小)",gn:"Amoxicillin 250mg",cat:"abx",dose:"1# TID"},
- AUG:{zh:"必百欣膜衣錠",gn:"Amoxicillin+Clavulanate 500/125mg",cat:"abx",dose:"1# BID"},
- CEPH1:{zh:"適汎黴素",gn:"Cephalexin 500mg",cat:"abx",dose:"1# QID"},
- DUR:{zh:"賜福得修膠囊",gn:"Cefadroxil 500mg",cat:"abx",dose:"1# BID"},
- KEF2:{zh:"優克樂膠囊",gn:"Cefaclor 250mg",cat:"abx",dose:"1# TID"},
- CEFS:{zh:"賜信膠囊",gn:"Cefixime 100mg",cat:"abx",dose:"1# BID"},
- ZIT2:{zh:"美妥欣膜衣錠",gn:"Azithromycin 250mg",cat:"abx",dose:"2# QD×3天"},
- KLAR2:{zh:"可利若辛膜衣錠",gn:"Clarithromycin 250mg",cat:"abx",dose:"1# BID"},
- ILOS1:{zh:"紅黴素膠囊",gn:"Erythromycin 250mg",cat:"abx",dose:"1# QID"},
- VIBR:{zh:"多喜黴素腸溶膠囊",gn:"Doxycycline 100mg",cat:"abx",dose:"1# BID"},
- LEV53:{zh:"伏炎康膜衣錠",gn:"Levofloxacin 500mg",cat:"abx",dose:"1# QD"},
- LEV2:{zh:"樂作欣膜衣錠",gn:"Levofloxacin 100mg",cat:"abx",dose:"1# TID"},
- CLE1:{zh:"可立欣",gn:"Clindamycin 150mg",cat:"abx",dose:"1# QID"},
- BAKT2:{zh:"剋菌錠",gn:"TMP/SMX 80/400mg",cat:"abx",dose:"2# BID"},
- FLA2:{zh:"帶寧錠",gn:"Metronidazole 250mg",cat:"abx",dose:"1# TID"},
- // NSAID / 止痛退熱
- MEF1:{zh:"普安痛錠",gn:"Mefenamic acid 500mg",cat:"nsaid",dose:"1# TID PC"},
- PONS2:{zh:"美舒痛膜衣錠",gn:"Mefenamic acid 500mg",cat:"nsaid",dose:"1# TID PC"},
- NAP1:{zh:"那柏生錠",gn:"Naproxen 250mg",cat:"nsaid",dose:"1# BID PC"},
- VOR253:{zh:"克炎平錠",gn:"Diclofenac 25mg",cat:"nsaid",dose:"1# TID PC"},
- VOR50:{zh:"得克芬腸溶膜衣錠",gn:"Diclofenac 50mg",cat:"nsaid",dose:"1# BID PC"},
- ETO1:{zh:"珀康膠囊",gn:"Etodolac 200mg",cat:"nsaid",dose:"1# BID PC"},
- NIM1:{zh:"美善妮媚錠",gn:"Nimesulide 100mg",cat:"nsaid",dose:"1# BID PC"},
- IBU:{zh:"伊普錠",gn:"Ibuprofen 400mg",cat:"nsaid",dose:"1# TID PC"},
- PANA:{zh:"必安痛錠",gn:"Acetaminophen 500mg",cat:"acet",dose:"1# QID PRN"},
- PANC:{zh:"可制痛錠",gn:"Acetaminophen 500mg",cat:"acet",dose:"1# QID PRN"},
- "PANA+":{zh:"惠止痛加強錠",gn:"Acetaminophen+Caffeine 500/65mg",cat:"acet",dose:"1# TID PRN"},
- // 類固醇
- PRED1:{zh:"去氫羥化腎上腺皮質素錠",gn:"Prednisolone 5mg",cat:"ster",dose:"1# BID"},
- MINI1:{zh:"美力錠",gn:"Methylprednisolone 4mg",cat:"ster",dose:"1# BID"},
- DECA1:{zh:"德善滅沙松錠",gn:"Dexamethasone 0.5mg",cat:"ster",dose:"1# BID"},
- DECX1:{zh:"倍他沒酸錠",gn:"Betamethasone 0.5mg",cat:"ster",dose:"1# BID"},
- // 胃藥
- OMEP1:{zh:"加胃先腸溶膠囊",gn:"Omeprazole 20mg",cat:"gi",dose:"1# QD AC"},
- GAST2:{zh:"胃利贊膜衣錠",gn:"Famotidine 20mg",cat:"gi",dose:"1# BID"},
- TAGA8:{zh:"樂定錠",gn:"Cimetidine 200mg",cat:"gi",dose:"1# TID"},
- MGO:{zh:"氧化鎂錠",gn:"MgO 250mg",cat:"gi",dose:"1# TID PC"},
- WEI0:{zh:"胃得康錠",gn:"Al/Mg/Simethicone",cat:"gi",dose:"1# TID PC"},
- ALG1:{zh:"艾胃逆服咀嚼錠",gn:"Alginic acid 200mg",cat:"gi",dose:"1# TID PC"},
- STR1:{zh:"芬康胃錠",gn:"Oxethazaine 10mg",cat:"gi",dose:"1# TID AC"},
- GAS2:{zh:"加斯克兒錠",gn:"Dimethylpolysiloxane 40mg",cat:"gi",dose:"1# TID PC"},
- BENT:{zh:"潰痛百利錠",gn:"Dicyclomine 10mg",cat:"gi",dose:"1# TID"},
- BUSM:{zh:"慕潰平膜衣錠",gn:"Methylscopolamine 1mg",cat:"gi",dose:"1# TID"},
- MOSA:{zh:"摩暢膜衣錠",gn:"Mosapride 5mg",cat:"gi",dose:"1# TID"},
- MOT5:{zh:"樂吐寧錠",gn:"Domperidone 10mg",cat:"gi",dose:"1# TID AC"},
- PAS:{zh:"拜胃爾膜衣錠",gn:"Pancreatin+Metoclopramide 212.5/5mg",cat:"gi",dose:"1# TID PC"},
- BISM:{zh:"次碳酸鉍錠",gn:"Bismuth subcarbonate 324mg",cat:"gi",dose:"1# TID"},
- KBT:{zh:"克瀉寧錠",gn:"Kaolin+Bismuth+Albumin tannate+Scopolia",cat:"gi",dose:"1# QID"},
- IMO:{zh:"樂止膠囊",gn:"Loperamide 2mg",cat:"gi",dose:"1# TID PRN"},
- DUL1:{zh:"秘瀉樂腸溶錠",gn:"Bisacodyl 5mg",cat:"gi",dose:"1# HS"},
- // 止咳
- MED17:{zh:"福得可錠",gn:"Dextromethorphan 15mg",cat:"tuss",dose:"1# TID"},
- MEDI:{zh:"滅嗽錠",gn:"Dextromethorphan 30mg",cat:"tuss",dose:"1# TID"},
- EUF0:{zh:"優喉",gn:"Dimemorfan 10mg",cat:"tuss",dose:"1# TID"},
- BENL:{zh:"剎咳得軟膠囊(大)",gn:"Benzonatate 200mg",cat:"tuss",dose:"1# TID"},
- BENS2:{zh:"咳治得軟膠囊(小)",gn:"Benzonatate 100mg",cat:"tuss",dose:"1# TID"},
- COD1:{zh:"可嗽平錠",gn:"Codeine+Terpin 5/10mg",cat:"tuss",dose:"1# TID"},
- COD2:{zh:"爽咳錠",gn:"Codeine+Terpin 5/40mg",cat:"tuss",dose:"1# TID"},
- OXO3:{zh:"安咳錠",gn:"Oxolamine 100mg",cat:"tuss",dose:"1# TID"},
- RES3:{zh:"益咳靜錠",gn:"Eprazinone 30mg",cat:"tuss",dose:"1# TID"},
- NOS2:{zh:"甜嗽錠",gn:"Noscapine 20mg",cat:"tuss",dose:"1# TID"},
- ASV3:{zh:"咳舒錠",gn:"Tipepidine 20mg",cat:"tuss",dose:"1# TID"},
- BM1:{zh:"甘草止咳水",gn:"Brown Mixture",cat:"tuss",dose:"10ml TID"},
- "BM-":{zh:"複方甘草合劑液",gn:"Compound Glycyrrhiza",cat:"tuss",dose:"10ml TID"},
- // 化痰
- AMB:{zh:"安不嗽錠",gn:"Ambroxol 30mg",cat:"muco",dose:"1# TID"},
- COBI2:{zh:"咳滴平膜衣錠",gn:"Orciprenaline+Bromhexine+Doxylamine",cat:"muco",dose:"1# TID"},
- // 支氣管擴張
- BRI2:{zh:"必喘寧",gn:"Terbutaline 2.5mg",cat:"bron",dose:"1# TID"},
- MEP:{zh:"弭喘平錠",gn:"Procaterol 25μg",cat:"bron",dose:"1# BID"},
- FORM:{zh:"服莫喘錠",gn:"Formoterol 40μg",cat:"bron",dose:"1# BID"},
- INO:{zh:"宜喘寧",gn:"Trimetoquinol 30mg",cat:"bron",dose:"1# TID"},
- THE1:{zh:"漠喘緩釋微粒膠囊",gn:"Theophylline 125mg",cat:"bron",dose:"1# BID"},
- THE2:{zh:"喘克緩釋微粒膠囊",gn:"Theophylline 250mg",cat:"bron",dose:"1# BID"},
- // 抗組織胺
- CTM1:{zh:"氯芬尼拉明錠",gn:"Chlorpheniramine 4mg",cat:"ah1",dose:"1# TID"},
- TOMI:{zh:"特息敏錠",gn:"Dexchlorpheniramine 2mg",cat:"ah1",dose:"1# TID"},
- INCI:{zh:"美敏錠",gn:"Mebhydrolin 50mg",cat:"ah1",dose:"1# BID"},
- MEQ4:{zh:"敏福錠",gn:"Mequitazine 5mg",cat:"ah1",dose:"1# BID"},
- BON2:{zh:"美克旅鎮錠",gn:"Meclizine 25mg",cat:"ah1",dose:"1# BID"},
- OG1:{zh:"抑疹糖衣錠",gn:"Glycyrrhizine+CTM",cat:"ah1",dose:"1# TID"},
- BIL:{zh:"倍抗敏",gn:"Bilastine 20mg",cat:"ah2",dose:"1# QD 空腹"},
- ALL1:{zh:"飛敏耐膜衣錠",gn:"Fexofenadine 60mg",cat:"ah2",dose:"1# BID"},
- LCETI3:{zh:"舒敏寧膜衣錠",gn:"Levocetirizine 5mg",cat:"ah2",dose:"1# QD HS"},
- // 鼻塞
- PSE1:{zh:"秀得寧錠",gn:"Pseudoephedrine 30mg",cat:"dec",dose:"1# TID"},
- MPE1:{zh:"鹽酸消旋甲基麻黃鹼錠",gn:"DL-Methylephedrine 25mg",cat:"dec",dose:"1# TID"},
- HIR0:{zh:"喜洛緩釋微粒膠囊",gn:"Cetirizine+Pseudoephedrine 5/120mg",cat:"dec",dose:"1# BID"},
- NORS:{zh:"鼻康速",gn:"CTM+Phenylephrine+Caffeine",cat:"dec",dose:"1# TID"},
-};
+    function getBcNormalRange(key, cust) {
+        const h = parseFloat(cust && cust.height) || 0;
+        const g = String(cust && cust.gender || '').trim();
+        const isMale = (g === '男');
+        const h2 = (h / 100) * (h / 100);
+        switch (key) {
+            case '體重': if (!h) return null; { const sw = h2 * (isMale ? 22 : 20); return [sw * 0.85, sw * 1.15]; }
+            case '體脂率': return isMale ? [10, 20] : [18, 28];
+            case '肌肉量': if (!h) return null; { const sm = h2 * (isMale ? 10.53 : 8.47); return [sm * 0.90, sm * 1.10]; }
+            case '蛋白質': if (!h) return null; { const sp = h2 * (isMale ? 3.72 : 3.08); return [sp * 0.85, sp * 1.15]; }
+            case '水分比率': return isMale ? [56, 69] : [50, 62];
+            case '內臟脂肪指數': return [0.5, 5];
+            case '身體質量參數 (BMI)': return [18.5, 24.9];
+            case '腰圍': return isMale ? [null, 90] : [null, 80];
+            case '腰臀比': return isMale ? [null, 0.9] : [null, 0.85];
+            default: return null;
+        }
+    }
 
-/* ================================================================
-   二、主訴與追問
-   ================================================================ */
-const SYMPTOM_GROUPS=[
- {t:"全身", items:[
-   {id:"fever",label:"發燒"},
-   {id:"headache",label:"頭痛"},
-   {id:"myalgia",label:"身體酸痛"},
-   {id:"fatigue",label:"倦怠"},
- ]},
- {t:"咽喉口腔", items:[
-   {id:"throat",label:"喉嚨痛"},
-   {id:"throatstuck",label:"喉嚨卡"},
-   {id:"throatitch",label:"喉嚨癢"},
-   {id:"mouthulcer",label:"嘴破"},
- ]},
- {t:"鼻", items:[
-   {id:"rhino",label:"流鼻涕"},
-   {id:"yellowrhino",label:"黃鼻涕"},
-   {id:"greenrhino",label:"綠鼻涕"},
-   {id:"postnasal",label:"鼻涕倒流"},
-   {id:"sneeze",label:"打噴嚏"},
-   {id:"nasal",label:"鼻塞"},
-   {id:"nasalvoice",label:"鼻音"},
- ]},
- {t:"咳嗽", items:[
-   {id:"cough",label:"咳嗽"},
-   {id:"nightcough",label:"夜咳"},
-   {id:"sputum",label:"痰"},
-   {id:"wheeze",label:"喘"},
- ]},
- {t:"耳", items:[
-   {id:"earache",label:"耳痛"},
-   {id:"earfull",label:"耳悶"},
-   {id:"earpus",label:"耳流膿"},
-   {id:"earwax",label:"耳屎多"},
- ]},
- {t:"腸胃", items:[
-   {id:"vomit",label:"吐"},
-   {id:"nausea",label:"噁心"},
-   {id:"reflux",label:"胃酸逆流"},
-   {id:"stomachache",label:"胃痛"},
-   {id:"abdpain",label:"腹痛"},
-   {id:"diarrhea",label:"腹瀉"},
- ]},
- {t:"皮膚", items:[
-   {id:"skinitch",label:"皮膚癢"},
-   {id:"skinpain",label:"皮膚痛"},
- ]},
-];
-const SYMPTOMS=SYMPTOM_GROUPS.flatMap(g=>g.items);
-const BASICS=[
- ["nsaidAllergy","NSAID過敏/潰瘍史",["無","有"]],
- ["htn","高血壓",["無","有"]],
- ["drive","開車/精密工作",["無","有"]],
- ["bph","青光眼/攝護腺肥大",["無","有"]],
-];
+    let bcChartInstance = null;
+    let bcData = null;
 
-/* ================================================================
-   三、規則表（醫師經驗。介面「⚙️規則設定」可直接改藥，存於瀏覽器）
-   每條：id、group、label、cond(s)、預設藥 rx:[院內代碼]
-   ================================================================ */
-/* 每個主訴都有 普通（綠）/ 嚴重（紅）兩條規則；rx 留空 = 暫不配藥，可在規則設定加 */
-const R=(id,g,label,sym,lvl,rx)=>({id,g,label,cond:s=>s.sev(sym)===lvl,rx});
-const RULE_DEFS=[
- // 全身
- R("fever_lo","全身","發燒普通（綠）","fever","普通",["PANA"]),
- R("fever_hi","全身","發燒嚴重（紅）","fever","嚴重",["MEF1"]),
- R("ha_mild","全身","頭痛普通（綠）","headache","普通",["PANA"]),
- R("ha_mod","全身","頭痛嚴重（紅）","headache","嚴重",["MEF1"]),
- R("myalgia","全身","身體酸痛普通（綠）","myalgia","普通",["PANA"]),
- R("myalgia_sev","全身","身體酸痛嚴重（紅）","myalgia","嚴重",["MEF1"]),
- R("fatigue","全身","倦怠普通（綠）","fatigue","普通",[]),
- R("fatigue_sev","全身","倦怠嚴重（紅）","fatigue","嚴重",[]),
- // 咽喉口腔
- R("throat_mod","咽喉口腔","喉嚨痛普通（綠）","throat","普通",["MEF1"]),
- R("throat_sev","咽喉口腔","喉嚨痛嚴重（紅）","throat","嚴重",["MEF1","PRED1"]),
- R("throatstuck","咽喉口腔","喉嚨卡普通（綠）","throatstuck","普通",[]),
- R("throatstuck_sev","咽喉口腔","喉嚨卡嚴重（紅）","throatstuck","嚴重",[]),
- R("throatitch","咽喉口腔","喉嚨癢普通（綠）","throatitch","普通",["CTM1"]),
- R("throatitch_sev","咽喉口腔","喉嚨癢嚴重（紅）","throatitch","嚴重",["BIL"]),
- R("mouthulcer","咽喉口腔","嘴破普通（綠）","mouthulcer","普通",[]),
- R("mouthulcer_sev","咽喉口腔","嘴破嚴重（紅）","mouthulcer","嚴重",[]),
- // 鼻
- R("rhino_mod","鼻","流鼻涕普通（綠）","rhino","普通",["TOMI"]),
- R("rhino_sev","鼻","流鼻涕嚴重（紅）","rhino","嚴重",["BIL"]),
- R("yellowrhino","鼻","黃鼻涕普通（綠）","yellowrhino","普通",[]),
- R("yellowrhino_sev","鼻","黃鼻涕嚴重（紅）","yellowrhino","嚴重",[]),
- R("greenrhino","鼻","綠鼻涕普通（綠）","greenrhino","普通",[]),
- R("greenrhino_sev","鼻","綠鼻涕嚴重（紅）","greenrhino","嚴重",[]),
- R("postnasal","鼻","鼻涕倒流普通（綠）","postnasal","普通",["CTM1"]),
- R("postnasal_sev","鼻","鼻涕倒流嚴重（紅）","postnasal","嚴重",["BIL"]),
- R("sneeze","鼻","打噴嚏普通（綠）","sneeze","普通",["CTM1"]),
- R("sneeze_sev","鼻","打噴嚏嚴重（紅）","sneeze","嚴重",["BIL"]),
- R("nasal_mod","鼻","鼻塞普通（綠）","nasal","普通",["PSE1"]),
- R("nasal_sev","鼻","鼻塞嚴重（紅）","nasal","嚴重",["HIR0"]),
- R("nasalvoice","鼻","鼻音普通（綠）","nasalvoice","普通",[]),
- R("nasalvoice_sev","鼻","鼻音嚴重（紅）","nasalvoice","嚴重",[]),
- // 咳嗽
- R("cough_mod","咳嗽","咳嗽普通（綠）","cough","普通",["EUF0"]),
- R("cough_sev","咳嗽","咳嗽嚴重（紅）","cough","嚴重",["COD1"]),
- R("nightcough","咳嗽","夜咳普通（綠）","nightcough","普通",[]),
- R("nightcough_sev","咳嗽","夜咳嚴重（紅）","nightcough","嚴重",[]),
- R("cough_sputum","咳嗽","痰普通（綠）","sputum","普通",["AMB"]),
- R("sputum_sev","咳嗽","痰嚴重（紅）","sputum","嚴重",["AMB"]),
- R("wheeze","咳嗽","喘普通（綠）","wheeze","普通",["BRI2"]),
- R("wheeze_sev","咳嗽","喘嚴重（紅）","wheeze","嚴重",["BRI2"]),
- // 耳
- R("earache","耳","耳痛普通（綠）","earache","普通",["PANA"]),
- R("earache_sev","耳","耳痛嚴重（紅）","earache","嚴重",["MEF1"]),
- R("earfull","耳","耳悶普通（綠）","earfull","普通",[]),
- R("earfull_sev","耳","耳悶嚴重（紅）","earfull","嚴重",[]),
- R("earpus","耳","耳流膿普通（綠）","earpus","普通",[]),
- R("earpus_sev","耳","耳流膿嚴重（紅）","earpus","嚴重",[]),
- R("earwax","耳","耳屎多普通（綠）","earwax","普通",[]),
- R("earwax_sev","耳","耳屎多嚴重（紅）","earwax","嚴重",[]),
- // 腸胃
- R("vomit","腸胃","吐普通（綠）","vomit","普通",["MOT5"]),
- R("vomit_sev","腸胃","吐嚴重（紅）","vomit","嚴重",["MOT5"]),
- R("nausea","腸胃","噁心普通（綠）","nausea","普通",["MOT5"]),
- R("nausea_sev","腸胃","噁心嚴重（紅）","nausea","嚴重",["MOT5"]),
- R("reflux","腸胃","胃酸逆流普通（綠）","reflux","普通",["ALG1"]),
- R("reflux_sev","腸胃","胃酸逆流嚴重（紅）","reflux","嚴重",["OMEP1"]),
- R("stomachache","腸胃","胃痛普通（綠）","stomachache","普通",["STR1"]),
- R("stomachache_sev","腸胃","胃痛嚴重（紅）","stomachache","嚴重",["OMEP1"]),
- R("abdpain","腸胃","腹痛普通（綠）","abdpain","普通",["BUSM"]),
- R("abdpain_sev","腸胃","腹痛嚴重（紅）","abdpain","嚴重",["BUSM"]),
- R("diarrhea","腸胃","腹瀉普通（綠）","diarrhea","普通",["BISM"]),
- R("diarrhea_sev","腸胃","腹瀉嚴重（紅）","diarrhea","嚴重",["IMO"]),
- // 皮膚
- R("skinitch","皮膚","皮膚癢普通（綠）","skinitch","普通",["CTM1"]),
- R("skinitch_sev","皮膚","皮膚癢嚴重（紅）","skinitch","嚴重",["BIL"]),
- R("skinpain","皮膚","皮膚痛普通（綠）","skinpain","普通",["PANA"]),
- R("skinpain_sev","皮膚","皮膚痛嚴重（紅）","skinpain","嚴重",["MEF1"]),
- // 胃藥（標配：只要有開藥就加）
- {id:"gi_std", g:"胃藥", label:"每張處方標配", cond:s=>s.anyRx(), rx:["MGO"]},
- // 自動
- {id:"gi_protect",  g:"自動加藥", label:"開NSAID時併用胃藥", cond:s=>s.rxCat("nsaid"), rx:["MGO"]},
- {id:"nsaid_sub",   g:"自動換藥", label:"NSAID過敏/潰瘍時改用", cond:()=>false, rx:["PANA"]}, // 由引擎特殊處理
-];
-/* ===== 醫師自訂預設（2026-07-24 Jesse 匯出寫入；規則設定仍可改，改動存各裝置瀏覽器） ===== */
-const DOCTOR_RX={fever_lo:["PANA"],fever_hi:["IBU"],ha_mild:["PANA"],ha_mod:["IBU"],myalgia:["PANA"],myalgia_sev:["IBU"],fatigue:["PANA"],fatigue_sev:["IBU"],
- throat_mod:["PANA"],throat_sev:["IBU"],throatstuck:["PANA"],throatstuck_sev:["IBU"],throatitch:["PANA"],throatitch_sev:["PANA"],mouthulcer:["IBU"],mouthulcer_sev:["IBU"],
- rhino_mod:["LCETI3","TOMI"],rhino_sev:["LCETI3","TOMI"],yellowrhino:["LCETI3","TOMI"],yellowrhino_sev:["LCETI3","TOMI","AUG"],greenrhino:["LCETI3","TOMI"],greenrhino_sev:["LCETI3","TOMI","AUG"],
- postnasal:["LCETI3","TOMI"],postnasal_sev:["LCETI3","TOMI"],sneeze:["LCETI3","TOMI"],sneeze_sev:["LCETI3","TOMI"],nasal_mod:["MPE1"],nasal_sev:["HIR0"],nasalvoice:["MPE1"],nasalvoice_sev:["MPE1"],
- cough_mod:["EUF0"],cough_sev:["COD1","THE1"],nightcough:["INO"],nightcough_sev:["INO"],cough_sputum:["AMB"],sputum_sev:["AMB"],wheeze:["THE1"],wheeze_sev:["THE1","INO"],
- earache:["VOR50"],earache_sev:["IBU"],earfull:["MINI1"],earfull_sev:["MINI1"],earpus:["VIBR"],earpus_sev:["AUG"],earwax:[],earwax_sev:[],
- vomit:["MOT5"],vomit_sev:["MOT5"],nausea:["MOT5"],nausea_sev:["MOT5"],reflux:["MOT5"],reflux_sev:["MOT5","OMEP1","GAST2"],stomachache:["GAST2"],stomachache_sev:["OMEP1","GAST2"],
- abdpain:["BUSM","BENT"],abdpain_sev:["BUSM"],diarrhea:["BENT"],diarrhea_sev:["BISM"],skinitch:["CTM1"],skinitch_sev:["BIL"],skinpain:["PANA"],skinpain_sev:["MEF1"],
- gi_std:["GAST2"],gi_protect:[],nsaid_sub:["PANA"]};
-RULE_DEFS.forEach(r=>{if(DOCTOR_RX[r.id]!==undefined)r.rx=DOCTOR_RX[r.id]});
-const DOCTOR_PK={fever_lo:{PANA:[1,1,1,1]},fever_hi:{IBU:[1,1,1,1]},ha_mod:{IBU:[1,1,1,1]},myalgia_sev:{IBU:[1,1,1,1]},fatigue_sev:{IBU:[1,1,1,1]},
- throat_sev:{IBU:[1,1,1,1]},throatstuck_sev:{IBU:[1,1,1,1]},mouthulcer:{IBU:[1,1,1,1]},mouthulcer_sev:{IBU:[1,1,1,1]},
- rhino_mod:{LCETI3:[1,0,1,0],TOMI:[0,0,0,1]},rhino_sev:{LCETI3:[1,0,1,0]},yellowrhino:{LCETI3:[1,0,1,0],TOMI:[0,0,0,1]},yellowrhino_sev:{LCETI3:[1,0,1,0],AUG:[1,1,1,0]},
- greenrhino:{LCETI3:[1,0,1,0],TOMI:[0,0,0,1]},greenrhino_sev:{LCETI3:[1,0,1,0],TOMI:[0,0,0,1],AUG:[1,1,1,0]},
- postnasal:{LCETI3:[1,0,1,0],TOMI:[0,0,0,1]},postnasal_sev:{LCETI3:[1,0,1,0],TOMI:[0,0,0,1]},sneeze:{LCETI3:[1,0,1,0],TOMI:[0,0,0,1]},sneeze_sev:{TOMI:[0,0,0,1]},
- nasal_mod:{MPE1:[1,1,1,1]},nasal_sev:{HIR0:[1,0,1,0]},nasalvoice:{MPE1:[1,1,1,1]},nasalvoice_sev:{MPE1:[1,1,1,1]},
- cough_mod:{EUF0:[1,1,1,1]},cough_sev:{COD1:[1,1,1,1],THE1:[1,0,1,0]},nightcough:{INO:[0,0,0,1]},nightcough_sev:{INO:[0,0,0,1]},
- cough_sputum:{AMB:[1,1,1,1]},sputum_sev:{AMB:[1,1,1,1]},wheeze:{THE1:[1,0,1,0]},wheeze_sev:{INO:[0,1,0,1],THE1:[1,0,1,0]},
- earache:{VOR50:[1,1,1,1]},earache_sev:{IBU:[1,1,1,1]},earfull:{MINI1:[1,0,0,1]},earfull_sev:{MINI1:[1,1,0,1]},earpus:{VIBR:[1,0,1,0]},earpus_sev:{AUG:[1,1,1,0]},
- stomachache:{GAST2:[1,1,1,1]},stomachache_sev:{GAST2:[0,1,1,1]},reflux_sev:{GAST2:[0,1,1,1]},gi_std:{GAST2:[1,1,1,1]}};
+    function renderBcSection(data) {
+        bcData = data;
+        const m = data.measurements || [];
+        const cust = data.customer || {};
+        if (m.length === 0) return;
+        // 計算日耗熱量 = BMR × 1.2，腰臀比 = 腰圍 / 臀圍
+        m.forEach(row => {
+            const bmr = parseFloat(row['基礎代謝 (BMR)']); if (!isNaN(bmr)) row['日耗熱量'] = Math.round(bmr * 1.2);
+            const w = parseFloat(row['腰圍']), hip = parseFloat(row['臀圍']); if (!isNaN(w) && !isNaN(hip) && hip > 0) row['腰臀比'] = Math.round((w / hip) * 100) / 100;
+        });
+        document.getElementById('bc-section').style.display = 'block';
+        const latest = m[m.length - 1];
+        const prev = m.length > 1 ? m[m.length - 2] : null;
+        let gridHtml = '';
+        const availMetrics = [];
+        BC_METRICS.forEach(meta => {
+            let curr = parseFloat(latest[meta[0]]);
+            let prevRow = prev;
+            // 如果最新測量缺少此項，往前找最近有數據的那筆
+            if (isNaN(curr)) {
+                for (let fi = m.length - 2; fi >= 0; fi--) {
+                    const fv = parseFloat(m[fi][meta[0]]);
+                    if (!isNaN(fv)) { curr = fv; prevRow = (fi > 0) ? m[fi - 1] : null; break; }
+                }
+            }
+            if (isNaN(curr)) return;
+            availMetrics.push(meta);
+            const rng = getBcNormalRange(meta[0], cust);
+            let dot = '';
+            if (rng) {
+                const lo = rng[0], hi = rng[1];
+                if (lo !== null && hi !== null) dot = (curr >= lo && curr <= hi) ? '<span style="color:#8B9D83;font-size:8px;margin-right:2px">●</span>' : '<span style="color:#A0626B;font-size:8px;margin-right:2px">●</span>';
+                else if (hi !== null) dot = (curr <= hi) ? '<span style="color:#8B9D83;font-size:8px;margin-right:2px">●</span>' : '<span style="color:#A0626B;font-size:8px;margin-right:2px">●</span>';
+            }
+            let diffHtml = '';
+            if (prevRow) {
+                const pv = parseFloat(prevRow[meta[0]]);
+                if (!isNaN(pv)) {
+                    const diff = curr - pv;
+                    const good = (meta[3] && diff < 0) || (!meta[3] && diff > 0);
+                    const cls = diff === 0 ? 'color:#8B8B8B' : (good ? 'color:#8B9D83' : 'color:#A0626B');
+                    diffHtml = `<div style="font-size:10px;${cls}">${diff > 0 ? '↑+' : (diff < 0 ? '↓' : '→')}${diff.toFixed(1)}</div>`;
+                }
+            }
+            const keyIdx = availMetrics.length - 1;
+            gridHtml += `<div class="bc-item" data-key-idx="${keyIdx}" onclick="switchBcFromGrid(this,${keyIdx})"><div class="bc-val">${curr}</div><div class="bc-lbl">${dot}${escHtml(meta[1])} ${escHtml(meta[2])}</div>${diffHtml}</div>`;
+        });
+        document.getElementById('bc-grid').innerHTML = gridHtml;
+        // 儲存可用指標，供點擊使用
+        window._bcAvailMetrics = availMetrics;
+        // 預設選中第一格
+        const firstItem = document.querySelector('.bc-item[data-key-idx]');
+        if (firstItem) firstItem.classList.add('active');
+        if (availMetrics.length > 0 && m.length >= 1) {
+            document.getElementById('bc-chart-title').textContent = '📈 ' + availMetrics[0][1];
+            const drawFirst = () => { if (typeof Chart === 'undefined') { setTimeout(drawFirst, 100); return; } renderBcChart(availMetrics[0][0]); };
+            drawFirst();
+        }
+        // 測量歷史表格
+        let tblHtml = '<table class="bc-table"><tr><th>日期</th>';
+        const usedMetrics = BC_METRICS.filter(meta => m.some(r => !isNaN(parseFloat(r[meta[0]]))));
+        usedMetrics.forEach(meta => { tblHtml += `<th>${escHtml(meta[1])}</th>`; });
+        tblHtml += '</tr>';
+        for (let hi = m.length - 1; hi >= 0; hi--) {
+            const dt = (m[hi]['測量日期/時間'] || '').substring(0, 10);
+            tblHtml += `<tr><td>${escHtml(dt)}</td>`;
+            usedMetrics.forEach(meta => { const v = parseFloat(m[hi][meta[0]]); tblHtml += `<td>${isNaN(v) ? '-' : v}</td>`; });
+            tblHtml += '</tr>';
+        }
+        tblHtml += '</table>';
+        document.getElementById('bc-history-table').innerHTML = tblHtml;
+    }
 
-/* 安全警示（固定邏輯） */
-const WARNS=[
- s=>s.sev("cough")==="嚴重"?{level:"red",msg:"重度咳嗽：若病程超過 3 週建議胸部 X 光，排除肺炎、結核、腫瘤。"}:null,
- s=>s.sev("fever")==="嚴重"?{level:"red",msg:"高燒：若發燒 ≥3 天建議進一步檢查（CBC、流感/新冠快篩）。"}:null,
- s=>s.sev("throat")==="嚴重"?{level:"amber",msg:"重度喉痛：注意扁桃腺周圍膿瘍、會厭炎；化膿考慮加開抗生素。"}:null,
-];
+    function renderBcChart(key) {
+        if (!bcData) return;
+        const m = bcData.measurements || [];
+        const cust = bcData.customer || {};
+        const meta = BC_METRICS.find(x => x[0] === key);
+        if (!meta) return;
+        const labels = [], values = [];
+        m.forEach(row => { const v = parseFloat(row[key]); if (!isNaN(v)) { labels.push((row['測量日期/時間'] || '').substring(0, 10)); values.push(v); } });
+        if (labels.length === 0) return;
+        // 單一數據點時補一個空白點，讓範圍線可以畫出來
+        if (labels.length === 1) { labels.push(''); values.push(values[0]); }
+        const canvas = document.getElementById('bc-chart');
+        if (!canvas) return;
+        if (bcChartInstance) bcChartInstance.destroy();
+        const datasets = [{ label: meta[1], data: values, borderColor: '#7B8FA1', backgroundColor: 'rgba(123,143,161,0.07)', tension: 0.3, pointBackgroundColor: '#7B8FA1', pointRadius: 4, fill: true, order: 1 }];
+        const range = getBcNormalRange(key, cust);
+        let yMin, yMax;
+        if (range) {
+            const lo = range[0], hi = range[1];
+            if (lo !== null && hi !== null) {
+                datasets.push({ label: '正常上限', data: Array(labels.length).fill(hi), borderColor: 'rgba(107,143,113,0.8)', borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0, fill: false, order: 2 });
+                datasets.push({ label: '正常下限', data: Array(labels.length).fill(lo), borderColor: 'rgba(107,143,113,0.8)', borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0, fill: '-1', backgroundColor: 'rgba(107,143,113,0.15)', order: 2 });
+            } else if (hi !== null) {
+                datasets.push({ label: '正常上限', data: Array(labels.length).fill(hi), borderColor: 'rgba(160,98,107,0.8)', borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0, fill: false, order: 2 });
+            } else if (lo !== null) {
+                datasets.push({ label: '正常下限', data: Array(labels.length).fill(lo), borderColor: 'rgba(107,143,113,0.8)', borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0, fill: false, order: 2 });
+            }
+            const dataMin = Math.min(...values), dataMax = Math.max(...values);
+            let allMin = dataMin, allMax = dataMax;
+            if (lo !== null) allMin = Math.min(allMin, lo);
+            if (hi !== null) allMax = Math.max(allMax, hi);
+            const pad = (allMax - allMin) * 0.15 || 1;
+            yMin = allMin - pad; yMax = allMax + pad;
+        }
+        const scaleOpts = { x: { ticks: { font: { size: 10 }, maxRotation: 45 } }, y: { ticks: { font: { size: 10 } } } };
+        if (yMin !== undefined) { scaleOpts.y.min = Math.floor(yMin * 10) / 10; scaleOpts.y.max = Math.ceil(yMax * 10) / 10; }
+        bcChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'line', data: { labels, datasets },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: scaleOpts }
+        });
+    }
 
-/* ================================================================
-   四、引擎與畫面（一般不需修改）
-   ================================================================ */
-const LS_KEY="uri_rules_v1";
-let ruleRx={};   // {ruleId:[codes]} 醫師自訂
-try{ruleRx=JSON.parse(localStorage.getItem(LS_KEY)||"{}")}catch(e){ruleRx={}}
-const getRx=r=>ruleRx[r.id]||r.rx;
-/* 規則層級的頻率（四燈號＝第1234包），存瀏覽器 */
-const LS_PK="uri_rulepk_v1";
-let rulePk={};   // {ruleId:{code:[bool,bool,bool,bool]}}
-try{rulePk=JSON.parse(localStorage.getItem(LS_PK)||"{}")}catch(e){rulePk={}}
-const getRulePk=(rid,code)=>{
- if(rulePk[rid]&&rulePk[rid][code])return rulePk[rid][code];
- if(DOCTOR_PK[rid]&&DOCTOR_PK[rid][code])return DOCTOR_PK[rid][code];
- return defaultPkts(parseDose((DRUGS[code]||{}).dose).freq);
-};
-const savePk=()=>localStorage.setItem(LS_PK,JSON.stringify(rulePk));
+    function switchBcFromGrid(el, idx) {
+        document.querySelectorAll('.bc-item').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        const meta = window._bcAvailMetrics[idx];
+        const key = meta[0];
+        document.getElementById('bc-chart-title').textContent = '📈 ' + meta[1];
+        renderBcChart(key);
+    }
 
-/* state.sym[id]: 0/undefined=未選, 1=普通(綠), 2=嚴重(紅) */
-const state={sym:{},basic:{},excluded:{},removed:{},swap:{},days:{},qty:{},pkts:{}};
-BASICS.forEach(([k,_,o])=>state.basic[k]=o[0]);
-let currentRx=[];
+    // 預熱 GAS
+    try { fetch(GAS_URL + '?preheat=1', {mode:'no-cors'}).catch(function(){}); } catch(e){}
 
-const S={
- has:id=>!!state.sym[id],
- sev:id=>state.sym[id]===2?"嚴重":(state.sym[id]?"普通":""),
- basic:k=>state.basic[k]||"",
- rxCat:cat=>currentRx.some(r=>(DRUGS[r.code]||{}).cat===cat),
- anyRx:()=>currentRx.length>0,
-};
+    function escHtml(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-function evaluate(){
- currentRx=[]; const warns=[]; const fired=[];
- for(const r of RULE_DEFS){
-  if(r.id==="nsaid_sub") continue;
-  let hit=false; try{hit=r.cond(S)}catch(e){}
-  if(!hit) continue;
-  fired.push(r);
-  getRx(r).forEach(code=>{
-   if(!DRUGS[code]) return;
-   if(!currentRx.some(x=>x.code===code)){
-    currentRx.push({code,why:r.g+"・"+r.label,rule:r.id});
-    if(!state.pkts[code]) state.pkts[code]=getRulePk(r.id,code).slice(); // 帶入規則設定/醫師預設的頻率
-   }
-  });
- }
- // NSAID 強於 PANA：複選主訴各自帶入 NSAID 與 Acetaminophen 時，只留 NSAID
- // （例外：同一條規則本身就同時配了兩種 → 視為醫師刻意，兩者都留）
- const comboRule=fired.some(r=>{
-  const cats=getRx(r).map(c=>(DRUGS[c]||{}).cat);
-  return cats.includes("nsaid")&&cats.includes("acet");
- });
- if(!comboRule&&currentRx.some(x=>DRUGS[x.code].cat==="nsaid")&&currentRx.some(x=>DRUGS[x.code].cat==="acet")){
-  currentRx=currentRx.filter(x=>DRUGS[x.code].cat!=="acet");
-  warns.push({level:"amber",msg:"同時符合 NSAID 與 Acetaminophen：依 NSAID 強於 PANA 原則，僅保留 NSAID。"});
- }
- // NSAID 同包互斥：同一包不能有兩顆 NSAID（不同包可並存）
- // 衝突時依強弱 PONS2 > IBU > VOR50 > NIM1（未列入者視為最弱）留強去弱
- const NSTR=["PONS2","IBU","VOR50","NIM1"];
- const nrank=c=>{const i=NSTR.indexOf(c);return i<0?NSTR.length:i};
- const nsaids=currentRx.filter(x=>DRUGS[x.code].cat==="nsaid");
- if(nsaids.length>1){
-  const kept=[],dropped=[];
-  nsaids.slice().sort((a,b)=>nrank(a.code)-nrank(b.code)).forEach(x=>{
-   const pk=rxFields(x.code).pk;
-   const clash=kept.some(k=>rxFields(k.code).pk.some((on,i)=>on&&pk[i]));
-   if(clash)dropped.push(x); else kept.push(x);
-  });
-  if(dropped.length){
-   currentRx=currentRx.filter(x=>!dropped.includes(x));
-   warns.push({level:"amber",msg:"同一包不可兩顆 NSAID：保留較強 "+kept.map(k=>k.code).join("、")+"，移除 "+dropped.map(d=>d.code).join("、")+"（強→弱：PONS2＞IBU＞VOR50＞NIM1）。"});
-  }
- }
- // 抗生素 強取代弱：複選主訴各自帶入不同抗生素時只留最強的一種
- // （例外：同一條規則本身配了兩種抗生素 → 視為醫師刻意，都留）
- // 強→弱預設順序（可依醫師習慣調整）
- const ABX_STR=["LEV53","LEV2","AUG","CEFS","KEF2","DUR","CEPH1","ZIT2","KLAR2","VIBR","CLE1","BAKT2","FLA2","ILOS1","AMO52","AMO2"];
- const arank=c=>{const i=ABX_STR.indexOf(c);return i<0?ABX_STR.length:i};
- const comboAbx=fired.some(r=>getRx(r).filter(c=>(DRUGS[c]||{}).cat==="abx").length>=2);
- const abxList=currentRx.filter(x=>DRUGS[x.code].cat==="abx");
- if(!comboAbx&&abxList.length>1){
-  const best=abxList.slice().sort((a,b)=>arank(a.code)-arank(b.code))[0];
-  const dropA=abxList.filter(x=>x!==best);
-  currentRx=currentRx.filter(x=>!dropA.includes(x));
-  warns.push({level:"amber",msg:"多條規則帶入抗生素：依強取代弱原則保留 "+best.code+"，移除 "+dropA.map(d=>d.code).join("、")+"。"});
- }
- // NSAID 禁忌 → 換藥
- if(state.basic.nsaidAllergy==="有"&&currentRx.some(x=>DRUGS[x.code].cat==="nsaid")){
-  const subs=getRx(RULE_DEFS.find(r=>r.id==="nsaid_sub"));
-  currentRx=currentRx.filter(x=>DRUGS[x.code].cat!=="nsaid");
-  currentRx=currentRx.filter(x=>x.rule!=="gi_protect");
-  subs.forEach(code=>{if(!currentRx.some(x=>x.code===code)){
-   currentRx.push({code,why:"NSAID禁忌替代",rule:"nsaid_sub"});
-   if(!state.pkts[code]) state.pkts[code]=getRulePk("nsaid_sub",code).slice();
-  }});
-  warns.push({level:"amber",msg:"NSAID 過敏/潰瘍史：已移除 NSAID，改用替代止痛。"});
- }
- // 高血壓 → 移除鼻塞藥
- if(state.basic.htn==="有"&&currentRx.some(x=>DRUGS[x.code].cat==="dec")){
-  currentRx=currentRx.filter(x=>DRUGS[x.code].cat!=="dec");
-  warns.push({level:"amber",msg:"高血壓：已移除解鼻充血劑（麻黃鹼類），鼻塞可改生理食鹽水沖洗。"});
- }
- // 開車 → 一代抗組織胺改二代
- if(state.basic.drive==="有"){
-  let swapped=false;
-  currentRx=currentRx.map(x=>{
-   if(DRUGS[x.code].cat==="ah1"){swapped=true;return{code:"LCETI3",why:"開車/精密工作改二代",rule:x.rule}}
-   return x;
-  }).filter((x,i,a)=>a.findIndex(y=>y.code===x.code)===i);
-  if(swapped) warns.push({level:"amber",msg:"開車/精密工作：第一代抗組織胺已改為 Levocetirizine（仍可能輕微嗜睡）。"});
- }
- // 青光眼/攝護腺
- if(state.basic.bph==="有"&&currentRx.some(x=>["ah1","dec"].includes(DRUGS[x.code].cat))){
-  warns.push({level:"amber",msg:"青光眼/攝護腺肥大：抗組織胺與鼻塞藥可能加重尿滯留/眼壓，請評估。"});
- }
- // 抗組織胺重複提醒
- if(currentRx.some(x=>x.code==="HIR0")&&currentRx.some(x=>["ah1","ah2"].includes(DRUGS[x.code].cat))){
-  warns.push({level:"amber",msg:"HIR0 已含 Cetirizine，與另一抗組織胺重複，請擇一。"});
- }
- // Codeine 提醒
- if(currentRx.some(x=>x.code==="COD1"||x.code==="COD2")){
-  warns.push({level:"amber",msg:"含 Codeine：嗜睡、便祕，避免與酒精併用；勿用於呼吸抑制風險者。"});
- }
- // 展望/外部帶入的處方（原樣加入，不套強弱取代）
- (state.manual||[]).forEach(code=>{
-  if(DRUGS[code]&&!currentRx.some(x=>x.code===code)) currentRx.push({code,why:"前次處方帶入",rule:"manual"});
- });
- // 固定紅旗
- WARNS.forEach(f=>{const w=f(S); if(w)warns.push(w)});
- renderRx(warns);
-}
+    function showError(msg) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('main').style.display = 'none';
+        document.getElementById('error-screen').style.display = 'block';
+        document.getElementById('error-msg').textContent = msg || '請在 LINE App 中開啟此頁面';
+    }
 
-/* ---------- 主畫面 ---------- */
-function render(){
- const chips=document.getElementById("symChips"); chips.innerHTML="";
- SYMPTOM_GROUPS.forEach(g=>{
-  const gd=document.createElement("div"); gd.className="symgroup";
-  gd.innerHTML=`<div class="gt">${g.t}</div>`;
-  const cw=document.createElement("div"); cw.className="chips";
-  g.items.forEach(s=>{
-   const lvl=state.sym[s.id]||0;
-   const c=document.createElement("span");
-   c.className="chip"+(lvl===1?" on":lvl===2?" sev":""); c.textContent=s.label;
-   c.title=lvl===0?"點一下：普通":lvl===1?"再點：嚴重":"再點：取消";
-   c.onclick=()=>{
-    if(lvl===2) delete state.sym[s.id]; else state.sym[s.id]=lvl+1; // 未選→綠(普通)→紅(嚴重)→未選…
-    render();
-   };
-   cw.appendChild(c);
-  });
-  gd.appendChild(cw); chips.appendChild(gd);
- });
- evaluate();
-}
-function drugSelect(cat,cur,onchange){
- const sel=document.createElement("select");
- Object.entries(DRUGS).filter(([c,d])=>d.cat===cat).forEach(([c,d])=>{
-  const o=document.createElement("option"); o.value=c; o.textContent=`${c}｜${d.zh}（${d.gn}）`;
-  if(c===cur)o.selected=true; sel.appendChild(o);
- });
- sel.onchange=()=>onchange(sel.value);
- return sel;
-}
-/* ---- 把 dose 字串解析成 HIS 欄位 ---- */
-const DEFAULT_DAYS=3;
-const FREQ_PER_DAY={QD:1,BID:2,TID:3,QID:4,HS:1};
-function parseDose(dose){
- dose=dose||"";
- let qty=1,un="錠";
- const ml=dose.match(/([\d.]+)\s*ml/i), hash=dose.match(/([\d.]+)#/);
- if(ml){qty=parseFloat(ml[1]);un="ML";}
- else if(hash){qty=parseFloat(hash[1]);un="錠";}
- let freq=""; const fm=dose.match(/\b(QID|TID|BID|QD)\b/);
- if(fm)freq=fm[1]; else if(/HS/.test(dose))freq="HS";
- let days=DEFAULT_DAYS; const dm=dose.match(/[×x]\s*(\d+)\s*天/); if(dm)days=parseInt(dm[1]);
- const notes=[];
- if(/PRN/.test(dose))notes.push("PRN");
- if(/\bPC\b/.test(dose))notes.push("PC");
- if(/\bAC\b/.test(dose))notes.push("AC");
- if(/HS/.test(dose)&&freq!=="HS")notes.push("HS");
- if(/空腹/.test(dose))notes.push("空腹");
- return {qty,un,freq,days,note:notes.join(" ")};
-}
-function rxTotal(p,days){return +(p.qty*(FREQ_PER_DAY[p.freq]||1)*days).toFixed(1);}
-/* 四燈號＝藥包第1234包；亮的數量＝一天幾包 */
-function defaultPkts(freq){
- if(freq==="HS")return[false,false,false,true];
- const n=FREQ_PER_DAY[freq]||1;
- return [n>=1,n>=2,n>=3,n>=4];
-}
-function rxPkts(code){
- if(!state.pkts[code]) state.pkts[code]=defaultPkts(parseDose(DRUGS[code].dose).freq);
- return state.pkts[code];
-}
-function freqCode(pk){
- const n=pk.filter(Boolean).length;
- if(n===1&&pk[3]&&!pk[0]&&!pk[1]&&!pk[2])return"HS";
- return {0:"",1:"QD",2:"BID",3:"TID",4:"QID"}[n]||"";
-}
-/* 套用醫師在表格上的覆寫（劑量／包別／日） */
-function rxFields(code){
- const p=parseDose(DRUGS[code].dose);
- const qty=state.qty[code]!=null?state.qty[code]:p.qty;
- const days=state.days[code]!=null?state.days[code]:p.days;
- const pk=rxPkts(code);
- const perDay=pk.filter(Boolean).length;
- const total=+(qty*perDay*days).toFixed(1);
- return {qty,un:p.un,pk,perDay,days,total,note:p.note};
-}
-function codeSelect(cat,cur,onchange){
- const sel=document.createElement("select"); sel.className="codesel";
- Object.entries(DRUGS).filter(([c,d])=>d.cat===cat).forEach(([c,d])=>{
-  const o=document.createElement("option"); o.value=c; o.textContent=c;
-  if(c===cur)o.selected=true; sel.appendChild(o);
- });
- sel.onchange=()=>onchange(sel.value);
- return sel;
-}
+    async function init() {
+        const loadingText = document.getElementById('loading-text');
+        let _step = '啟動';
+        try {
+            _step = '讀取URL';
+            const urlParams = new URLSearchParams(location.search);
+            const liffState = urlParams.get('liff.state') || '';
+            if (liffState) {
+                var stateStr = liffState.charAt(0) === '?' ? liffState.substring(1) : liffState;
+                var stateParams = new URLSearchParams(stateStr);
+                stateParams.forEach(function(v, k) { if (!urlParams.has(k)) urlParams.set(k, v); });
+            }
+            const urlId = urlParams.get('id');
+            const urlUserId = urlParams.get('userId');
+            let userId = null, displayName = null, pictureUrl = null;
 
-function renderRx(warns){
- const al=document.getElementById("alerts");
- if(al){
-  al.innerHTML=warns.length?"":'<div class="empty">無</div>';
-  warns.forEach(w=>{
-   const d=document.createElement("div"); d.className="alert "+(w.level==="red"?"red":"amber");
-   d.textContent=(w.level==="red"?"🚩 ":"⚠️ ")+w.msg; al.appendChild(d);
-  });
- }
- const rx=document.getElementById("rx");
- if(!currentRx.length){rx.innerHTML='<div class="empty">勾選主訴後自動產生</div>';return}
- rx.innerHTML="";
- const st=computeStat(); const scol=["blue","green","yellow","red"];
- const statHtml=st.any?'<div class="fhstat"><span class="fhlbl">每包顆數</span>'+
-  st.sums.map((s,i)=>`<span class="st"><span class="lt on ${scol[i]}"></span>${+s.toFixed(2)}</span>`).join("")+'</div>':'';
- const tab=document.createElement("table"); tab.className="rxtab";
- tab.innerHTML='<thead><tr><th>藥代</th><th>全名</th><th class="num">次劑量</th><th>UN</th>'+
-  '<th class="freqhead">頻率'+statHtml+'</th><th class="ctr">日</th><th class="num">總量</th><th>途徑</th><th>註</th><th></th></tr></thead>';
- const tb=document.createElement("tbody");
- /* 處方排列順序：抗生素→類固醇→NSAID→止痛→胃藥/腸胃→止咳→化痰→擴張劑→鼻塞→長效(二代)抗組織胺→短效(一代)抗組織胺 */
- const CAT_ORDER={abx:0,ster:1,nsaid:2,acet:3,gi:4,tuss:5,muco:6,bron:7,dec:8,ah2:9,ah1:10};
- const catOf=it=>(DRUGS[state.swap[it.rule+"_"+it.code]||it.code]||{}).cat;
- const sorted=[...currentRx].sort((a,b)=>(CAT_ORDER[catOf(a)]??99)-(CAT_ORDER[catOf(b)]??99));
- sorted.forEach(item=>{
-  const code=state.swap[item.rule+"_"+item.code]||item.code;
-  const d=DRUGS[code]; if(!d||state.removed[code])return;
-  const off=state.excluded[code];
-  const f=rxFields(code);
-  const tr=document.createElement("tr"); if(off)tr.className="off";
-  tr.innerHTML=
-   `<td class="codecell"></td>`+
-   `<td class="nmcell"><span class="c-nm">${d.gn}</span></td>`+
-   `<td class="num qtycell"></td>`+
-   `<td>${f.un}</td>`+
-   `<td class="freqcell"></td>`+
-   `<td class="ctr"></td>`+
-   `<td class="num">${f.total.toFixed(1)}</td>`+
-   `<td>PO</td>`+
-   `<td>${f.note||""}</td>`+
-   `<td></td>`;
-  // 藥代：點選換藥＋✕刪除
-  tr.children[0].appendChild(codeSelect(d.cat,code,v=>{state.swap[item.rule+"_"+item.code]=v;renderRx(warns)}));
-  const del=document.createElement("span"); del.className="rxdel"; del.textContent="✕"; del.title="刪除此藥";
-  del.onclick=()=>{state.removed[code]=true;renderRx(warns)};
-  tr.children[0].appendChild(del);
-  // 次劑量：可改
-  const qin=document.createElement("input"); qin.className="qtyin"; qin.type="number"; qin.step="0.25"; qin.min="0"; qin.value=f.qty;
-  qin.onchange=()=>{state.qty[code]=parseFloat(qin.value)||0;renderRx(warns)};
-  tr.children[2].appendChild(qin);
-  // 頻率：四燈號（藍綠黃紅＝第1234包），可點亮暗
-  const lw=document.createElement("div"); lw.className="lights"; const cols=["blue","green","yellow","red"];
-  f.pk.forEach((on,i)=>{
-   const dot=document.createElement("span"); dot.className="lt "+cols[i]+(on?" on":""); dot.title="第"+(i+1)+"包";
-   dot.onclick=()=>{const a=rxPkts(code).slice();a[i]=!a[i];state.pkts[code]=a;renderRx(warns);};
-   lw.appendChild(dot);
-  });
-  tr.children[4].appendChild(lw);
-  // 日：可改
-  const din=document.createElement("input"); din.className="daysin"; din.type="number"; din.min="1"; din.value=f.days;
-  din.onchange=()=>{state.days[code]=parseInt(din.value)||1;renderRx(warns)};
-  tr.children[5].appendChild(din);
-  // 排除
-  const t=document.createElement("span"); t.className="tgl"; t.textContent=off?"已排除":"排除";
-  t.onclick=()=>{state.excluded[code]=!state.excluded[code];renderRx(warns)};
-  tr.children[9].appendChild(t);
-  tb.appendChild(tr);
- });
- tab.appendChild(tb); rx.appendChild(tab);
-}
-/* 每包顆數統計（第1234包；只計錠劑） */
-function computeStat(){
- const sums=[0,0,0,0]; let any=false;
- currentRx.forEach(item=>{
-  const code=state.swap[item.rule+"_"+item.code]||item.code;
-  if(!DRUGS[code]||state.excluded[code]||state.removed[code])return;
-  const f=rxFields(code); if(f.un!=="錠")return;
-  any=true; f.pk.forEach((on,i)=>{if(on)sums[i]+=f.qty;});
- });
- return {sums,any};
-}
-function finalList(){
- const seen={};
- return currentRx.map(i=>state.swap[i.rule+"_"+i.code]||i.code)
-  .filter(c=>!state.excluded[c]&&!state.removed[c]&&!seen[c]&&(seen[c]=1));
-}
-function flash(id,a,b){const e=document.getElementById(id);e.textContent=a;setTimeout(()=>e.textContent=b,1200)}
-document.getElementById("resetBtn").onclick=()=>{
- state.sym={};state.excluded={};state.removed={};state.swap={};state.days={};state.qty={};state.pkts={};state.manual=[];
- BASICS.forEach(([k,_,o])=>state.basic[k]=o[0]);
- render();
-};
+            if (urlId) {
+                // 用 ?id= 直接查（個人化連結）
+                document.getElementById('patient-name').textContent = urlId;
+                document.getElementById('main').style.display = 'block';
+                loadingText.textContent = '載入身體組成…';
+                fetch(GAS_URL + '?id=' + encodeURIComponent(urlId))
+                    .then(r => r.json())
+                    .then(data => {
+                        document.getElementById('loading').classList.add('fade-out');
+                        setTimeout(() => { document.getElementById('loading').style.display = 'none'; }, 300);
+                        if (data && data.customer && data.customer.name) document.getElementById('patient-name').textContent = data.customer.name;
+                        if (data && data.measurements) renderBcSection(data);
+                    })
+                    .catch(e => showError('載入失敗：' + (e.message || e)));
+                // 背景跑 LIFF init 更新頭像
+                if (LIFF_ID && LIFF_ID !== 'YOUR_LIFF_ID_HERE') {
+                    liff.init({ liffId: LIFF_ID }).then(() => {
+                        if (!liff.isLoggedIn()) return;
+                        return liff.getProfile();
+                    }).then(profile => {
+                        if (!profile) return;
+                        if (profile.pictureUrl) document.getElementById('avatar-wrap').innerHTML = `<img class="avatar" src="${profile.pictureUrl}" alt="avatar">`;
+                        if (profile.displayName) document.getElementById('patient-name').textContent = profile.displayName;
+                    }).catch(() => {});
+                }
+                return;
+            }
 
-/* ---------- 規則編輯 ---------- */
-const modal=document.getElementById("modal");
-document.getElementById("gearBtn").onclick=()=>{renderRules();modal.classList.add("show")};
-document.getElementById("mClose").onclick=()=>{modal.classList.remove("show");render()};
-document.getElementById("mReset").onclick=()=>{
- if(confirm("確定恢復所有規則為預設值？")){ruleRx={};rulePk={};localStorage.removeItem(LS_KEY);localStorage.removeItem(LS_PK);renderRules()}
-};
-document.getElementById("mExport").onclick=()=>{
- const full={}; RULE_DEFS.forEach(r=>full[r.id]=getRx(r));
- navigator.clipboard.writeText(JSON.stringify({rx:full,pkts:rulePk},null,1)).then(()=>flash("mExport","已複製 ✓","匯出規則 JSON"));
-};
-document.getElementById("mImport").onclick=()=>{
- let box=document.getElementById("impBox");
- if(box){box.remove();return}
- box=document.createElement("div"); box.id="impBox";
- const ta=document.createElement("textarea"); ta.placeholder="貼上另一台裝置「匯出規則 JSON」的內容，按確定匯入（會覆蓋此裝置的規則與頻率設定）";
- const go=document.createElement("button"); go.className="impGo"; go.textContent="確定匯入";
- go.onclick=()=>{
-  try{
-   const o=JSON.parse(ta.value);
-   if(o&&(o.rx||o.pkts)){ruleRx=o.rx||{};rulePk=o.pkts||{};}
-   else if(o&&typeof o==="object"){ruleRx=o;}
-   else throw new Error("內容不是規則 JSON");
-   saveRules();savePk();box.remove();renderRules();
-  }catch(e){alert("匯入失敗："+e.message)}
- };
- box.appendChild(ta);box.appendChild(go);
- document.getElementById("ruleList").after(box);
-};
-function saveRules(){localStorage.setItem(LS_KEY,JSON.stringify(ruleRx))}
-const openGroups={}; // 收折狀態（點群組標題展開）
-function renderRules(){
- const box=document.getElementById("ruleList"); box.innerHTML="";
- let lastG="",body=null;
- RULE_DEFS.forEach(r=>{
-  if(r.g!==lastG){
-   lastG=r.g; const g=r.g, open=!!openGroups[g];
-   const n=RULE_DEFS.filter(x=>x.g===g).length, filled=RULE_DEFS.filter(x=>x.g===g&&getRx(x).length).length;
-   const h=document.createElement("div"); h.className="rgroup"+(open?" open":"");
-   h.innerHTML=`<span class="arr">▶</span>${g}<span class="cnt">${filled}/${n} 已配藥</span>`;
-   h.onclick=()=>{openGroups[g]=!openGroups[g];renderRules()};
-   box.appendChild(h);
-   body=document.createElement("div"); body.className="rbody"+(open?" open":"");
-   box.appendChild(body);
-  }
-  const row=document.createElement("div"); row.className="rrow";
-  const lab=document.createElement("span"); lab.className="rlabel"; lab.textContent=r.label; row.appendChild(lab);
-  getRx(r).forEach((code,idx)=>{
-   const tag=document.createElement("span"); tag.className="rdrug";
-   const b=document.createElement("b"); b.textContent=code; tag.appendChild(b);
-   // 四燈號：點選改此規則出藥的預設頻率（第1234包）
-   const lw=document.createElement("span"); lw.className="lights";
-   const pk=getRulePk(r.id,code); const cols=["blue","green","yellow","red"];
-   pk.forEach((on,i)=>{
-    const dot=document.createElement("span"); dot.className="lt "+cols[i]+(on?" on":""); dot.title="第"+(i+1)+"包";
-    dot.onclick=()=>{
-     const a=getRulePk(r.id,code).slice(); a[i]=!a[i];
-     rulePk[r.id]=rulePk[r.id]||{}; rulePk[r.id][code]=a; savePk(); renderRules();
-    };
-    lw.appendChild(dot);
-   });
-   tag.appendChild(lw);
-   const x=document.createElement("span"); x.className="x"; x.textContent="✕";
-   x.onclick=()=>{
-    const arr=[...getRx(r)]; arr.splice(idx,1); ruleRx[r.id]=arr; saveRules();
-    if(rulePk[r.id]){delete rulePk[r.id][code]; savePk();}
-    renderRules();
-   };
-   tag.appendChild(x);
-   row.appendChild(tag);
-  });
-  const sel=document.createElement("select");
-  sel.innerHTML='<option value="">＋加藥…</option>';
-  let lastCat="";
-  Object.entries(DRUGS).forEach(([c,d])=>{
-   if(d.cat!==lastCat){lastCat=d.cat;const og=document.createElement("optgroup");og.label=CAT_LABEL[d.cat];sel.appendChild(og)}
-   const o=document.createElement("option"); o.value=c; o.textContent=`${c}｜${d.gn}`;
-   sel.lastChild.appendChild(o);
-  });
-  sel.onchange=()=>{
-   if(!sel.value)return;
-   const arr=[...getRx(r)]; if(!arr.includes(sel.value))arr.push(sel.value);
-   ruleRx[r.id]=arr; saveRules(); renderRules();
-  };
-  row.appendChild(sel);
-  body.appendChild(row);
- });
-}
-/* ---------- 病人資訊（#pt=姓名|病歷號|註記，fragment 不會送到伺服器） ---------- */
-(function(){
- const m=(location.hash||"").match(/pt=([^&]+)/);
- if(!m)return;
- const parts=decodeURIComponent(m[1]).split("|");
- const nm=parts[0]||"",sn=parts[1]||"",note=parts[2]||"";
- if(!nm&&!sn)return;
- const bar=document.createElement("div"); bar.className="ptbar";
- bar.textContent="👤 "+nm+(sn?"（"+sn+"）":"")+(note?"・⚠️ "+note:"");
- const wrap=document.querySelector(".wrap"), hd=document.querySelector("header");
- wrap.insertBefore(bar,hd.nextSibling);
-})();
-/* ---------- 網址帶入處方 ?rx=藥代:次劑量:頻率:日,... 例 ?rx=AMO52:1:QID:3,AMB:1:TID:3 ---------- */
-(function(){
- const p=new URLSearchParams(location.search).get("rx");
- if(!p)return;
- state.manual=[];
- p.split(",").forEach(t=>{
-  const [code,qty,freq,days]=t.trim().split(":");
-  const c=(code||"").toUpperCase();
-  if(!DRUGS[c])return;
-  state.manual.push(c);
-  if(qty)state.qty[c]=parseFloat(qty)||1;
-  if(days)state.days[c]=parseInt(days)||DEFAULT_DAYS;
-  if(freq)state.pkts[c]=defaultPkts(freq.toUpperCase());
- });
-})();
-render();
-</script>
+            if (LIFF_ID && LIFF_ID !== 'YOUR_LIFF_ID_HERE' && !urlUserId) {
+                try {
+                    loadingText.textContent = '正在連線 LINE…';
+                    _step = 'liff.init';
+                    await liff.init({ liffId: LIFF_ID });
+                    _step = '檢查登入';
+                    if (!liff.isLoggedIn()) { liff.login(); return; }
+                    _step = 'getProfile';
+                    const profile = await liff.getProfile();
+                    userId = profile.userId; displayName = profile.displayName; pictureUrl = profile.pictureUrl;
+                } catch (liffErr) {
+                    const eMsg = (liffErr && liffErr.message) ? String(liffErr.message) : String(liffErr);
+                    const eName = (liffErr && liffErr.name) ? liffErr.name : 'Error';
+                    console.warn('LIFF failed [' + _step + ']:', eName, eMsg);
+                    if (!sessionStorage.getItem('_liff_retry')) { sessionStorage.setItem('_liff_retry', '1'); location.reload(); return; }
+                    showError('LIFF 初始化失敗 [' + _step + ']\n' + eName + ': ' + eMsg); return;
+                }
+            }
+            if (!userId && urlUserId) { userId = urlUserId; displayName = '患者'; }
+            if (!userId) { showError('請在 LINE App 中開啟此頁面'); return; }
+            if (pictureUrl) { document.getElementById('avatar-wrap').innerHTML = `<img class="avatar" src="${pictureUrl}" alt="avatar">`; }
+            document.getElementById('patient-name').textContent = displayName || '您好';
+            // 同步 LINE 名稱
+            if (userId && displayName && displayName !== '患者') {
+                fetch(GAS_URL + '?setLineName=' + encodeURIComponent(userId) + '&dName=' + encodeURIComponent(displayName)).catch(function(){});
+            }
+            document.getElementById('main').style.display = 'block';
+            loadingText.textContent = '載入身體組成…';
+
+            fetch(GAS_URL + '?uid=' + encodeURIComponent(userId))
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('loading').classList.add('fade-out');
+                    setTimeout(() => { document.getElementById('loading').style.display = 'none'; }, 300);
+                    if (data && data.customer && data.customer.name) document.getElementById('patient-name').textContent = data.customer.name;
+                    if (data && data.measurements) renderBcSection(data);
+                })
+                .catch(e => showError('載入失敗：' + (e.message || e)));
+        } catch (err) {
+            console.error('Error [' + _step + ']:', err);
+            showError('載入失敗 [' + _step + ']：' + (err.message || err));
+        }
+    }
+    init();
+    </script>
 </body>
 </html>
