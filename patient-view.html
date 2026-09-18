@@ -14,10 +14,13 @@
         var p=new URLSearchParams(window.location.search);
         var sn=p.get('id')||'';
         if(!sn) return;
-        // 提前發主 API（體組成）
-        window._pvEarlyBody=fetch(GAS+'?id='+encodeURIComponent(sn)).then(function(r){return r.json();}).catch(function(){return null;});
-        // 提前預熱 MEALS_GAS
-        try{fetch(MGAS+'?preheat=1',{mode:'no-cors'}).catch(function(){});}catch(e){}
+        // ★ 一次請求取五份資料（body/meals/dietPlan/homeWeight/dietHistory），取代原本 5 支 API + 1 支預熱
+        window._pvBundle=fetch(MGAS+'?bundle='+encodeURIComponent(sn)).then(function(r){return r.json();}).catch(function(){return null;});
+        // 體組成：優先用 bundle.body；bundle 失敗才回退單獨請求（相容舊路徑）
+        window._pvEarlyBody=window._pvBundle.then(function(b){
+            if(b&&b.body) return b.body;
+            return fetch(GAS+'?id='+encodeURIComponent(sn)).then(function(r){return r.json();});
+        }).catch(function(){return null;});
         // 偵測 cache
         try{
             var raw=localStorage.getItem('pv_body');
@@ -519,6 +522,15 @@
     var N8N = 'https://huangcs.app.n8n.cloud/webhook';
     // 預熱已移至 <head>（GAS_URL 的 early fetch 取代預熱，MEALS_GAS 在 <head> 預熱）
 
+    // ★ bundle：<head> 已提前發出 ?bundle=，各 loader 第一次載入優先取用；
+    //   每個 key 只用一次，之後的重新載入（例如儲存後）一律走各自的 fetch 拿最新資料
+    var _pvBundleUsed = {};
+    function pvFromBundle(key){
+        if(!window._pvBundle || _pvBundleUsed[key]) return Promise.resolve(null);
+        _pvBundleUsed[key] = true;
+        return window._pvBundle.then(function(b){ return (b && b[key] && !b.error) ? b[key] : null; }).catch(function(){ return null; });
+    }
+
     // ====== Cache-first（localStorage 快取）======
     var PV_CACHE_TTL = 1800000; // 30 分鐘
     function pvSaveCache(cacheKey, subKey, data) {
@@ -895,8 +907,7 @@
             if (activeTab === 'meals') renderMealsTab();
             fillProteinFromMeals();
         }
-        fetch(MEALS_GAS + '?patientId=' + encodeURIComponent(patientSn))
-            .then(function(r){return r.json();})
+        pvFromBundle('meals').then(function(b){ return b || fetch(MEALS_GAS + '?patientId=' + encodeURIComponent(patientSn)).then(function(r){return r.json();}); })
             .then(function(data){
                 var uid = data.lineUid || '';
                 if (uid && !patientLineUid) {
@@ -939,8 +950,7 @@
             if (activeTab === 'meals') renderMealsTab();
             fillProteinFromMeals();
         }
-        fetch(MEALS_GAS + '?userId=' + encodeURIComponent(uid))
-            .then(function(r){ return r.json(); })
+        pvFromBundle('meals').then(function(b){ return b || fetch(MEALS_GAS + '?userId=' + encodeURIComponent(uid)).then(function(r){ return r.json(); }); })
             .then(function(data){
                 pvSaveCache('pv_meals', patientSn, data);
                 mealsData = data;
@@ -3215,9 +3225,8 @@
         // 先用預設值立刻渲染，讓頁面不留白
         PLAN_TYPES.forEach(function(p) { generateDietPlan(p); });
 
-        // 再從 API 載入已儲存的資料覆蓋
-        fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn))
-            .then(function(r) { return r.json(); })
+        // 再從 API 載入已儲存的資料覆蓋（第一次優先用 bundle）
+        pvFromBundle('dietPlan').then(function(b){ return b || fetch(MEALS_GAS + '?dietPlan=' + encodeURIComponent(patientSn)).then(function(r) { return r.json(); }); })
             .then(function(data) {
                 var rec = parseInt(document.getElementById('proteinInput').value) || 0;
                 var packs = rec <= 110 ? 2 : 3;
@@ -3366,8 +3375,7 @@
             dietHistoryCache = cached;
             if (activeTab === 'note') renderHistoryCards(document.getElementById('historyContent'), cached);
         }
-        _histPrefetchPromise = fetch(MEALS_GAS + '?dietHistory=' + encodeURIComponent(patientSn))
-            .then(function(r) { return r.json(); })
+        _histPrefetchPromise = pvFromBundle('dietHistory').then(function(b){ return b || fetch(MEALS_GAS + '?dietHistory=' + encodeURIComponent(patientSn)).then(function(r) { return r.json(); }); })
             .then(function(data) {
                 var records = data.records || [];
                 if (records.length > 0) {
@@ -3678,8 +3686,7 @@
             hwLoaded = true;
             if (activeTab === 'meals') { hwUpdateStats(); mealRenderWeightChart(); }
         }
-        _hwPrefetchPromise = fetch(MEALS_GAS + '?homeWeight=' + encodeURIComponent(patientSn))
-            .then(function(r){ return r.json(); })
+        _hwPrefetchPromise = pvFromBundle('homeWeight').then(function(b){ return b || fetch(MEALS_GAS + '?homeWeight=' + encodeURIComponent(patientSn)).then(function(r){ return r.json(); }); })
             .then(function(data){
                 hwLoaded = true;
                 if (data && data.records) {
