@@ -3171,7 +3171,7 @@
 
             if (gasOk && lineOk) {
                 btn.textContent = '已發送'; btn.style.background = '#6B8F71';
-                showDietSentBadge(new Date());
+                showDietSentBadge(new Date(), true);
             } else if (gasOk && !lineOk) {
                 btn.textContent = '已儲存（推播失敗）'; btn.style.background = '#C4A882';
                 alert('Sheet 已儲存，但 LINE 推播失敗：' + (lineRes.error || JSON.stringify(lineRes)));
@@ -3208,10 +3208,10 @@
     }
 
     // 顯示「已發送」永久註記（碳水循環計劃卡片標題列）
-    function showDietSentBadge(dateVal) {
+    function showDietSentBadge(dateVal, pushed) {
         var el = document.getElementById('dietSentBadge');
         if (!el) return;
-        var label = '✓ 已發送';
+        var label = pushed ? '✓ 已發送' : '✓ 已儲存';
         var ymd = hwParseDateToYMD(dateVal);
         if (ymd) {
             var p = ymd.split('-');
@@ -3236,8 +3236,8 @@
                 // 載入排程
                 if (data.schedule && data.schedule.length === 7) {
                     cycleSchedule = data.schedule;
-                    // 曾儲存並發送過 → 永久顯示已發送註記
-                    showDietSentBadge(data.date);
+                    // 曾儲存過 → 顯示「已儲存」註記（Sheet 沒記錄 LINE 是否真的推成功，所以不寫「已發送」）
+                    showDietSentBadge(data.date, false);
                 }
                 renderCycleSchedule();
 
